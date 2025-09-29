@@ -18,6 +18,9 @@ export function DashboardShell({ children, displayName }: DashboardShellProps) {
   return (
     <Box
       sx={{
+        position: "fixed",
+        inset: 0,
+
         display: "flex",
         minHeight: "100vh",
         bgcolor: "#b92626", // 🔴 ทำเหมือนของเก่า
