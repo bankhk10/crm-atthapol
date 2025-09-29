@@ -18,15 +18,3 @@ export default async function EmployeesPage() {
 
   return <EmployeesTable employees={items} />;
 }
-
-function StatusChip({ status }: { status: EmployeeStatus }) {
-  if (status === "ACTIVE") {
-    return <Chip label="ปฏิบัติงาน" color="success" variant="outlined" />;
-  }
-
-  if (status === "ON_LEAVE") {
-    return <Chip label="ลาพัก" color="warning" variant="outlined" />;
-  }
-
-  return <Chip label="ออกจากงาน" color="default" variant="outlined" />;
-}

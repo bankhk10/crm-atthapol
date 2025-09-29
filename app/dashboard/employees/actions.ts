@@ -17,9 +17,7 @@ const employeeFormSchema = z.object({
   department: z.string().min(1, "กรุณาเลือกแผนก"),
   phone: z.string().min(1, "กรุณากรอกเบอร์โทร"),
   startDate: z.string().min(1, "กรุณาเลือกวันที่เริ่มงาน"),
-  status: z.enum(["ACTIVE", "ON_LEAVE", "INACTIVE"], {
-    errorMap: () => ({ message: "สถานะไม่ถูกต้อง" }),
-  }),
+  status: z.enum(["ACTIVE", "ON_LEAVE", "INACTIVE"], { message: "สถานะไม่ถูกต้อง" }),
 });
 
 async function generateEmployeeCode(tx: Prisma.TransactionClient) {

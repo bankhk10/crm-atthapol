@@ -1,12 +1,11 @@
-import { Stack, Typography } from "@mui/material";
+import { RolesClient } from "./_components/roles-client";
+import { getPermissionLibrary, getRoleList } from "./data";
 
-export default function PermissionPage() {
-  return (
-    <Stack spacing={2}>
-      <Typography variant="h4" fontWeight={700}>
-        PermissionPage
-      </Typography>
-      <Typography color="text.secondary">หน้าว่างสำหรับการจัดการPermissionPage</Typography>
-    </Stack>
-  );
+export default async function RolesPage() {
+  const [roles, permissionLibrary] = await Promise.all([
+    getRoleList(),
+    getPermissionLibrary(),
+  ]);
+
+  return <RolesClient roles={roles} permissionLibrary={permissionLibrary} />;
 }
