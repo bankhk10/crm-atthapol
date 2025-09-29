@@ -11,12 +11,15 @@ import {
   FormControlLabel,
   Paper,
   Stack,
-  TextField,
   Typography,
+  IconButton,
+  InputAdornment,
+  TextField,
 } from "@mui/material";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { FormEvent, useCallback, useState } from "react";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 
 // ฟอนต์ Prompt
 const prompt = Prompt({
@@ -28,6 +31,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
@@ -220,7 +224,7 @@ export default function LoginPage() {
                 fullWidth
                 label="USERNAME"
                 name="email"
-                placeholder="name@example.com"
+                // placeholder="name@example.com"
                 required
                 type="email"
                 InputLabelProps={{
@@ -257,11 +261,24 @@ export default function LoginPage() {
                 fullWidth
                 label="PASSWORD"
                 name="password"
-                placeholder="••••••••"
                 required
-                type="password"
+                type={showPassword ? "text" : "password"}
                 InputLabelProps={{
                   sx: { fontSize: { xs: "0.8rem", md: "0.95rem" } },
+                }}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        aria-label="toggle password visibility"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        edge="end"
+                        sx={{ mr: 0.5 }}
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
                 }}
                 sx={{
                   "& .MuiOutlinedInput-root": {
@@ -282,6 +299,7 @@ export default function LoginPage() {
                 spacing={1.5}
                 alignItems={{ xs: "flex-start", sm: "center" }}
                 justifyContent="space-between"
+                 sx={{ mt: 6 }} 
               >
                 <FormControlLabel
                   control={
