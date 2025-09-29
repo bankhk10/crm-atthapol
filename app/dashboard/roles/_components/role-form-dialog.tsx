@@ -112,10 +112,36 @@ export function RoleFormDialog({
     index: number,
     value: string,
   ) => {
-    handleUpdatePermissionGroup(index, (group) => ({
-      ...group,
-      category: value,
-    }));
+    const trimmed = value.trim();
+    const matchedLibraryGroup = permissionLibrary.find(
+      (libraryGroup) => libraryGroup.category.toLowerCase() === trimmed.toLowerCase(),
+    );
+
+    handleUpdatePermissionGroup(index, (group) => {
+      const existingItems = Array.from(new Set((group.items ?? []).map((item) => item.trim())));
+      const nextItems = matchedLibraryGroup
+        ? Array.from(
+            new Set([
+              ...existingItems,
+              ...matchedLibraryGroup.items.map((item) => item.trim()),
+            ]),
+          )
+        : existingItems;
+
+      return {
+        ...group,
+        category: value,
+        items: nextItems,
+      };
+    });
+
+    if (matchedLibraryGroup) {
+      setPermissionInputs((prev) => {
+        const draft = [...prev];
+        draft[index] = "";
+        return draft;
+      });
+    }
   };
 
   const handlePermissionInputChange = (index: number, value: string) => {
