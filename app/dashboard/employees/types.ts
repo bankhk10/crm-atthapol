@@ -18,6 +18,7 @@ export type EmployeeFormValues = {
   status: EmployeeStatus;
   role: EmployeeRole;
   roleDefinitionId: string | null;
+  employeeCode: string; 
 };
 
 export type EmployeeListItem = {

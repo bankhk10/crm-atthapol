@@ -24,6 +24,7 @@ const employeeFormSchema = z.object({
     .trim()
     .nullish()
     .transform((value) => (value && value.length > 0 ? value : null)),
+     employeeCode: z.string().min(1, "กรุณากรอกรหัสพนักงาน"),
 });
 
 async function generateEmployeeCode(tx: Prisma.TransactionClient) {
@@ -66,7 +67,8 @@ export async function createEmployee(rawValues: EmployeeFormValues) {
       await tx.employee.create({
         data: {
           userId: user.id,
-          employeeCode,
+          employeeCode: values.employeeCode,
+          // employeeCode,
           position: values.position,
           department: values.department,
           phone: values.phone,
@@ -134,6 +136,8 @@ export async function updateEmployee(
 function handlePrismaError(error: unknown): never {
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     if (error.code === "P2002") {
+      console.error("P2002 Error Meta:", error.meta); // 👈 log ออกมา
+
       const target = error.meta?.target as string | string[] | undefined;
       const targets = Array.isArray(target)
         ? target
@@ -144,16 +148,15 @@ function handlePrismaError(error: unknown): never {
       if (targets.includes("email")) {
         throw new Error("อีเมลนี้ถูกใช้งานแล้ว กรุณาใช้อีเมลอื่น");
       }
-
       if (targets.includes("employeeCode")) {
         throw new Error("รหัสพนักงานนี้ถูกใช้งานแล้ว กรุณาใช้รหัสอื่น");
       }
-
       if (targets.includes("userId")) {
         throw new Error("บัญชีผู้ใช้นี้ถูกผูกกับพนักงานคนอื่นแล้ว");
       }
 
-      throw new Error("ข้อมูลซ้ำ กรุณาตรวจสอบแล้วลองอีกครั้ง");
+      // fallback: แสดง target จริงๆ
+      throw new Error(`ข้อมูลซ้ำที่ฟิลด์: ${targets.join(", ")}`);
     }
   }
 
@@ -163,3 +166,4 @@ function handlePrismaError(error: unknown): never {
 
   throw new Error("ไม่สามารถบันทึกข้อมูลได้ กรุณาลองใหม่อีกครั้ง");
 }
+

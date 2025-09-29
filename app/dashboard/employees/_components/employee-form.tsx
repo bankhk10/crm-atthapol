@@ -63,28 +63,28 @@ export function EmployeeForm({
 
   const departmentItems = useMemo(
     () => [...departmentOptions].sort((a, b) => a.localeCompare(b)),
-    [],
+    []
   );
 
   const selectedRole = useMemo(
     () => roleOptions.find((option) => option.value === values.role),
-    [roleOptions, values.role],
+    [roleOptions, values.role]
   );
 
   const selectedRoleDefinition = useMemo(
     () =>
-      roleDefinitions.find((definition) => definition.id === values.roleDefinitionId) ??
-      null,
-    [roleDefinitions, values.roleDefinitionId],
+      roleDefinitions.find(
+        (definition) => definition.id === values.roleDefinitionId
+      ) ?? null,
+    [roleDefinitions, values.roleDefinitionId]
   );
 
   useEffect(() => {
     setValues(initialValues);
   }, [initialValues]);
 
-  const handleChange = <Field extends keyof EmployeeFormValues>(
-    field: Field,
-  ) =>
+  const handleChange =
+    <Field extends keyof EmployeeFormValues>(field: Field) =>
     (event: ChangeEvent<HTMLInputElement>) => {
       setError(null);
       setValues((prev) => ({ ...prev, [field]: event.target.value }));
@@ -186,6 +186,15 @@ export function EmployeeForm({
               required
               fullWidth
             />
+            
+            <TextField
+              label="รหัสพนักงาน"
+              value={values.employeeCode ?? ""}
+              onChange={handleChange("employeeCode")}
+              required
+              placeholder="เช่น EMP-0001"
+            />
+
             <TextField
               select
               label="แผนก"
@@ -258,9 +267,7 @@ export function EmployeeForm({
               }
               disabled={roleDefinitions.length === 0}
             >
-              <MenuItem value="">
-                ไม่กำหนด (ใช้ตามบทบาทหลัก)
-              </MenuItem>
+              <MenuItem value="">ไม่กำหนด (ใช้ตามบทบาทหลัก)</MenuItem>
               {roleDefinitions.map((definition) => (
                 <MenuItem key={definition.id} value={definition.id}>
                   <Stack spacing={0.5}>
@@ -284,7 +291,9 @@ export function EmployeeForm({
             <Paper variant="outlined" sx={{ p: 2 }}>
               <Stack spacing={1.5}>
                 <Stack spacing={0.5}>
-                  <Typography fontWeight={600}>{selectedRoleDefinition.name}</Typography>
+                  <Typography fontWeight={600}>
+                    {selectedRoleDefinition.name}
+                  </Typography>
                   {selectedRoleDefinition.description && (
                     <Typography color="text.secondary">
                       {selectedRoleDefinition.description}
@@ -296,8 +305,15 @@ export function EmployeeForm({
                   <Stack spacing={2}>
                     {selectedRoleDefinition.permissions.map((group) => (
                       <Stack key={group.category} spacing={1}>
-                        <Typography fontWeight={600}>{group.category}</Typography>
-                        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                        <Typography fontWeight={600}>
+                          {group.category}
+                        </Typography>
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          flexWrap="wrap"
+                          useFlexGap
+                        >
                           {group.items.map((item) => (
                             <Chip key={item} label={item} size="small" />
                           ))}
