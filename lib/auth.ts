@@ -1,10 +1,28 @@
 // lib/auth.ts
-import type { NextAuthOptions } from "next-auth";
+import type { DefaultSession, NextAuthOptions } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import type { JWT } from "next-auth/jwt";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
 import { z } from "zod";
+
+type ExtendedUser = {
+  id: string;
+  name: string | null;
+  email: string | null;
+  role: string;
+};
+
+type ExtendedToken = JWT & {
+  id?: string;
+  role?: string;
+};
+
+type SessionUser = DefaultSession["user"] & {
+  id?: string;
+  role?: string;
+};
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -16,10 +34,12 @@ export const authOptions: NextAuthOptions = {
       name: "Credentials",
       credentials: { email: {}, password: {} },
       authorize: async (raw) => {
-        const parsed = z.object({
-          email: z.string().email(),
-          password: z.string().min(6),
-        }).safeParse(raw);
+        const parsed = z
+          .object({
+            email: z.string().email(),
+            password: z.string().min(6),
+          })
+          .safeParse(raw);
         if (!parsed.success) return null;
 
         const { email, password } = parsed.data;
@@ -27,7 +47,16 @@ export const authOptions: NextAuthOptions = {
         if (!user || !user.passwordHash) return null;
 
         const ok = await bcrypt.compare(password, user.passwordHash);
-        return ok ? { id: user.id, name: user.name, email: user.email, role: user.role } as any : null;
+        if (!ok) return null;
+
+        const result: ExtendedUser = {
+          id: user.id,
+          name: user.name ?? null,
+          email: user.email ?? null,
+          role: user.role ?? "USER",
+        };
+
+        return result;
       },
     }),
   ],
@@ -37,20 +66,23 @@ export const authOptions: NextAuthOptions = {
   // ✅ map ข้อมูลลง JWT แล้วส่งต่อให้ session
   callbacks: {
     async jwt({ token, user }) {
+      const safeToken = token as ExtendedToken;
       if (user) {
-        token.id = (user as any).id;
-        token.role = (user as any).role ?? "USER";
-        token.name = user.name;
-        token.email = user.email;
+        const extended = user as ExtendedUser;
+        safeToken.id = extended.id;
+        safeToken.role = extended.role ?? "USER";
+        safeToken.name = extended.name ?? undefined;
+        safeToken.email = extended.email ?? undefined;
       }
-      return token;
+      return safeToken;
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).id = token.id;
-        (session.user as any).role = token.role ?? "USER";
-        session.user.name = token.name as string | undefined;
-        session.user.email = token.email as string | undefined;
+        const sessionUser = session.user as SessionUser;
+        sessionUser.id = typeof token.id === "string" ? token.id : undefined;
+        sessionUser.role = typeof token.role === "string" ? token.role : "USER";
+        sessionUser.name = typeof token.name === "string" ? token.name : undefined;
+        sessionUser.email = typeof token.email === "string" ? token.email : undefined;
       }
       return session;
     },
