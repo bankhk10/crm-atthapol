@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { EmployeeEditClient } from "../../_components/employee-edit-client";
+import { ActionButtons } from "../../../_components/action-buttons";
 import {
   employeeRoleOptions,
   getEmployeeById,
@@ -38,12 +39,15 @@ export default async function EmployeeEditPage({
   };
 
   return (
-    <EmployeeEditClient
-      employeeId={employee.id}
-      employeeCode={employee.employeeCode}
-      initialValues={initialValues}
-      roleOptions={employeeRoleOptions}
-      roleDefinitions={roleDefinitions}
-    />
+    <>
+      <ActionButtons resource="employees" />
+      <EmployeeEditClient
+        employeeId={employee.id}
+        employeeCode={employee.employeeCode}
+        initialValues={initialValues}
+        roleOptions={employeeRoleOptions}
+        roleDefinitions={roleDefinitions}
+      />
+    </>
   );
 }
