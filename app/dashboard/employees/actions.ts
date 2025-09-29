@@ -18,6 +18,12 @@ const employeeFormSchema = z.object({
   phone: z.string().min(1, "กรุณากรอกเบอร์โทร"),
   startDate: z.string().min(1, "กรุณาเลือกวันที่เริ่มงาน"),
   status: z.enum(["ACTIVE", "ON_LEAVE", "INACTIVE"], { message: "สถานะไม่ถูกต้อง" }),
+  role: z.enum(["ADMIN", "MANAGER", "USER"], { message: "บทบาทไม่ถูกต้อง" }),
+  roleDefinitionId: z
+    .string()
+    .trim()
+    .nullish()
+    .transform((value) => (value && value.length > 0 ? value : null)),
 });
 
 async function generateEmployeeCode(tx: Prisma.TransactionClient) {
@@ -50,7 +56,8 @@ export async function createEmployee(rawValues: EmployeeFormValues) {
           name: values.name,
           email: values.email,
           passwordHash,
-          role: "USER",
+          role: values.role,
+          roleDefinitionId: values.roleDefinitionId,
         },
       });
 
@@ -97,6 +104,8 @@ export async function updateEmployee(
         data: {
           name: values.name,
           email: values.email,
+          role: values.role,
+          roleDefinitionId: values.roleDefinitionId,
           ...(values.password
             ? { passwordHash: await bcrypt.hash(values.password, 10) }
             : {}),

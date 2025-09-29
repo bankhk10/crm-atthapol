@@ -3,14 +3,29 @@
 import type { ChangeEvent, FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Alert, Button, MenuItem, Paper, Stack, TextField, Typography } from "@mui/material";
+import {
+  Alert,
+  Button,
+  Chip,
+  MenuItem,
+  Paper,
+  Stack,
+  TextField,
+  Typography,
+} from "@mui/material";
 
-import type { EmployeeFormValues } from "../types";
+import type {
+  EmployeeFormValues,
+  EmployeeRoleOption,
+  RoleDefinitionOption,
+} from "../types";
 
 export type EmployeeFormProps = {
   title: string;
   description: string;
   initialValues: EmployeeFormValues;
+  roleOptions: EmployeeRoleOption[];
+  roleDefinitions: RoleDefinitionOption[];
   submitLabel?: string;
   onSubmit?: (values: EmployeeFormValues) => Promise<void> | void;
   requirePassword?: boolean;
@@ -36,6 +51,8 @@ export function EmployeeForm({
   title,
   description,
   initialValues,
+  roleOptions,
+  roleDefinitions,
   submitLabel = "บันทึกข้อมูล",
   onSubmit,
   requirePassword = false,
@@ -49,6 +66,18 @@ export function EmployeeForm({
     [],
   );
 
+  const selectedRole = useMemo(
+    () => roleOptions.find((option) => option.value === values.role),
+    [roleOptions, values.role],
+  );
+
+  const selectedRoleDefinition = useMemo(
+    () =>
+      roleDefinitions.find((definition) => definition.id === values.roleDefinitionId) ??
+      null,
+    [roleDefinitions, values.roleDefinitionId],
+  );
+
   useEffect(() => {
     setValues(initialValues);
   }, [initialValues]);
@@ -60,6 +89,15 @@ export function EmployeeForm({
       setError(null);
       setValues((prev) => ({ ...prev, [field]: event.target.value }));
     };
+
+  const handleRoleDefinitionChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setError(null);
+    const nextValue = event.target.value;
+    setValues((prev) => ({
+      ...prev,
+      roleDefinitionId: nextValue ? nextValue : null,
+    }));
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -183,6 +221,102 @@ export function EmployeeForm({
               fullWidth
             />
           </Stack>
+
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <TextField
+              select
+              label="บทบาทผู้ใช้งาน"
+              value={values.role}
+              onChange={handleChange("role")}
+              required
+              fullWidth
+              helperText={selectedRole?.description ?? undefined}
+            >
+              {roleOptions.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  <Stack spacing={0.5}>
+                    <Typography fontWeight={600}>{option.label}</Typography>
+                    {option.description && (
+                      <Typography variant="body2" color="text.secondary">
+                        {option.description}
+                      </Typography>
+                    )}
+                  </Stack>
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              select
+              label="สิทธิ์การใช้งาน"
+              value={values.roleDefinitionId ?? ""}
+              onChange={handleRoleDefinitionChange}
+              fullWidth
+              helperText={
+                roleDefinitions.length === 0
+                  ? "ยังไม่มีสิทธิ์การใช้งานที่สร้างไว้"
+                  : "เลือกสิทธิ์เพื่อกำหนดขอบเขตการใช้งาน"
+              }
+              disabled={roleDefinitions.length === 0}
+            >
+              <MenuItem value="">
+                ไม่กำหนด (ใช้ตามบทบาทหลัก)
+              </MenuItem>
+              {roleDefinitions.map((definition) => (
+                <MenuItem key={definition.id} value={definition.id}>
+                  <Stack spacing={0.5}>
+                    <Typography fontWeight={600}>{definition.name}</Typography>
+                    {definition.description && (
+                      <Typography variant="body2" color="text.secondary">
+                        {definition.description}
+                      </Typography>
+                    )}
+                  </Stack>
+                </MenuItem>
+              ))}
+            </TextField>
+          </Stack>
+
+          {roleDefinitions.length === 0 ? (
+            <Alert severity="info">
+              ยังไม่มีการสร้างสิทธิ์การใช้งาน กรุณาสร้างจากเมนูบทบาทก่อน
+            </Alert>
+          ) : selectedRoleDefinition ? (
+            <Paper variant="outlined" sx={{ p: 2 }}>
+              <Stack spacing={1.5}>
+                <Stack spacing={0.5}>
+                  <Typography fontWeight={600}>{selectedRoleDefinition.name}</Typography>
+                  {selectedRoleDefinition.description && (
+                    <Typography color="text.secondary">
+                      {selectedRoleDefinition.description}
+                    </Typography>
+                  )}
+                </Stack>
+
+                {selectedRoleDefinition.permissions.length > 0 ? (
+                  <Stack spacing={2}>
+                    {selectedRoleDefinition.permissions.map((group) => (
+                      <Stack key={group.category} spacing={1}>
+                        <Typography fontWeight={600}>{group.category}</Typography>
+                        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                          {group.items.map((item) => (
+                            <Chip key={item} label={item} size="small" />
+                          ))}
+                        </Stack>
+                      </Stack>
+                    ))}
+                  </Stack>
+                ) : (
+                  <Typography color="text.secondary">
+                    ยังไม่มีการกำหนดสิทธิ์สำหรับรายการนี้
+                  </Typography>
+                )}
+              </Stack>
+            </Paper>
+          ) : (
+            <Typography color="text.secondary">
+              เลือกสิทธิ์การใช้งานเพื่อดูรายละเอียดของสิทธิ์ที่ได้รับ
+            </Typography>
+          )}
 
           <TextField
             select
