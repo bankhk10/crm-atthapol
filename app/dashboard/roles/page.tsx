@@ -1,4 +1,5 @@
 import { RolesClient } from "./_components/roles-client";
+import { ActionButtons } from "../_components/action-buttons";
 import { getPermissionLibrary, getRoleList } from "./data";
 
 export default async function RolesPage() {
@@ -7,5 +8,10 @@ export default async function RolesPage() {
     getPermissionLibrary(),
   ]);
 
-  return <RolesClient roles={roles} permissionLibrary={permissionLibrary} />;
+  return (
+    <>
+      <ActionButtons resource="roles" />
+      <RolesClient roles={roles} permissionLibrary={permissionLibrary} />
+    </>
+  );
 }

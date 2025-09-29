@@ -1,6 +1,13 @@
 "use client";
 
-import { Fragment, ReactNode, forwardRef, useEffect, useState } from "react";
+import {
+  Fragment,
+  ReactNode,
+  forwardRef,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import Box from "@mui/material/Box";
 import Collapse from "@mui/material/Collapse";
 import Divider from "@mui/material/Divider";
@@ -27,6 +34,9 @@ import SecurityOutlinedIcon from "@mui/icons-material/SecurityOutlined";
 import Image from "next/image";
 import Link, { LinkProps } from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
+
+import { hasPermission } from "@/lib/permissions";
 
 const BRAND_COLOR = "#b92626";
 const ACTIVE_BACKGROUND = "#991b1b";
@@ -38,12 +48,14 @@ export const SIDEBAR_WIDTH = 230;
 type NavChild = {
   href: string;
   label: string;
+  resource?: string;
 };
 
 type NavItem = {
   href: string;
   label: string;
   icon: ReactNode;
+  resource?: string;
   children?: NavChild[];
 };
 
@@ -52,61 +64,95 @@ const navItems: NavItem[] = [
     href: "/dashboard",
     label: "รายงาน",
     icon: <AssessmentIcon fontSize="small" />,
+    resource: "reports",
     children: [
-      { href: "/dashboard/reports/overview", label: "รายงานภาพรวม" },
-      { href: "/dashboard/reports/sales", label: "รายงานการขาย" },
-      { href: "/dashboard/reports/marketing", label: "รายงานการตลาด" },
-      { href: "/dashboard/reports/activity", label: "รายงานกิจกรรม" },
+      {
+        href: "/dashboard/reports/overview",
+        label: "รายงานภาพรวม",
+        resource: "reports",
+      },
+      {
+        href: "/dashboard/reports/sales",
+        label: "รายงานการขาย",
+        resource: "reports",
+      },
+      {
+        href: "/dashboard/reports/marketing",
+        label: "รายงานการตลาด",
+        resource: "reports",
+      },
+      {
+        href: "/dashboard/reports/activity",
+        label: "รายงานกิจกรรม",
+        resource: "reports",
+      },
     ],
   },
   {
     href: "/dashboard/activities",
     label: "กิจกรรม",
     icon: <AssignmentIndIcon fontSize="small" />,
+    resource: "activities",
   },
   {
     href: "/dashboard/calendar",
     label: "ปฏิทิน",
     icon: <CalendarMonthIcon fontSize="small" />,
+    resource: "calendar",
   },
   {
     href: "/dashboard/map",
     label: "แผนที่",
     icon: <LocationOnIcon fontSize="small" />,
+    resource: "map",
   },
   {
     href: "/dashboard/products",
     label: "สินค้า",
     icon: <Inventory2Icon fontSize="small" />,
+    resource: "products",
   },
   {
     href: "/dashboard/sales",
     label: "การขาย",
     icon: <MonetizationOnIcon fontSize="small" />,
+    resource: "sales",
     children: [
-      { href: "/dashboard/sales/orders", label: "รายการขาย" },
-      { href: "/dashboard/sales/quotations", label: "ใบเสนอราคา" },
+      {
+        href: "/dashboard/sales/orders",
+        label: "รายการขาย",
+        resource: "sales",
+      },
+      {
+        href: "/dashboard/sales/quotations",
+        label: "ใบเสนอราคา",
+        resource: "sales",
+      },
     ],
   },
   {
     href: "/dashboard/marketing",
     label: "การตลาด",
     icon: <CampaignIcon fontSize="small" />,
+    resource: "marketing",
   },
   {
     href: "/dashboard/customers",
     label: "ลูกค้า",
     icon: <PersonIcon fontSize="small" />,
+    resource: "customers",
   },
   {
     href: "/dashboard/employees",
     label: "พนักงาน",
     icon: <Diversity3Icon fontSize="small" />,
+    resource: "employees",
   },
   {
     href: "/dashboard/roles",
     label: "สิทธิ์",
     icon: <SecurityOutlinedIcon fontSize="small" />,
+    resource: "roles",
   },
 ];
 
@@ -242,13 +288,40 @@ type SidebarProps = {
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
   const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const { data: session } = useSession();
+  const permissionList = session?.user?.permissions;
+
+  const accessibleNavItems = useMemo(() => {
+    return navItems
+      .map((item) => {
+        if (item.resource && !hasPermission(permissionList, item.resource, "view")) {
+          return null;
+        }
+
+        if (!item.children?.length) {
+          return item;
+        }
+
+        const filteredChildren = item.children.filter((child) => {
+          const resource = child.resource ?? item.resource;
+          if (!resource) {
+            return true;
+          }
+
+          return hasPermission(permissionList, resource, "view");
+        });
+
+        return { ...item, children: filteredChildren };
+      })
+      .filter((item): item is NavItem => item !== null);
+  }, [permissionList]);
 
   useEffect(() => {
-    const parent = navItems.find((item) =>
+    const parent = accessibleNavItems.find((item) =>
       item.children?.some((child) => pathname.startsWith(child.href))
     );
     setOpenMenu(parent ? parent.href : null);
-  }, [pathname]);
+  }, [pathname, accessibleNavItems]);
 
   const content = (
     <Box
@@ -278,7 +351,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       <Divider sx={{ borderColor: "rgba(255,255,255,0.2)", mb: 2 }} />
 
       <List sx={{ flex: 1, overflowY: "auto" }}>
-        {navItems.map((item) => (
+        {accessibleNavItems.map((item) => (
           <NavLink
             key={item.href}
             item={item}

@@ -21,10 +21,12 @@ import {
   Typography,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 import { createRole, updateRole } from "../actions";
 import type { PermissionLibraryGroup, RoleFormValues, RoleListItem } from "../types";
 import { RoleFormDialog } from "./role-form-dialog";
+import { hasPermission } from "@/lib/permissions";
 
 type RolesClientProps = {
   roles: RoleListItem[];
@@ -56,6 +58,10 @@ export function RolesClient({ roles, permissionLibrary }: RolesClientProps) {
   const router = useRouter();
   const [dialogState, setDialogState] = useState<DialogState>(initialDialogState);
   const [isPending, startTransition] = useTransition();
+  const { data: session } = useSession();
+  const permissions = session?.user?.permissions ?? [];
+  const canCreateRole = hasPermission(permissions, "roles", "create");
+  const canEditRole = hasPermission(permissions, "roles", "edit");
 
   const totalUniquePermissions = useMemo(() => {
     const unique = new Set<string>();
@@ -66,10 +72,16 @@ export function RolesClient({ roles, permissionLibrary }: RolesClientProps) {
   }, [permissionLibrary]);
 
   const handleOpenCreate = () => {
+    if (!canCreateRole) {
+      return;
+    }
     setDialogState({ mode: "create", open: true, role: null, error: null });
   };
 
   const handleOpenEdit = (role: RoleListItem) => {
+    if (!canEditRole) {
+      return;
+    }
     setDialogState({ mode: "edit", open: true, role, error: null });
   };
 
@@ -132,14 +144,16 @@ export function RolesClient({ roles, permissionLibrary }: RolesClientProps) {
             ตรวจสอบและกำหนดบทบาทของทีม พร้อมปรับสิทธิ์การเข้าถึงในที่เดียว
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          size="large"
-          startIcon={<AddIcon />}
-          onClick={handleOpenCreate}
-        >
-          สร้างบทบาทใหม่
-        </Button>
+        {canCreateRole && (
+          <Button
+            variant="contained"
+            size="large"
+            startIcon={<AddIcon />}
+            onClick={handleOpenCreate}
+          >
+            สร้างบทบาทใหม่
+          </Button>
+        )}
       </Stack>
 
       <Paper sx={{ p: { xs: 2, sm: 3 } }}>
@@ -245,13 +259,15 @@ export function RolesClient({ roles, permissionLibrary }: RolesClientProps) {
                   </Typography>
                 </TableCell>
                 <TableCell align="right">
-                  <Button
-                    startIcon={<EditOutlinedIcon />}
-                    variant="text"
-                    onClick={() => handleOpenEdit(role)}
-                  >
-                    แก้ไขบทบาท
-                  </Button>
+                  {canEditRole && (
+                    <Button
+                      startIcon={<EditOutlinedIcon />}
+                      variant="text"
+                      onClick={() => handleOpenEdit(role)}
+                    >
+                      แก้ไขบทบาท
+                    </Button>
+                  )}
                 </TableCell>
               </TableRow>
             ))}
