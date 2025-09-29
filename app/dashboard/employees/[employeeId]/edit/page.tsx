@@ -6,9 +6,11 @@ import { getEmployeeById } from "../../data";
 export default async function EmployeeEditPage({
   params,
 }: {
-  params: { employeeId: string };
+  params: Promise<{ employeeId: string }>;
 }) {
-  const employee = await getEmployeeById(params.employeeId);
+  const { employeeId } = await params;
+
+  const employee = await getEmployeeById(employeeId);
 
   if (!employee || !employee.user) {
     notFound();
