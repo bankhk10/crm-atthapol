@@ -27,7 +27,14 @@ export const authOptions: NextAuthOptions = {
         if (!user || !user.passwordHash) return null;
 
         const ok = await bcrypt.compare(password, user.passwordHash);
-        return ok ? { id: user.id, name: user.name, email: user.email, role: user.role } as any : null;
+        if (!ok) return null;
+
+        return {
+          id: user.id,
+          name: user.name ?? undefined,
+          email: user.email ?? undefined,
+          role: user.role ?? undefined,
+        };
       },
     }),
   ],
@@ -38,8 +45,13 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = (user as any).id;
-        token.role = (user as any).role ?? "USER";
+        if ("id" in user && typeof user.id === "string") {
+          token.id = user.id;
+        }
+        if ("role" in user) {
+          const role = (user as { role?: string | null }).role;
+          token.role = role ?? "USER";
+        }
         token.name = user.name;
         token.email = user.email;
       }
@@ -47,10 +59,12 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).id = token.id;
-        (session.user as any).role = token.role ?? "USER";
-        session.user.name = token.name as string | undefined;
-        session.user.email = token.email as string | undefined;
+        if (token.id) {
+          session.user.id = token.id;
+        }
+        session.user.role = token.role ?? "USER";
+        session.user.name = token.name ?? undefined;
+        session.user.email = token.email ?? undefined;
       }
       return session;
     },
