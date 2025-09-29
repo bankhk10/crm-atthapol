@@ -134,7 +134,26 @@ export async function updateEmployee(
 function handlePrismaError(error: unknown): never {
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     if (error.code === "P2002") {
-      throw new Error("อีเมลนี้ถูกใช้งานแล้ว กรุณาใช้อีเมลอื่น");
+      const target = error.meta?.target as string | string[] | undefined;
+      const targets = Array.isArray(target)
+        ? target
+        : typeof target === "string"
+          ? [target]
+          : [];
+
+      if (targets.includes("email")) {
+        throw new Error("อีเมลนี้ถูกใช้งานแล้ว กรุณาใช้อีเมลอื่น");
+      }
+
+      if (targets.includes("employeeCode")) {
+        throw new Error("รหัสพนักงานนี้ถูกใช้งานแล้ว กรุณาใช้รหัสอื่น");
+      }
+
+      if (targets.includes("userId")) {
+        throw new Error("บัญชีผู้ใช้นี้ถูกผูกกับพนักงานคนอื่นแล้ว");
+      }
+
+      throw new Error("ข้อมูลซ้ำ กรุณาตรวจสอบแล้วลองอีกครั้ง");
     }
   }
 
