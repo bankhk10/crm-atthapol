@@ -28,7 +28,6 @@ export default function LoginPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [logoLoaded, setLogoLoaded] = useState(false);
 
   const handleSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
@@ -177,10 +176,8 @@ export default function LoginPage() {
                     sizes="(max-width: 800px) 140px, 180px"
                     style={{
                       objectFit: "contain",
-                      opacity: logoLoaded ? 1 : 0,
-                      transition: "opacity 0.2s ease-in-out",
+                      transition: "opacity 0.1s ease-in-out",
                     }}
-                    onLoadingComplete={() => setLogoLoaded(true)}
                   />
                 </Box>
 
@@ -226,6 +223,12 @@ export default function LoginPage() {
                 placeholder="name@example.com"
                 required
                 type="email"
+                InputLabelProps={{
+                  sx: {
+                    fontSize: { xs: "0.8rem", md: "0.95rem" },
+                    fontFamily: prompt.style.fontFamily,
+                  },
+                }}
                 sx={{
                   "& .MuiOutlinedInput-root": {
                     borderRadius: "20px",
@@ -238,13 +241,14 @@ export default function LoginPage() {
 
                       // ✅ ปรับ autofill ให้สีอ่อน
                       "&:-webkit-autofill": {
-                        boxShadow: "0 0 0 1000px #f3f4f6 inset", // สีเทาอ่อน
-                        WebkitTextFillColor: "#000", // สีตัวอักษร
-                        caretColor: "#000", // สี cursor
+                        boxShadow: "0 0 0 1000px #f3f4f6 inset",
+                        WebkitTextFillColor: "#000",
+                        caretColor: "#000",
                         borderRadius: "20px",
                       },
                     },
                   },
+                  top: 12,
                 }}
               />
 
