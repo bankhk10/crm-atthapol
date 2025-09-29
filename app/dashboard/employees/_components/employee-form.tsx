@@ -1,27 +1,11 @@
 "use client";
 
 import type { ChangeEvent, FormEvent } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import {
-  Button,
-  MenuItem,
-  Paper,
-  Stack,
-  TextField,
-  Typography,
-} from "@mui/material";
+import { Alert, Button, MenuItem, Paper, Stack, TextField, Typography } from "@mui/material";
 
-export type EmployeeFormValues = {
-  name: string;
-  email: string;
-  password: string;
-  position: string;
-  department: string;
-  phone: string;
-  startDate: string;
-  status: "ACTIVE" | "ON_LEAVE" | "INACTIVE";
-};
+import type { EmployeeFormValues } from "../types";
 
 export type EmployeeFormProps = {
   title: string;
@@ -58,16 +42,22 @@ export function EmployeeForm({
 }: EmployeeFormProps) {
   const [values, setValues] = useState<EmployeeFormValues>(initialValues);
   const [isSubmitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const departmentItems = useMemo(
     () => [...departmentOptions].sort((a, b) => a.localeCompare(b)),
     [],
   );
 
+  useEffect(() => {
+    setValues(initialValues);
+  }, [initialValues]);
+
   const handleChange = <Field extends keyof EmployeeFormValues>(
     field: Field,
   ) =>
     (event: ChangeEvent<HTMLInputElement>) => {
+      setError(null);
       setValues((prev) => ({ ...prev, [field]: event.target.value }));
     };
 
@@ -77,9 +67,22 @@ export function EmployeeForm({
 
     try {
       setSubmitting(true);
+      setError(null);
       await onSubmit?.(values);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleSubmitWithErrors = async (event: FormEvent<HTMLFormElement>) => {
+    try {
+      await handleSubmit(event);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง";
+      setError(message);
     }
   };
 
@@ -94,10 +97,16 @@ export function EmployeeForm({
 
       <Paper
         component="form"
-        onSubmit={handleSubmit}
+        onSubmit={handleSubmitWithErrors}
         sx={{ p: { xs: 2, sm: 3 }, maxWidth: 720 }}
       >
         <Stack spacing={3}>
+          {error && (
+            <Alert severity="error" onClose={() => setError(null)}>
+              {error}
+            </Alert>
+          )}
+
           <TextField
             label="ชื่อ-นามสกุล"
             value={values.name}
@@ -122,7 +131,11 @@ export function EmployeeForm({
               onChange={handleChange("password")}
               type="password"
               required={requirePassword}
-              helperText="ใช้สำหรับเข้าสู่ระบบครั้งแรก สามารถเปลี่ยนได้ภายหลัง"
+              helperText={
+                requirePassword
+                  ? "ใช้สำหรับเข้าสู่ระบบครั้งแรก สามารถเปลี่ยนได้ภายหลัง"
+                  : "เว้นว่างไว้หากไม่ต้องการเปลี่ยนรหัสผ่าน"
+              }
               fullWidth
             />
           </Stack>

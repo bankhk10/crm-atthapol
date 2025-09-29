@@ -1,9 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Stack, Typography } from "@mui/material";
+import { Stack } from "@mui/material";
 
 import { EmployeeForm } from "../_components/employee-form";
+import { createEmployee } from "../actions";
 
 export default function EmployeeCreatePage() {
   const router = useRouter();
@@ -26,13 +27,11 @@ export default function EmployeeCreatePage() {
         submitLabel="เพิ่มพนักงาน"
         requirePassword
         onSubmit={async (values) => {
-          console.log("create employee", values);
+          await createEmployee(values);
           router.push("/dashboard/employees");
+          router.refresh();
         }}
       />
-      <Typography color="text.secondary">
-        * ตัวอย่างการบันทึกข้อมูลนี้เป็นการจำลอง ยังไม่มีการเชื่อมต่อฐานข้อมูลจริง
-      </Typography>
     </Stack>
   );
 }
