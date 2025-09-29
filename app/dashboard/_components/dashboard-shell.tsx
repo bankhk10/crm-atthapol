@@ -16,7 +16,13 @@ export function DashboardShell({ children, displayName }: DashboardShellProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: "#f1f5f9" }}>
+    <Box
+      sx={{
+        display: "flex",
+        minHeight: "100vh",
+        bgcolor: "#b92626", // 🔴 ทำเหมือนของเก่า
+      }}
+    >
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
       <Box
@@ -27,21 +33,36 @@ export function DashboardShell({ children, displayName }: DashboardShellProps) {
           minHeight: "100vh",
         }}
       >
-        <Paper
-          elevation={0}
-          square
+        {/* Header */}
+        <Box
           sx={{
             bgcolor: "#b92626",
             color: "common.white",
-            borderRadius: 0,
+            flexShrink: 0,
           }}
         >
-          <Header onMenuClick={() => setIsSidebarOpen(true)} displayName={displayName} />
-        </Paper>
+          <Header
+            onMenuClick={() => setIsSidebarOpen(true)}
+            displayName={displayName}
+          />
+        </Box>
 
-        <Stack component="main" spacing={3} sx={{ flex: 1, p: { xs: 2, md: 4 } }}>
-          {children}
-        </Stack>
+        {/* Main มีขอบโค้ง */}
+        <Box
+          component="main"
+          sx={{
+            flex: 1,
+            minHeight: 0,
+            overflowX: "hidden",
+            overflowY: "auto",
+            bgcolor: "grey.100", // 🔘 กล่องเทา
+            borderTopLeftRadius: 24, // ⬅ โค้งด้านบนซ้าย
+            // borderTopRightRadius: 24, // ⬅ ถ้าอยากให้โค้งทั้ง 2 ข้าง
+            p: { xs: 2, md: 4 },
+          }}
+        >
+          <Stack spacing={3}>{children}</Stack>
+        </Box>
       </Box>
     </Box>
   );
