@@ -18,6 +18,9 @@ import {
   Typography,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
+import { useSession } from "next-auth/react";
+
+import { hasPermission } from "@/lib/permissions";
 
 import type { EmployeeListItem, EmployeeStatus } from "../types";
 
@@ -28,6 +31,10 @@ type EmployeesTableProps = {
 export function EmployeesTable({ employees }: EmployeesTableProps) {
   const [query, setQuery] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const { data: session } = useSession();
+  const permissions = session?.user?.permissions ?? [];
+  const canCreateEmployee = hasPermission(permissions, "employees", "create");
+  const canEditEmployee = hasPermission(permissions, "employees", "edit");
 
   const filteredEmployees = useMemo(() => {
     const normalized = searchTerm.trim().toLowerCase();
@@ -74,14 +81,16 @@ export function EmployeesTable({ employees }: EmployeesTableProps) {
             จัดการข้อมูลพนักงาน และติดตามสถานะการทำงานของทีมได้จากหน้านี้
           </Typography>
         </Box>
-        <Button
-          component={Link}
-          href="/dashboard/employees/new"
-          variant="contained"
-          size="large"
-        >
-          เพิ่มพนักงาน
-        </Button>
+        {canCreateEmployee && (
+          <Button
+            component={Link}
+            href="/dashboard/employees/new"
+            variant="contained"
+            size="large"
+          >
+            เพิ่มพนักงาน
+          </Button>
+        )}
       </Stack>
 
       <Paper sx={{ p: { xs: 2, sm: 3 } }}>
@@ -141,13 +150,15 @@ export function EmployeesTable({ employees }: EmployeesTableProps) {
                   <StatusChip status={employee.status} />
                 </TableCell>
                 <TableCell align="right">
-                  <Button
-                    component={Link}
-                    href={`/dashboard/employees/${employee.id}/edit`}
-                    variant="text"
-                  >
-                    แก้ไข
-                  </Button>
+                  {canEditEmployee && (
+                    <Button
+                      component={Link}
+                      href={`/dashboard/employees/${employee.id}/edit`}
+                      variant="text"
+                    >
+                      แก้ไข
+                    </Button>
+                  )}
                 </TableCell>
               </TableRow>
             ))}

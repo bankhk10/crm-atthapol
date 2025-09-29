@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
-import { Box, Typography, Paper, Stack } from "@mui/material";
+import { Box, Typography, Paper } from "@mui/material";
 import { authOptions } from "@/lib/auth";
+import { ActionButtons } from "./_components/action-buttons";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -8,7 +9,8 @@ export default async function DashboardPage() {
   const role = typeof roleValue === "string" ? roleValue : "USER";
 
   return (
-    <Stack spacing={3}>
+    <>
+      <ActionButtons resource="reports" />
       <Box>
         <Typography variant="h4" fontWeight={700} mb={1}>
           Dashboard
@@ -23,6 +25,6 @@ export default async function DashboardPage() {
           สวัสดี {session?.user?.name ?? "ผู้ใช้"} (role: {role})
         </Typography>
       </Paper>
-    </Stack>
+    </>
   );
 }

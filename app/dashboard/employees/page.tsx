@@ -1,4 +1,5 @@
 import { EmployeesTable } from "./_components/employees-table";
+import { ActionButtons } from "../_components/action-buttons";
 import { getEmployees } from "./data";
 import type { EmployeeListItem } from "./types";
 
@@ -16,5 +17,10 @@ export default async function EmployeesPage() {
     startDate: employee.startDate.toISOString(),
   }));
 
-  return <EmployeesTable employees={items} />;
+  return (
+    <>
+      <ActionButtons resource="employees" />
+      <EmployeesTable employees={items} />
+    </>
+  );
 }
