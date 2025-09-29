@@ -66,3 +66,9 @@ next15-mui-auth-prisma/
 ├─ package.json
 ├─ README.md
 └─ docker-compose.yml (optional)
+
+1.แก้ schema.prisma
+npx prisma migrate dev --name add_user_table
+
+2.(ออปชัน) seed ข้อมูล
+pnpm seed
