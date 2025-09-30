@@ -20,6 +20,7 @@ const defaultInitialValues: EmployeeFormValues = {
   name: "",
   email: "",
   password: "",
+  employeeCode: "",
   position: "",
   department: "วิศวกรรม",
   phone: "",

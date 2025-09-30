@@ -117,6 +117,8 @@ export async function updateEmployee(
       await tx.employee.update({
         where: { id: employeeId },
         data: {
+          // include employeeCode so edits to the field persist
+          employeeCode: values.employeeCode,
           position: values.position,
           department: values.department,
           phone: values.phone,

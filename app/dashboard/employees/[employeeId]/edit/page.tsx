@@ -26,6 +26,7 @@ export default async function EmployeeEditPage({
   }
 
   const initialValues: EmployeeFormValues = {
+    employeeCode: employee.employeeCode ?? "",
     name: employee.user.name ?? "",
     email: employee.user.email ?? "",
     password: "",
