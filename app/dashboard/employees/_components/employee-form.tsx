@@ -145,11 +145,29 @@ export function EmployeeForm({
             </Alert>
           )}
 
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <TextField
+              label="ชื่อ"
+              value={values.firstName ?? ""}
+              onChange={handleChange("firstName")}
+              required
+              placeholder="เช่น สมชาย"
+              fullWidth
+            />
+            <TextField
+              label="นามสกุล"
+              value={values.lastName ?? ""}
+              onChange={handleChange("lastName")}
+              required
+              placeholder="เช่น ใจดี"
+              fullWidth
+            />
+          </Stack>
+          {/* legacy single name field kept for compatibility */}
           <TextField
-            label="ชื่อ-นามสกุล"
-            value={values.name}
+            label="ชื่อ-นามสกุล (รวม)"
+            value={values.name ?? `${values.firstName ?? ""} ${values.lastName ?? ""}`.trim()}
             onChange={handleChange("name")}
-            required
             placeholder="เช่น สมชาย ใจดี"
           />
 
@@ -227,6 +245,61 @@ export function EmployeeForm({
               type="date"
               InputLabelProps={{ shrink: true }}
               required
+              fullWidth
+            />
+          </Stack>
+
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <TextField
+              label="วันเกิด"
+              value={values.birthDate ?? ""}
+              onChange={handleChange("birthDate")}
+              type="date"
+              InputLabelProps={{ shrink: true }}
+              fullWidth
+            />
+            <TextField
+              label="อายุ"
+              value={
+                typeof values.age === "number" && values.age >= 0
+                  ? String(values.age)
+                  : values.birthDate
+                  ? String(
+                      Math.floor(
+                        (Date.now() - new Date(values.birthDate).getTime()) /
+                          (1000 * 60 * 60 * 24 * 365.25)
+                      )
+                    )
+                  : ""
+              }
+              InputProps={{ readOnly: true }}
+              fullWidth
+            />
+          </Stack>
+
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <TextField
+              select
+              label="เพศ"
+              value={values.gender ?? ""}
+              onChange={handleChange("gender") as any}
+              fullWidth
+            >
+              <MenuItem value="">ไม่ระบุ</MenuItem>
+              <MenuItem value="MALE">ชาย</MenuItem>
+              <MenuItem value="FEMALE">หญิง</MenuItem>
+              <MenuItem value="OTHER">อื่นๆ</MenuItem>
+            </TextField>
+            <TextField
+              label="สังกัดบริษัท"
+              value={values.company ?? ""}
+              onChange={handleChange("company")}
+              fullWidth
+            />
+            <TextField
+              label="เขตที่รับผิดชอบ"
+              value={values.responsibilityArea ?? ""}
+              onChange={handleChange("responsibilityArea")}
               fullWidth
             />
           </Stack>

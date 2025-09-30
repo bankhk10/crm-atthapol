@@ -18,11 +18,18 @@ type EmployeeCreateClientProps = {
 
 const defaultInitialValues: EmployeeFormValues = {
   name: "",
+  firstName: "",
+  lastName: "",
   email: "",
   password: "",
   employeeCode: "",
   position: "",
   department: "วิศวกรรม",
+  company: "",
+  responsibilityArea: "",
+  birthDate: undefined,
+  age: null,
+  gender: null,
   phone: "",
   startDate: new Date().toISOString().slice(0, 10),
   status: "ACTIVE",

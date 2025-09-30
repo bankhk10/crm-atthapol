@@ -10,11 +10,21 @@ import { prisma } from "@/lib/prisma";
 import type { EmployeeFormValues } from "./types";
 
 const employeeFormSchema = z.object({
-  name: z.string().min(1, "กรุณากรอกชื่อพนักงาน"),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  // legacy name field
+  name: z.string().optional(),
   email: z.string().email("อีเมลไม่ถูกต้อง"),
   password: z.string().optional(),
   position: z.string().min(1, "กรุณากรอกตำแหน่ง"),
   department: z.string().min(1, "กรุณาเลือกแผนก"),
+  company: z.string().optional(),
+  responsibilityArea: z.string().optional(),
+  birthDate: z.string().optional(),
+  gender: z
+    .enum(["MALE", "FEMALE", "OTHER"])
+    .optional()
+    .or(z.null()),
   phone: z.string().min(1, "กรุณากรอกเบอร์โทร"),
   startDate: z.string().min(1, "กรุณาเลือกวันที่เริ่มงาน"),
   status: z.enum(["ACTIVE", "ON_LEAVE", "INACTIVE"], { message: "สถานะไม่ถูกต้อง" }),
@@ -24,7 +34,7 @@ const employeeFormSchema = z.object({
     .trim()
     .nullish()
     .transform((value) => (value && value.length > 0 ? value : null)),
-     employeeCode: z.string().min(1, "กรุณากรอกรหัสพนักงาน"),
+  employeeCode: z.string().min(1, "กรุณากรอกรหัสพนักงาน"),
 });
 
 async function generateEmployeeCode(tx: Prisma.TransactionClient) {
@@ -52,9 +62,13 @@ export async function createEmployee(rawValues: EmployeeFormValues) {
 
   try {
     await prisma.$transaction(async (tx) => {
+      const fullName = [values.firstName, values.lastName]
+        .filter(Boolean)
+        .join(" ") || values.name || null;
+
       const user = await tx.user.create({
         data: {
-          name: values.name,
+          name: fullName,
           email: values.email,
           passwordHash,
           role: values.role,
@@ -71,6 +85,10 @@ export async function createEmployee(rawValues: EmployeeFormValues) {
           // employeeCode,
           position: values.position,
           department: values.department,
+          company: values.company,
+          responsibilityArea: values.responsibilityArea,
+          birthDate: values.birthDate ? new Date(values.birthDate) : null,
+          gender: values.gender ?? null,
           phone: values.phone,
           startDate: new Date(values.startDate),
           status: values.status,
@@ -104,7 +122,7 @@ export async function updateEmployee(
       await tx.user.update({
         where: { id: employee.userId },
         data: {
-          name: values.name,
+          name: [values.firstName, values.lastName].filter(Boolean).join(" ") || values.name || undefined,
           email: values.email,
           role: values.role,
           roleDefinitionId: values.roleDefinitionId,
@@ -121,6 +139,10 @@ export async function updateEmployee(
           employeeCode: values.employeeCode,
           position: values.position,
           department: values.department,
+          company: values.company,
+          responsibilityArea: values.responsibilityArea,
+          birthDate: values.birthDate ? new Date(values.birthDate) : null,
+          gender: values.gender ?? null,
           phone: values.phone,
           startDate: new Date(values.startDate),
           status: values.status,

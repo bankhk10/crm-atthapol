@@ -27,11 +27,20 @@ export default async function EmployeeEditPage({
 
   const initialValues: EmployeeFormValues = {
     employeeCode: employee.employeeCode ?? "",
+    // split name into first/last if possible (assume existing name is full name)
     name: employee.user.name ?? "",
+    firstName: employee.user.name ? employee.user.name.split(" ").slice(0, -1).join(" ") || employee.user.name : undefined,
+    lastName: employee.user.name ? employee.user.name.split(" ").slice(-1).join(" ") : undefined,
     email: employee.user.email ?? "",
     password: "",
     position: employee.position,
     department: employee.department,
+  // cast to any because Prisma Client may not have been regenerated yet on this machine
+  company: (employee as any).company ?? undefined,
+  responsibilityArea: (employee as any).responsibilityArea ?? undefined,
+  birthDate: (employee as any).birthDate ? (employee as any).birthDate.toISOString().slice(0, 10) : undefined,
+  age: (employee as any).birthDate ? Math.floor((Date.now() - new Date((employee as any).birthDate).getTime()) / (1000 * 60 * 60 * 24 * 365.25)) : null,
+  gender: (employee as any).gender ?? null,
     phone: employee.phone,
     startDate: employee.startDate.toISOString().slice(0, 10),
     status: employee.status,

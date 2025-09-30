@@ -37,12 +37,22 @@ enum EmployeeStatus {
   INACTIVE
 }
 
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
 model Employee {
   id           String          @id @default(cuid())
   employeeCode String          @unique
   userId       String          @unique
   position     String
   department   String
+  company      String?
+  responsibilityArea String?
+  birthDate    DateTime?
+  gender       Gender?
   phone        String
   startDate    DateTime
   status       EmployeeStatus  @default(ACTIVE)

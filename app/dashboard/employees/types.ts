@@ -8,26 +8,39 @@ export type PermissionGroup = {
 };
 
 export type EmployeeFormValues = {
-  name: string;
+  // New: split name into first and last name
+  firstName?: string;
+  lastName?: string;
+  // legacy single field (kept for compatibility, prefer firstName/lastName)
+  name?: string;
   email: string;
   password: string;
+  employeeCode: string; 
   position: string;
   department: string;
+  company?: string;
+  responsibilityArea?: string;
+  birthDate?: string;
+  age?: number | null;
+  gender?: "MALE" | "FEMALE" | "OTHER" | null;
   phone: string;
   startDate: string;
   status: EmployeeStatus;
   role: EmployeeRole;
   roleDefinitionId: string | null;
-  employeeCode: string; 
 };
 
 export type EmployeeListItem = {
   id: string;
   employeeCode: string;
-  name: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  name?: string | null;
   email: string;
   position: string;
   department: string;
+  company?: string | null;
+  responsibilityArea?: string | null;
   status: EmployeeStatus;
   startDate: string;
   role?: EmployeeRole;
