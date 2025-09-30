@@ -12,6 +12,7 @@ import {
   Stack,
   TextField,
   Typography,
+  Divider,
 } from "@mui/material";
 
 import type {
@@ -19,6 +20,11 @@ import type {
   EmployeeRoleOption,
   RoleDefinitionOption,
 } from "../types";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { th } from "date-fns/locale";
+import { Box } from "@mui/material";
 
 export type EmployeeFormProps = {
   title: string;
@@ -125,87 +131,125 @@ export function EmployeeForm({
   };
 
   return (
-    <Stack spacing={3}>
-      <Stack spacing={1} alignItems="center">
-        <Typography variant="h4" fontWeight={700} component="h1" align="center">
-          {title}
-        </Typography>
-        <Typography color="text.secondary" align="center">
-          {description}
-        </Typography>
-      </Stack>
+    <Paper
+      component="form"
+      onSubmit={handleSubmitWithErrors}
+      sx={{ p: { xs: 2, sm: 3 }, maxWidth: 960 }}
+    >
+      <Stack spacing={3}>
+        {error && (
+          <Alert severity="error" onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
 
-      <Paper
-        component="form"
-        onSubmit={handleSubmitWithErrors}
-        sx={{ p: { xs: 2, sm: 3 }, maxWidth: 960 }}
-      >
-        <Stack spacing={3}>
-          {error && (
-            <Alert severity="error" onClose={() => setError(null)}>
-              {error}
-            </Alert>
-          )}
+        <Stack spacing={1} alignItems="center">
+          <Typography
+            variant="h4"
+            fontWeight={700}
+            component="h1"
+            align="center"
+          >
+            {title}
+          </Typography>
+          <Typography color="text.secondary" align="center">
+            {description}
+          </Typography>
+        </Stack>
 
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-            <TextField
-              select
-              label="คำนำหน้า"
-              value={values.prefix ?? ""}
-              onChange={handleChange("prefix") as any}
-              required
-              sx={{ minWidth: { xs: "100%", sm: 150 } }} // ให้เล็กกว่าช่องชื่อ
+        <Divider />
+
+        {/* Section Header */}
+        <Box
+          sx={{
+            backgroundColor: "#d9d9dbff", // เทาอ่อน
+            borderRadius: 2,
+            px: 2,
+            py: 2,
+          }}
+        >
+          <Typography variant="h6" fontWeight={960}>
+            ข้อมูลพนักงาน
+          </Typography>
+        </Box>
+
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          <TextField
+            select
+            label="คำนำหน้า"
+            value={values.prefix ?? ""}
+            onChange={handleChange("prefix") as any}
+            required
+            sx={{ minWidth: { xs: "100%", sm: 150 } }} // ให้เล็กกว่าช่องชื่อ
+          >
+            <MenuItem value="นาย">นาย</MenuItem>
+            <MenuItem value="นาง">นาง</MenuItem>
+            <MenuItem value="นางสาว">นางสาว</MenuItem>
+            {/* <MenuItem value="อื่นๆ">อื่นๆ</MenuItem> */}
+          </TextField>
+          <TextField
+            label="ชื่อ"
+            value={values.firstName ?? ""}
+            onChange={handleChange("firstName")}
+            required
+            placeholder="เช่น สมชาย"
+            fullWidth
+          />
+          <TextField
+            label="นามสกุล"
+            value={values.lastName ?? ""}
+            onChange={handleChange("lastName")}
+            required
+            placeholder="เช่น ใจดี"
+            fullWidth
+          />
+        </Stack>
+
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          {/* <Box flex={1}> */}
+          <TextField
+            label="รหัสพนักงาน"
+            value={values.employeeCode ?? ""}
+            onChange={handleChange("employeeCode")}
+            required
+            placeholder="เช่น EMP-0001"
+            fullWidth
+          />
+          {/* </Box> */}
+          <TextField
+            label="เบอร์โทรศัพท์"
+            value={values.phone}
+            onChange={handleChange("phone")}
+            required
+            fullWidth
+            placeholder="0xx-xxx-xxxx"
+          />
+        </Stack>
+
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          <Box flex={1}>
+            <LocalizationProvider
+              dateAdapter={AdapterDateFns}
+              adapterLocale={th}
             >
-              <MenuItem value="นาย">นาย</MenuItem>
-              <MenuItem value="นาง">นาง</MenuItem>
-              <MenuItem value="นางสาว">นางสาว</MenuItem>
-              {/* <MenuItem value="อื่นๆ">อื่นๆ</MenuItem> */}
-            </TextField>
-            <TextField
-              label="ชื่อ"
-              value={values.firstName ?? ""}
-              onChange={handleChange("firstName")}
-              required
-              placeholder="เช่น สมชาย"
-              fullWidth
-            />
-            <TextField
-              label="นามสกุล"
-              value={values.lastName ?? ""}
-              onChange={handleChange("lastName")}
-              required
-              placeholder="เช่น ใจดี"
-              fullWidth
-            />
-          </Stack>
-
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-            <TextField
-              label="รหัสพนักงาน"
-              value={values.employeeCode ?? ""}
-              onChange={handleChange("employeeCode")}
-              required
-              placeholder="เช่น EMP-0001"
-            />
-
-            <TextField
-              label="วันเกิด"
-              type="date"
-              value={
-                values.birthDate
-                  ? new Date(values.birthDate).toISOString().slice(0, 10)
-                  : ""
-              }
-              onChange={(e) =>
-                setValues((prev) => ({
-                  ...prev,
-                  birthDate: e.target.value ? e.target.value : "",
-                }))
-              }
-              InputLabelProps={{ shrink: true }}
-              fullWidth
-            />
-
+              <DatePicker
+                label="วันเกิด"
+                value={values.birthDate ? new Date(values.birthDate) : null}
+                onChange={(newValue) => {
+                  setValues((prev) => ({
+                    ...prev,
+                    birthDate: newValue
+                      ? newValue.toISOString().slice(0, 10)
+                      : "",
+                  }));
+                }}
+                slotProps={{
+                  textField: { fullWidth: true },
+                }}
+              />
+            </LocalizationProvider>
+          </Box>
+          <Box flex={1}>
             <TextField
               label="อายุ"
               value={
@@ -223,108 +267,138 @@ export function EmployeeForm({
               InputProps={{ readOnly: true }}
               fullWidth
             />
-          </Stack>
+          </Box>
+        </Stack>
 
-          {/* removed legacy combined name field — using firstName and lastName separately */}
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          <TextField
+            label="ตำแหน่งงาน"
+            value={values.position}
+            onChange={handleChange("position")}
+            required
+            fullWidth
+          />
 
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-            <TextField
-              label="อีเมลสำหรับเข้าสู่ระบบ"
-              value={values.email}
-              onChange={handleChange("email")}
-              type="email"
-              required
-              fullWidth
-              placeholder="name@example.com"
-            />
-            <TextField
-              label="รหัสผ่านเริ่มต้น"
-              value={values.password}
-              onChange={handleChange("password")}
-              type="password"
-              required={requirePassword}
-              helperText={
-                requirePassword
-                  ? "ใช้สำหรับเข้าสู่ระบบครั้งแรก สามารถเปลี่ยนได้ภายหลัง"
-                  : "เว้นว่างไว้หากไม่ต้องการเปลี่ยนรหัสผ่าน"
-              }
-              fullWidth
-            />
-          </Stack>
+          <TextField
+            select
+            label="แผนก"
+            value={values.department}
+            onChange={handleChange("department")}
+            required
+            fullWidth
+          >
+            {departmentItems.map((department) => (
+              <MenuItem key={department} value={department}>
+                {department}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Stack>
 
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-            <TextField
-              label="ตำแหน่งงาน"
-              value={values.position}
-              onChange={handleChange("position")}
-              required
-              fullWidth
-            />
-
-            <TextField
-              select
-              label="แผนก"
-              value={values.department}
-              onChange={handleChange("department")}
-              required
-              fullWidth
-            >
-              {departmentItems.map((department) => (
-                <MenuItem key={department} value={department}>
-                  {department}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Stack>
-
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-            <TextField
-              label="หมายเลขติดต่อ"
-              value={values.phone}
-              onChange={handleChange("phone")}
-              required
-              fullWidth
-              placeholder="0xx-xxx-xxxx"
-            />
-            <TextField
+        {/* removed legacy combined name field — using firstName and lastName separately */}
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          <TextField
+            select
+            label="เพศ"
+            value={values.gender ?? ""}
+            onChange={handleChange("gender") as any}
+            fullWidth
+          >
+            <MenuItem value="">ไม่ระบุ</MenuItem>
+            <MenuItem value="MALE">ชาย</MenuItem>
+            <MenuItem value="FEMALE">หญิง</MenuItem>
+            <MenuItem value="OTHER">อื่นๆ</MenuItem>
+          </TextField>
+          <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={th}>
+            <DatePicker
               label="วันที่เริ่มงาน"
-              value={values.startDate}
-              onChange={handleChange("startDate")}
-              type="date"
-              InputLabelProps={{ shrink: true }}
-              required
-              fullWidth
+              value={values.startDate ? new Date(values.startDate) : null}
+              onChange={(newValue) => {
+                setValues((prev) => ({
+                  ...prev,
+                  startDate: newValue
+                    ? newValue.toISOString().slice(0, 10)
+                    : "",
+                }));
+              }}
+              slotProps={{
+                textField: { fullWidth: true },
+              }}
             />
-          </Stack>
+          </LocalizationProvider>
+        </Stack>
 
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-            <TextField
-              select
-              label="เพศ"
-              value={values.gender ?? ""}
-              onChange={handleChange("gender") as any}
-              fullWidth
-            >
-              <MenuItem value="">ไม่ระบุ</MenuItem>
-              <MenuItem value="MALE">ชาย</MenuItem>
-              <MenuItem value="FEMALE">หญิง</MenuItem>
-              <MenuItem value="OTHER">อื่นๆ</MenuItem>
-            </TextField>
-            <TextField
-              label="สังกัดบริษัท"
-              value={values.company ?? ""}
-              onChange={handleChange("company")}
-              fullWidth
-            />
-            <TextField
-              label="เขตที่รับผิดชอบ"
-              value={values.responsibilityArea ?? ""}
-              onChange={handleChange("responsibilityArea")}
-              fullWidth
-            />
-          </Stack>
+        <TextField
+          label="ที่อยู่"
+          value={values.company ?? ""}
+          onChange={handleChange("company")}
+          fullWidth
+        />
 
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          {/* จังหวัด */}
+
+          {/* อำเภอ */}
+        </Stack>
+
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          {/* ตำบล */}
+
+          {/* รหัสไปรษณีย์ */}
+        </Stack>
+
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          <TextField
+            label="สังกัดบริษัท"
+            value={values.company ?? ""}
+            onChange={handleChange("company")}
+            fullWidth
+          />
+          <TextField
+            label="เขตที่รับผิดชอบ"
+            value={values.responsibilityArea ?? ""}
+            onChange={handleChange("responsibilityArea")}
+            fullWidth
+          />
+        </Stack>
+
+        <Box
+          sx={{
+            backgroundColor: "#d9d9dbff", // เทาอ่อน
+            borderRadius: 2,
+            px: 2,
+            py: 2,
+          }}
+        >
+          <Typography variant="h6" fontWeight={960}>
+            ข้อมูลการเข้าสู่ระบบ
+          </Typography>
+        </Box>
+
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          <TextField
+            label="อีเมลสำหรับเข้าสู่ระบบ"
+            value={values.email}
+            onChange={handleChange("email")}
+            type="email"
+            required
+            fullWidth
+            placeholder="name@example.com"
+          />
+          <TextField
+            label="รหัสผ่านเริ่มต้น"
+            value={values.password}
+            onChange={handleChange("password")}
+            type="password"
+            required={requirePassword}
+            helperText={
+              requirePassword ? "" : "เว้นว่างไว้หากไม่ต้องการเปลี่ยนรหัสผ่าน"
+            }
+            fullWidth
+          />
+        </Stack>
+
+        {/* <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
               select
               label="บทบาทผู้ใช้งาน"
@@ -374,8 +448,9 @@ export function EmployeeForm({
                 </MenuItem>
               ))}
             </TextField>
-          </Stack>
+          </Stack> */}
 
+        {/* 
           {roleDefinitions.length === 0 ? (
             <Alert severity="info">
               ยังไม่มีการสร้างสิทธิ์การใช้งาน กรุณาสร้างจากเมนูบทบาทก่อน
@@ -425,7 +500,39 @@ export function EmployeeForm({
             <Typography color="text.secondary">
               เลือกสิทธิ์การใช้งานเพื่อดูรายละเอียดของสิทธิ์ที่ได้รับ
             </Typography>
-          )}
+          )} */}
+
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          <TextField
+            select
+            label="สิทธิ์การใช้งาน"
+            value={values.roleDefinitionId ?? ""}
+            onChange={handleRoleDefinitionChange}
+            fullWidth
+            // helperText={
+            //   roleDefinitions.length === 0
+            //     ? "ยังไม่มีสิทธิ์การใช้งานที่สร้างไว้"
+            //     : "เลือกสิทธิ์เพื่อกำหนดขอบเขตการใช้งาน"
+            // }
+            disabled={roleDefinitions.length === 0}
+            SelectProps={{
+              MenuProps: {
+                PaperProps: {
+                  style: {
+                    maxHeight: 180, // ความสูงสูงสุด (px)
+                    overflowY: "auto", // เลื่อนแนวตั้ง
+                  },
+                },
+              },
+            }}
+          >
+            <MenuItem value="">ไม่กำหนด (ใช้ตามบทบาทหลัก)</MenuItem>
+            {roleDefinitions.map((definition) => (
+              <MenuItem key={definition.id} value={definition.id}>
+                {definition.name}
+              </MenuItem>
+            ))}
+          </TextField>
 
           <TextField
             select
@@ -433,6 +540,7 @@ export function EmployeeForm({
             value={values.status}
             onChange={handleChange("status")}
             required
+            fullWidth
           >
             {statusOptions.map((option) => (
               <MenuItem key={option.value} value={option.value}>
@@ -440,26 +548,26 @@ export function EmployeeForm({
               </MenuItem>
             ))}
           </TextField>
-
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            spacing={2}
-            justifyContent="flex-end"
-          >
-            <Button
-              component={Link}
-              href="/dashboard/employees"
-              variant="outlined"
-              color="inherit"
-            >
-              ยกเลิก
-            </Button>
-            <Button type="submit" variant="contained" disabled={isSubmitting}>
-              {submitLabel}
-            </Button>
-          </Stack>
         </Stack>
-      </Paper>
-    </Stack>
+
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          spacing={2}
+          justifyContent="flex-end"
+        >
+          <Button
+            component={Link}
+            href="/dashboard/employees"
+            variant="outlined"
+            color="inherit"
+          >
+            ยกเลิก
+          </Button>
+          <Button type="submit" variant="contained" disabled={isSubmitting}>
+            {submitLabel}
+          </Button>
+        </Stack>
+      </Stack>
+    </Paper>
   );
 }
