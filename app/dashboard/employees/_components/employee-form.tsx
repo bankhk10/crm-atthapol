@@ -149,6 +149,19 @@ export function EmployeeForm({
 
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
+              select
+              label="คำนำหน้า"
+              value={values.prefix ?? ""}
+              onChange={handleChange("prefix") as any}
+              required
+              sx={{ minWidth: { xs: "100%", sm: 150 } }} // ให้เล็กกว่าช่องชื่อ
+            >
+              <MenuItem value="นาย">นาย</MenuItem>
+              <MenuItem value="นาง">นาง</MenuItem>
+              <MenuItem value="นางสาว">นางสาว</MenuItem>
+              {/* <MenuItem value="อื่นๆ">อื่นๆ</MenuItem> */}
+            </TextField>
+            <TextField
               label="ชื่อ"
               value={values.firstName ?? ""}
               onChange={handleChange("firstName")}
@@ -165,6 +178,53 @@ export function EmployeeForm({
               fullWidth
             />
           </Stack>
+
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <TextField
+              label="รหัสพนักงาน"
+              value={values.employeeCode ?? ""}
+              onChange={handleChange("employeeCode")}
+              required
+              placeholder="เช่น EMP-0001"
+            />
+
+            <TextField
+              label="วันเกิด"
+              type="date"
+              value={
+                values.birthDate
+                  ? new Date(values.birthDate).toISOString().slice(0, 10)
+                  : ""
+              }
+              onChange={(e) =>
+                setValues((prev) => ({
+                  ...prev,
+                  birthDate: e.target.value ? e.target.value : "",
+                }))
+              }
+              InputLabelProps={{ shrink: true }}
+              fullWidth
+            />
+
+            <TextField
+              label="อายุ"
+              value={
+                typeof values.age === "number" && values.age >= 0
+                  ? String(values.age)
+                  : values.birthDate
+                  ? String(
+                      Math.floor(
+                        (Date.now() - new Date(values.birthDate).getTime()) /
+                          (1000 * 60 * 60 * 24 * 365.25)
+                      )
+                    )
+                  : ""
+              }
+              InputProps={{ readOnly: true }}
+              fullWidth
+            />
+          </Stack>
+
           {/* removed legacy combined name field — using firstName and lastName separately */}
 
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
@@ -200,14 +260,6 @@ export function EmployeeForm({
               required
               fullWidth
             />
-            
-            <TextField
-              label="รหัสพนักงาน"
-              value={values.employeeCode ?? ""}
-              onChange={handleChange("employeeCode")}
-              required
-              placeholder="เช่น EMP-0001"
-            />
 
             <TextField
               select
@@ -241,34 +293,6 @@ export function EmployeeForm({
               type="date"
               InputLabelProps={{ shrink: true }}
               required
-              fullWidth
-            />
-          </Stack>
-
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-            <TextField
-              label="วันเกิด"
-              value={values.birthDate ?? ""}
-              onChange={handleChange("birthDate")}
-              type="date"
-              InputLabelProps={{ shrink: true }}
-              fullWidth
-            />
-            <TextField
-              label="อายุ"
-              value={
-                typeof values.age === "number" && values.age >= 0
-                  ? String(values.age)
-                  : values.birthDate
-                  ? String(
-                      Math.floor(
-                        (Date.now() - new Date(values.birthDate).getTime()) /
-                          (1000 * 60 * 60 * 24 * 365.25)
-                      )
-                    )
-                  : ""
-              }
-              InputProps={{ readOnly: true }}
               fullWidth
             />
           </Stack>

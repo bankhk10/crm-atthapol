@@ -17,6 +17,7 @@ type EmployeeCreateClientProps = {
 };
 
 const defaultInitialValues: EmployeeFormValues = {
+  prefix: "",
   name: "",
   firstName: "",
   lastName: "",

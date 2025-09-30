@@ -8,14 +8,14 @@ export type PermissionGroup = {
 };
 
 export type EmployeeFormValues = {
-  // New: split name into first and last name
+  prefix?: string;
   firstName?: string;
   lastName?: string;
   // legacy single field (kept for compatibility, prefer firstName/lastName)
   name?: string;
   email: string;
   password: string;
-  employeeCode: string; 
+  employeeCode: string;
   position: string;
   department: string;
   company?: string;
