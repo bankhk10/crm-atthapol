@@ -52,7 +52,7 @@ export function EmployeeCreateClient({
     <Stack spacing={3}>
       <EmployeeForm
         title="เพิ่มข้อมูลพนักงานใหม่"
-        description="กรอกข้อมูลรายละเอียดพนักงาน รวมถึงอีเมลและรหัสผ่านสำหรับการเข้าสู่ระบบ"
+        description=""
         initialValues={initialValues}
         submitLabel="เพิ่มพนักงาน"
         requirePassword

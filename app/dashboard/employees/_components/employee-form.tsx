@@ -126,17 +126,19 @@ export function EmployeeForm({
 
   return (
     <Stack spacing={3}>
-      <Stack spacing={1}>
-        <Typography variant="h4" fontWeight={700} component="h1">
+      <Stack spacing={1} alignItems="center">
+        <Typography variant="h4" fontWeight={700} component="h1" align="center">
           {title}
         </Typography>
-        <Typography color="text.secondary">{description}</Typography>
+        <Typography color="text.secondary" align="center">
+          {description}
+        </Typography>
       </Stack>
 
       <Paper
         component="form"
         onSubmit={handleSubmitWithErrors}
-        sx={{ p: { xs: 2, sm: 3 }, maxWidth: 720 }}
+        sx={{ p: { xs: 2, sm: 3 }, maxWidth: 960 }}
       >
         <Stack spacing={3}>
           {error && (
