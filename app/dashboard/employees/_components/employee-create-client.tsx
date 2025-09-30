@@ -25,7 +25,7 @@ const defaultInitialValues: EmployeeFormValues = {
   password: "",
   employeeCode: "",
   position: "",
-  department: "วิศวกรรม",
+  department: "",
   company: "",
   responsibilityArea: "",
   birthDate: undefined,
@@ -46,7 +46,7 @@ export function EmployeeCreateClient({
 
   const initialValues: EmployeeFormValues = {
     ...defaultInitialValues,
-    roleDefinitionId: roleDefinitions[0]?.id ?? null,
+    // roleDefinitionId: roleDefinitions[0]?.id ?? null,
   };
 
   return (
