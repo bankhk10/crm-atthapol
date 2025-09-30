@@ -25,6 +25,7 @@ import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { th } from "date-fns/locale";
 import { Box } from "@mui/material";
+import ThaiAddressPicker from "@/components/ThaiAddressPicker";
 
 export type EmployeeFormProps = {
   title: string;
@@ -328,25 +329,6 @@ export function EmployeeForm({
           </LocalizationProvider>
         </Stack>
 
-        <TextField
-          label="ที่อยู่"
-          value={values.company ?? ""}
-          onChange={handleChange("company")}
-          fullWidth
-        />
-
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-          {/* จังหวัด */}
-
-          {/* อำเภอ */}
-        </Stack>
-
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-          {/* ตำบล */}
-
-          {/* รหัสไปรษณีย์ */}
-        </Stack>
-
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           <TextField
             label="สังกัดบริษัท"
@@ -360,6 +342,34 @@ export function EmployeeForm({
             onChange={handleChange("responsibilityArea")}
             fullWidth
           />
+        </Stack>
+
+        <TextField
+          label="ที่อยู่"
+          value={values.company ?? ""}
+          onChange={handleChange("company")}
+          fullWidth
+        />
+
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          <Box flex={1}>
+            <ThaiAddressPicker
+              value={{
+                province: values.province,
+                district: values.district,
+                subdistrict: values.subdistrict,
+              }}
+              onChange={(next) => {
+                setValues((prev) => ({
+                  ...prev,
+                  province: next.province,
+                  district: next.district,
+                  subdistrict: next.subdistrict,
+                  postalCode: next.postalCode ?? prev.postalCode,
+                }));
+              }}
+            />
+          </Box>
         </Stack>
 
         <Box
