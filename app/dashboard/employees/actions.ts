@@ -69,11 +69,13 @@ export async function createEmployee(rawValues: EmployeeFormValues) {
       const user = await tx.user.create({
         data: {
           name: fullName,
+          firstName: values.firstName ?? null,
+          lastName: values.lastName ?? null,
           email: values.email,
           passwordHash,
           role: values.role,
           roleDefinitionId: values.roleDefinitionId,
-        },
+        } as any,
       });
 
       const employeeCode = await generateEmployeeCode(tx);
@@ -123,13 +125,15 @@ export async function updateEmployee(
         where: { id: employee.userId },
         data: {
           name: [values.firstName, values.lastName].filter(Boolean).join(" ") || values.name || undefined,
+          firstName: values.firstName ?? null,
+          lastName: values.lastName ?? null,
           email: values.email,
           role: values.role,
           roleDefinitionId: values.roleDefinitionId,
           ...(values.password
             ? { passwordHash: await bcrypt.hash(values.password, 10) }
             : {}),
-        },
+        } as any,
       });
 
       await tx.employee.update({

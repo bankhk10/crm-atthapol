@@ -27,10 +27,10 @@ export default async function EmployeeEditPage({
 
   const initialValues: EmployeeFormValues = {
     employeeCode: employee.employeeCode ?? "",
-    // split name into first/last if possible (assume existing name is full name)
-    name: employee.user.name ?? "",
-    firstName: employee.user.name ? employee.user.name.split(" ").slice(0, -1).join(" ") || employee.user.name : undefined,
-    lastName: employee.user.name ? employee.user.name.split(" ").slice(-1).join(" ") : undefined,
+     // prefer explicit firstName/lastName if available; otherwise fall back to splitting full name
+     firstName: (employee.user as any).firstName ?? (employee.user.name ? employee.user.name.split(" ").slice(0, -1).join(" ") || employee.user.name : undefined),
+     lastName: (employee.user as any).lastName ?? (employee.user.name ? employee.user.name.split(" ").slice(-1).join(" ") : undefined),
+     name: employee.user.name ?? undefined,
     email: employee.user.email ?? "",
     password: "",
     position: employee.position,

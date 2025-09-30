@@ -163,13 +163,7 @@ export function EmployeeForm({
               fullWidth
             />
           </Stack>
-          {/* legacy single name field kept for compatibility */}
-          <TextField
-            label="ชื่อ-นามสกุล (รวม)"
-            value={values.name ?? `${values.firstName ?? ""} ${values.lastName ?? ""}`.trim()}
-            onChange={handleChange("name")}
-            placeholder="เช่น สมชาย ใจดี"
-          />
+          {/* removed legacy combined name field — using firstName and lastName separately */}
 
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
