@@ -184,6 +184,25 @@ function buildPermissionGroup(resource: string, actions: PermissionAction[]) {
 async function main() {
   const roleDefinitionIdMap = new Map<string, string>();
 
+  // Ensure a system actor exists and set as audit actor for seeding
+  const systemEmail = "system@local";
+  const systemPassword = await bcrypt.hash("System@seed", 10);
+  const systemUser = await prisma.user.upsert({
+    where: { email: systemEmail },
+    update: {
+      name: "System",
+      passwordHash: systemPassword,
+      role: "ADMIN",
+    },
+    create: {
+      email: systemEmail,
+      name: "System",
+      passwordHash: systemPassword,
+      role: "ADMIN",
+    },
+  });
+  process.env.AUDIT_ACTOR_USER_ID = systemUser.id;
+
   await prisma.$transaction(async (tx) => {
     // Ensure permissions exist
     const permissionIdMap = new Map<string, string>();
@@ -265,6 +284,11 @@ async function main() {
         roleDefinitionId,
       },
     });
+
+    // Set audit actor for subsequent seed writes using this admin user
+    if (!process.env.AUDIT_ACTOR_USER_ID && userSeed.role === "ADMIN") {
+      process.env.AUDIT_ACTOR_USER_ID = user.id;
+    }
 
     if (userSeed.employee) {
       const employee = userSeed.employee;

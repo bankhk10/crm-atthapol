@@ -377,6 +377,11 @@ const maybeWriteAuditLog = async ({
 
   try {
     const { userId } = getRequestContext();
+    let actorId: string | undefined = typeof userId === "string" ? userId : undefined;
+    if (!actorId && process.env.AUDIT_ACTOR_USER_ID) {
+      const v = process.env.AUDIT_ACTOR_USER_ID;
+      if (typeof v === "string" && v.length > 0) actorId = v;
+    }
     await auditDelegate.create({
       data: {
         model: modelName,
@@ -384,7 +389,7 @@ const maybeWriteAuditLog = async ({
         recordId: recordId ?? undefined,
         before: sanitizeData(beforeData) as Prisma.InputJsonValue,
         after: sanitizeData(afterData ?? result) as Prisma.InputJsonValue,
-        performedByUserId: typeof userId === "string" ? userId : undefined,
+        performedByUserId: actorId,
       },
     });
   } catch (error) {

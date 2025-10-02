@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
+import { withActor } from "@/lib/with-actor";
 
 import type { RoleFormValues } from "./types";
 
@@ -26,26 +27,28 @@ const roleFormSchema = z.object({
 export async function createRole(rawValues: RoleFormValues) {
   const values = roleFormSchema.parse(rawValues);
 
-  await prisma.$transaction(async (tx) => {
-    const role = await tx.roleDefinition.create({
-      data: {
-        key: values.key,
-        name: values.name,
-        description: values.description || null,
-      },
-    });
-
-    const permissionIds = await upsertPermissions(tx, values.permissions);
-
-    if (permissionIds.length > 0) {
-      await tx.rolePermission.createMany({
-        data: permissionIds.map((permissionId) => ({
-          roleId: role.id,
-          permissionId,
-        })),
-        skipDuplicates: true,
+  await withActor(async () => {
+    await prisma.$transaction(async (tx) => {
+      const role = await tx.roleDefinition.create({
+        data: {
+          key: values.key,
+          name: values.name,
+          description: values.description || null,
+        },
       });
-    }
+
+      const permissionIds = await upsertPermissions(tx, values.permissions);
+
+      if (permissionIds.length > 0) {
+        await tx.rolePermission.createMany({
+          data: permissionIds.map((permissionId) => ({
+            roleId: role.id,
+            permissionId,
+          })),
+          skipDuplicates: true,
+        });
+      }
+    });
   }).catch(handlePrismaError);
 
   revalidateRoleViews();
@@ -54,49 +57,51 @@ export async function createRole(rawValues: RoleFormValues) {
 export async function updateRole(roleId: string, rawValues: RoleFormValues) {
   const values = roleFormSchema.parse(rawValues);
 
-  await prisma.$transaction(async (tx) => {
-    const role = await tx.roleDefinition.update({
-      where: { id: roleId },
-      data: {
-        key: values.key,
-        name: values.name,
-        description: values.description || null,
-      },
-    });
-
-    const permissionIds = await upsertPermissions(tx, values.permissions);
-    const nextPermissionSet = new Set(permissionIds);
-
-    const existingAssignments = await tx.rolePermission.findMany({
-      where: { roleId: role.id },
-    });
-
-    const existingSet = new Set(existingAssignments.map((assignment) => assignment.permissionId));
-
-    const toRemove = existingAssignments
-      .filter((assignment) => !nextPermissionSet.has(assignment.permissionId))
-      .map((assignment) => assignment.permissionId);
-
-    if (toRemove.length > 0) {
-      await tx.rolePermission.deleteMany({
-        where: {
-          roleId: role.id,
-          permissionId: { in: toRemove },
+  await withActor(async () => {
+    await prisma.$transaction(async (tx) => {
+      const role = await tx.roleDefinition.update({
+        where: { id: roleId },
+        data: {
+          key: values.key,
+          name: values.name,
+          description: values.description || null,
         },
       });
-    }
 
-    const toAdd = permissionIds.filter((id) => !existingSet.has(id));
+      const permissionIds = await upsertPermissions(tx, values.permissions);
+      const nextPermissionSet = new Set(permissionIds);
 
-    if (toAdd.length > 0) {
-      await tx.rolePermission.createMany({
-        data: toAdd.map((permissionId) => ({
-          roleId: role.id,
-          permissionId,
-        })),
-        skipDuplicates: true,
+      const existingAssignments = await tx.rolePermission.findMany({
+        where: { roleId: role.id },
       });
-    }
+
+      const existingSet = new Set(existingAssignments.map((assignment) => assignment.permissionId));
+
+      const toRemove = existingAssignments
+        .filter((assignment) => !nextPermissionSet.has(assignment.permissionId))
+        .map((assignment) => assignment.permissionId);
+
+      if (toRemove.length > 0) {
+        await tx.rolePermission.deleteMany({
+          where: {
+            roleId: role.id,
+            permissionId: { in: toRemove },
+          },
+        });
+      }
+
+      const toAdd = permissionIds.filter((id) => !existingSet.has(id));
+
+      if (toAdd.length > 0) {
+        await tx.rolePermission.createMany({
+          data: toAdd.map((permissionId) => ({
+            roleId: role.id,
+            permissionId,
+          })),
+          skipDuplicates: true,
+        });
+      }
+    });
   }).catch(handlePrismaError);
 
   revalidateRoleViews();
