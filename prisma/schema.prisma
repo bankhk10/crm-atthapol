@@ -41,6 +41,7 @@ model User {
   roleDefinition RoleDefinition? @relation(fields: [roleDefinitionId], references: [id])
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
+  deletedAt      DateTime?
 }
 
 model Employee {
@@ -67,6 +68,7 @@ model Employee {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  deletedAt DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -114,6 +116,7 @@ model RoleDefinition {
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
 
   users       User[]
   permissions RolePermission[]
@@ -126,6 +129,7 @@ model Permission {
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
 
   roles RolePermission[]
 
