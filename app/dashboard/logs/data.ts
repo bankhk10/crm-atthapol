@@ -1,0 +1,83 @@
+import { prisma } from "@/lib/prisma";
+
+export type AuditLogFilters = {
+  q?: string;
+  model?: string;
+  action?: string;
+  userId?: string;
+  startDate?: string; // yyyy-mm-dd
+  endDate?: string; // yyyy-mm-dd
+  limit?: number;
+};
+
+const buildWhere = (filters: AuditLogFilters = {}) => {
+  const where: Record<string, unknown> = { deletedAt: null };
+
+  if (filters.model) where.model = filters.model;
+  if (filters.action) where.action = filters.action as unknown as string;
+  if (filters.userId) where.performedByUserId = filters.userId;
+
+  if (filters.startDate || filters.endDate) {
+    const when: Record<string, Date> = {};
+    if (filters.startDate) when.gte = new Date(filters.startDate);
+    if (filters.endDate) {
+      const end = new Date(filters.endDate);
+      end.setHours(23, 59, 59, 999);
+      when.lte = end;
+    }
+    (where as any).performedAt = when;
+  }
+
+  if (filters.q) {
+    const q = filters.q.trim();
+    (where as any).OR = [
+      { model: { contains: q, mode: "insensitive" } },
+      { recordId: { contains: q, mode: "insensitive" } },
+      { performedBy: { is: { name: { contains: q, mode: "insensitive" } } } },
+      { performedBy: { is: { email: { contains: q, mode: "insensitive" } } } },
+    ];
+  }
+
+  return where;
+};
+
+export function getAuditLogs(filters: AuditLogFilters = {}) {
+  const where = buildWhere(filters);
+  const take = Number.isFinite(filters.limit as number) ? (filters.limit as number) : 200;
+  return prisma.auditLog.findMany({
+    where,
+    include: { performedBy: { select: { id: true, name: true, email: true } } },
+    orderBy: { performedAt: "desc" },
+    take,
+  });
+}
+
+export async function getAuditLogsPage(filters: AuditLogFilters = {}, page = 1, pageSize = 20) {
+  const where = buildWhere(filters);
+  const skip = Math.max(0, (page - 1) * pageSize);
+  const take = Math.max(1, pageSize);
+
+  const [rows, total] = await Promise.all([
+    prisma.auditLog.findMany({
+      where,
+      include: { performedBy: { select: { id: true, name: true, email: true } } },
+      orderBy: { performedAt: "desc" },
+      skip,
+      take,
+    }),
+    prisma.auditLog.count({ where }),
+  ]);
+
+  return { rows, total };
+}
+
+export function getAuditLogById(id: string) {
+  return prisma.auditLog.findUnique({
+    where: { id, deletedAt: null },
+    include: {
+      performedBy: {
+        select: { id: true, name: true, email: true },
+      },
+    },
+  });
+}

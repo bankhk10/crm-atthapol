@@ -39,6 +39,7 @@ model User {
   sessions       Session[]
   employee       Employee?
   roleDefinition RoleDefinition? @relation(fields: [roleDefinitionId], references: [id])
+  performedAuditLogs AuditLog[] @relation("AuditPerformedByUser")
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   deletedAt      DateTime?
@@ -167,5 +168,7 @@ model AuditLog {
   before      Json?
   after       Json?
   performedAt DateTime    @default(now())
+  performedByUserId String?
+  performedBy       User?     @relation("AuditPerformedByUser", fields: [performedByUserId], references: [id])
   deletedAt   DateTime?
 }

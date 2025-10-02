@@ -1,4 +1,5 @@
 import { Prisma, PrismaClient } from "@prisma/client";
+import { getRequestContext } from "@/lib/request-context";
 
 // Use string literals for audit actions at runtime to avoid issues
 // when the generated enum is not available during bundling.
@@ -375,6 +376,7 @@ const maybeWriteAuditLog = async ({
   const recordId = buildRecordIdentifier(modelName, args, result);
 
   try {
+    const { userId } = getRequestContext();
     await auditDelegate.create({
       data: {
         model: modelName,
@@ -382,6 +384,7 @@ const maybeWriteAuditLog = async ({
         recordId: recordId ?? undefined,
         before: sanitizeData(beforeData) as Prisma.InputJsonValue,
         after: sanitizeData(afterData ?? result) as Prisma.InputJsonValue,
+        performedByUserId: typeof userId === "string" ? userId : undefined,
       },
     });
   } catch (error) {

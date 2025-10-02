@@ -6,6 +6,9 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
+import { runWithRequestContext } from "@/lib/request-context";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 import type { EmployeeFormValues } from "./types";
 
@@ -60,6 +63,7 @@ async function generateEmployeeCode(tx: Prisma.TransactionClient) {
 
 export async function createEmployee(rawValues: EmployeeFormValues) {
   const values = employeeFormSchema.parse(rawValues);
+  const session = await getServerSession(authOptions);
 
   if (!values.password || values.password.length < 6) {
     throw new Error("กรุณากรอกรหัสผ่านอย่างน้อย 6 ตัวอักษร");
@@ -68,43 +72,45 @@ export async function createEmployee(rawValues: EmployeeFormValues) {
   const passwordHash = await bcrypt.hash(values.password, 10);
 
   try {
-    await prisma.$transaction(async (tx) => {
-      const fullName = [values.firstName, values.lastName]
-        .filter(Boolean)
-        .join(" ") || values.name || null;
+    await runWithRequestContext({ userId: session?.user?.id }, async () => {
+      await prisma.$transaction(async (tx) => {
+        const fullName = [values.firstName, values.lastName]
+          .filter(Boolean)
+          .join(" ") || values.name || null;
 
-      const user = await tx.user.create({
-        data: {
-          name: fullName,
-          email: values.email,
-          passwordHash,
-          role: values.role,
-          roleDefinitionId: values.roleDefinitionId,
-        },
-      });
+        const user = await tx.user.create({
+          data: {
+            name: fullName,
+            email: values.email,
+            passwordHash,
+            role: values.role,
+            roleDefinitionId: values.roleDefinitionId,
+          },
+        });
 
-      await tx.employee.create({
-        data: {
-          userId: user.id,
-          employeeCode: values.employeeCode,
-          prefix: values.prefix ?? null,
-          firstName: values.firstName ?? null,
-          lastName: values.lastName ?? null,
-          position: values.position,
-          department: values.department,
-          company: values.company,
-          responsibilityArea: values.responsibilityArea,
-          birthDate: values.birthDate ? new Date(values.birthDate) : null,
-          gender: values.gender ?? null,
-          phone: values.phone,
-          startDate: new Date(values.startDate),
-          status: values.status,
-          address: values.address ?? null,
-          province: values.province ?? null,
-          district: values.district ?? null,
-          subdistrict: values.subdistrict ?? null,
-          postalCode: values.postalCode ?? null,
-        },
+        await tx.employee.create({
+          data: {
+            userId: user.id,
+            employeeCode: values.employeeCode,
+            prefix: values.prefix ?? null,
+            firstName: values.firstName ?? null,
+            lastName: values.lastName ?? null,
+            position: values.position,
+            department: values.department,
+            company: values.company,
+            responsibilityArea: values.responsibilityArea,
+            birthDate: values.birthDate ? new Date(values.birthDate) : null,
+            gender: values.gender ?? null,
+            phone: values.phone,
+            startDate: new Date(values.startDate),
+            status: values.status,
+            address: values.address ?? null,
+            province: values.province ?? null,
+            district: values.district ?? null,
+            subdistrict: values.subdistrict ?? null,
+            postalCode: values.postalCode ?? null,
+          },
+        });
       });
     });
   } catch (error) {
@@ -119,13 +125,15 @@ export async function updateEmployee(
   rawValues: EmployeeFormValues,
 ) {
   const values = employeeFormSchema.parse(rawValues);
+  const session = await getServerSession(authOptions);
 
   try {
-    await prisma.$transaction(async (tx) => {
-      const employee = await tx.employee.findUnique({
-        where: { id: employeeId },
-        include: { user: true },
-      });
+    await runWithRequestContext({ userId: session?.user?.id }, async () => {
+      await prisma.$transaction(async (tx) => {
+        const employee = await tx.employee.findUnique({
+          where: { id: employeeId },
+          include: { user: true },
+        });
 
       if (!employee) {
         throw new Error("ไม่พบข้อมูลพนักงานที่ต้องการแก้ไข");
@@ -170,6 +178,7 @@ export async function updateEmployee(
           subdistrict: values.subdistrict ?? null,
           postalCode: values.postalCode ?? null,
         },
+      });
       });
     });
   } catch (error) {
