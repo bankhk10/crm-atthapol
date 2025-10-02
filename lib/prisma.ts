@@ -35,7 +35,7 @@ const ensureHelperClient = () => {
 
 const getDelegate = (client: PrismaClient, model: Prisma.ModelName) => {
   const key = model.charAt(0).toLowerCase() + model.slice(1);
-  return (client as Record<string, unknown>)[key] as ReadDelegate | undefined;
+  return (client as unknown as Record<string, unknown>)[key] as ReadDelegate | undefined;
 };
 
 const sanitizeData = (data: unknown): unknown => {
@@ -74,7 +74,7 @@ const extractStatusValue = (data: unknown): string | undefined => {
 
 const resolveAuditAction = (
   defaultAction: AuditAction,
-  paramsAction: Prisma.MiddlewareParams["action"],
+  paramsAction: string,
   data: unknown,
 ): AuditAction => {
   if (paramsAction === "update" || paramsAction === "updateMany") {
@@ -91,7 +91,7 @@ const resolveAuditAction = (
 
 const buildRecordIdentifier = (
   model: Prisma.ModelName,
-  args: Prisma.MiddlewareParams["args"],
+  args: Record<string, unknown>,
   result: unknown,
 ): string | null => {
   if (result && typeof result === "object" && "id" in (result as Record<string, unknown>)) {
@@ -112,137 +112,270 @@ const buildRecordIdentifier = (
   return null;
 };
 
-const createPrismaClient = () => {
+const createPrismaClient = (): PrismaClient => {
   const helperClient = ensureHelperClient();
-  const client = new PrismaClient();
+  const baseClient = new PrismaClient();
 
-  client.$use(async (params, next) => {
-    if (!params.model || !SOFT_DELETE_MODELS.has(params.model as Prisma.ModelName)) {
-      return next(params);
-    }
+  const extendedClient = baseClient.$extends({
+    query: {
+      $allModels: {
+        async $allOperations({ model, operation, args, query }) {
+          if (!model || !SOFT_DELETE_MODELS.has(model as Prisma.ModelName)) {
+            return query(args);
+          }
 
-    const modelName = params.model as Prisma.ModelName;
-    const delegate = getDelegate(helperClient, modelName);
-    const shouldLog = modelName !== "AuditLog" && Boolean(delegate);
+          const modelName = model as Prisma.ModelName;
+          const delegate = getDelegate(helperClient, modelName);
+          const shouldLog = modelName !== "AuditLog" && Boolean(delegate);
 
-    const ensureWhere = () => {
-      if (!params.args) params.args = {};
-      if (!("where" in params.args)) {
-        (params.args as Record<string, unknown>).where = {};
-      }
-      return (params.args as Record<string, unknown>).where as Record<string, unknown>;
-    };
+          const normalizedArgs = (args ?? {}) as Record<string, unknown>;
+          const ensureWhere = () => {
+            if (!("where" in normalizedArgs) || normalizedArgs.where === undefined) {
+              normalizedArgs.where = {};
+            }
+            return normalizedArgs.where as Record<string, unknown>;
+          };
+          const setDeletedFilter = () => {
+            const where = ensureWhere();
+            if (!("deletedAt" in where)) {
+              where.deletedAt = null;
+            }
+            return where;
+          };
+          const cloneWhere = () => {
+            const where = ensureWhere();
+            return JSON.parse(JSON.stringify(where));
+          };
 
-    const cloneWhere = () => {
-      const where = ensureWhere();
-      return JSON.parse(JSON.stringify(where));
-    };
+          const now = new Date();
 
-    if (params.action === "findUnique") {
-      params.action = "findFirst";
-      const where = ensureWhere();
-      if (!("deletedAt" in where)) where.deletedAt = null;
-    } else if (["findFirst", "findMany", "count"].includes(params.action)) {
-      const where = ensureWhere();
-      if (!("deletedAt" in where)) where.deletedAt = null;
-    } else if (params.action === "update" || params.action === "updateMany") {
-      const where = ensureWhere();
-      if (!("deletedAt" in where)) where.deletedAt = null;
-    }
+          let auditAction: AuditAction | null = null;
+          let beforeData: unknown;
+          let afterData: unknown;
+          let whereForLogging: Record<string, unknown> | undefined;
 
-    let auditAction: AuditAction | null = null;
-    let beforeData: unknown;
-    let afterData: unknown;
-    let whereForLogging: Record<string, unknown> | undefined;
+          if (
+            operation === "findFirst" ||
+            operation === "findFirstOrThrow" ||
+            operation === "findMany" ||
+            operation === "count"
+          ) {
+            setDeletedFilter();
+          } else if (operation === "update" || operation === "updateMany") {
+            setDeletedFilter();
+            whereForLogging = cloneWhere();
+            if (shouldLog && delegate) {
+              if (operation === "update" && delegate.findFirst) {
+                beforeData = await delegate.findFirst({ where: whereForLogging });
+              }
+              if (operation === "updateMany" && delegate.findMany) {
+                beforeData = await delegate.findMany({ where: whereForLogging });
+              }
+            }
+            auditAction = AuditAction.UPDATE;
+          } else if (operation === "delete" || operation === "deleteMany") {
+            const where = setDeletedFilter();
+            whereForLogging = cloneWhere();
 
-    const now = new Date();
+            if (shouldLog && delegate) {
+              if (operation === "delete" && delegate.findFirst) {
+                beforeData = await delegate.findFirst({ where: whereForLogging });
+              }
+              if (operation === "deleteMany" && delegate.findMany) {
+                beforeData = await delegate.findMany({ where: whereForLogging });
+              }
+            }
 
-    if (params.action === "delete" || params.action === "deleteMany") {
-      const where = ensureWhere();
-      if (!("deletedAt" in where)) where.deletedAt = null;
-      whereForLogging = cloneWhere();
+            auditAction = AuditAction.DELETE;
 
-      if (shouldLog && delegate) {
-        if (params.action === "delete" && delegate.findFirst) {
-          beforeData = await delegate.findFirst({ where: whereForLogging });
-        }
-        if (params.action === "deleteMany" && delegate.findMany) {
-          beforeData = await delegate.findMany({ where: whereForLogging });
-        }
-      }
+            if (operation === "delete") {
+              const key = modelName.charAt(0).toLowerCase() + modelName.slice(1);
+              const modelDelegate = (helperClient as unknown as Record<string, unknown>)[key] as
+                | { update: (payload: Record<string, unknown>) => Promise<unknown> }
+                | undefined;
+              if (!modelDelegate?.update) {
+                console.warn(`[prisma] Missing update delegate for ${modelName}`);
+                return null;
+              }
 
-      params.action = params.action === "delete" ? "update" : "updateMany";
-      params.args = {
-        where,
-        data: { deletedAt: now },
-      };
-      auditAction = AuditAction.DELETE;
-    } else if (params.action === "update" || params.action === "updateMany") {
-      whereForLogging = cloneWhere();
-      if (shouldLog && delegate) {
-        if (params.action === "update" && delegate.findFirst) {
-          beforeData = await delegate.findFirst({ where: whereForLogging });
-        }
-        if (params.action === "updateMany" && delegate.findMany) {
-          beforeData = await delegate.findMany({ where: whereForLogging });
-        }
-      }
-      auditAction = AuditAction.UPDATE;
-    } else if (params.action === "create" || params.action === "createMany") {
-      auditAction = AuditAction.CREATE;
-    }
+              const updateArgs = {
+                where,
+                data: { deletedAt: now },
+              };
+              const result = await modelDelegate.update(updateArgs);
+              afterData = result;
 
-    const result = await next(params);
+              if (shouldLog) {
+                await maybeWriteAuditLog({
+                  action: auditAction,
+                  helperClient,
+                  modelName,
+                  operation,
+                  args: normalizedArgs,
+                  beforeData,
+                  afterData,
+                  result,
+                });
+              }
 
-    if (!shouldLog || !auditAction) {
-      return result;
-    }
+              return result;
+            }
 
-    const currentAction = params.action;
+            if (operation === "deleteMany") {
+              const key = modelName.charAt(0).toLowerCase() + modelName.slice(1);
+              const modelDelegate = (helperClient as unknown as Record<string, unknown>)[key] as
+                | { updateMany: (payload: Record<string, unknown>) => Promise<unknown> }
+                | undefined;
+              if (!modelDelegate?.updateMany) {
+                console.warn(`[prisma] Missing updateMany delegate for ${modelName}`);
+                return null;
+              }
 
-    if (currentAction === "update" || currentAction === "updateMany" || auditAction === AuditAction.DELETE) {
-      const where = whereForLogging ?? cloneWhere();
-      if (delegate) {
-        if (currentAction === "update" && delegate.findFirst) {
-          afterData = await delegate.findFirst({ where });
-        } else if (delegate.findMany) {
-          afterData = await delegate.findMany({ where });
-        }
-      }
-    } else if (currentAction === "create") {
-      afterData = result;
-    } else if (currentAction === "createMany") {
-      afterData = (params.args as Record<string, unknown>)?.data ?? result;
-    }
+              const updateArgs = {
+                where,
+                data: { deletedAt: now },
+              };
+              const result = await modelDelegate.updateMany(updateArgs);
 
-    if (!afterData && (currentAction === "updateMany" || currentAction === "createMany")) {
-      const where = whereForLogging ?? cloneWhere();
-      if (delegate?.findMany) {
-        afterData = await delegate.findMany({ where });
-      }
-    }
+              if (shouldLog && delegate?.findMany) {
+                afterData = await delegate.findMany({ where: whereForLogging });
+              }
 
-    const action = resolveAuditAction(auditAction, currentAction, (params.args as Record<string, unknown>)?.data);
-    const recordId = buildRecordIdentifier(modelName, params.args, result);
+              if (shouldLog) {
+                await maybeWriteAuditLog({
+                  action: auditAction,
+                  helperClient,
+                  modelName,
+                  operation,
+                  args: normalizedArgs,
+                  beforeData,
+                  afterData,
+                  result,
+                });
+              }
 
-    try {
-      await helperClient.auditLog.create({
-        data: {
-          model: modelName,
-          action,
-          recordId: recordId ?? undefined,
-          before: sanitizeData(beforeData) as Prisma.JsonValue,
-          after: sanitizeData(afterData ?? result) as Prisma.JsonValue,
+              return result;
+            }
+          } else if (operation === "create" || operation === "createMany") {
+            auditAction = AuditAction.CREATE;
+          }
+
+          const result = await query(normalizedArgs);
+
+          if (operation === "findUnique" || operation === "findUniqueOrThrow") {
+            if (
+              result &&
+              typeof result === "object" &&
+              "deletedAt" in (result as Record<string, unknown>) &&
+              (result as Record<string, unknown>).deletedAt !== null
+            ) {
+              if (operation === "findUniqueOrThrow") {
+                throw createNotFoundError(modelName);
+              }
+              return null;
+            }
+            return result;
+          }
+
+          if (!shouldLog || !auditAction) {
+            return result;
+          }
+
+          if (operation === "update" || operation === "updateMany" || auditAction === AuditAction.DELETE) {
+            const where = whereForLogging ?? cloneWhere();
+            if (delegate) {
+              if (operation === "update" && delegate.findFirst) {
+                afterData = await delegate.findFirst({ where });
+              } else if (delegate.findMany) {
+                afterData = await delegate.findMany({ where });
+              }
+            }
+          } else if (operation === "create") {
+            afterData = result;
+          } else if (operation === "createMany") {
+            afterData = normalizedArgs.data ?? result;
+          }
+
+          if (!afterData && (operation === "updateMany" || operation === "createMany")) {
+            const where = whereForLogging ?? cloneWhere();
+            if (delegate?.findMany) {
+              afterData = await delegate.findMany({ where });
+            }
+          }
+
+          await maybeWriteAuditLog({
+            action: auditAction,
+            helperClient,
+            modelName,
+            operation,
+            args: normalizedArgs,
+            beforeData,
+            afterData,
+            result,
+          });
+
+          return result;
         },
-      });
-    } catch (error) {
-      console.error(`[prisma] Failed to record audit log for ${modelName}`, error);
-    }
-
-    return result;
+      },
+    },
   });
 
-  return client;
+  return extendedClient as unknown as PrismaClient;
+};
+
+type AuditContext = {
+  action: AuditAction;
+  helperClient: PrismaClient;
+  modelName: Prisma.ModelName;
+  operation: string;
+  args: Record<string, unknown>;
+  beforeData: unknown;
+  afterData: unknown;
+  result: unknown;
+};
+
+const maybeWriteAuditLog = async ({
+  action,
+  helperClient,
+  modelName,
+  operation,
+  args,
+  beforeData,
+  afterData,
+  result,
+}: AuditContext) => {
+  if (modelName === "AuditLog") {
+    return;
+  }
+
+  const { data } = args as { data?: unknown };
+  const resolvedAction = resolveAuditAction(action, operation, data);
+  const recordId = buildRecordIdentifier(modelName, args, result);
+
+  try {
+    await helperClient.auditLog.create({
+      data: {
+        model: modelName,
+        action: resolvedAction,
+        recordId: recordId ?? undefined,
+        before: sanitizeData(beforeData) as Prisma.InputJsonValue,
+        after: sanitizeData(afterData ?? result) as Prisma.InputJsonValue,
+      },
+    });
+  } catch (error) {
+    console.error(`[prisma] Failed to record audit log for ${modelName}`);
+    console.error(error);
+  }
+};
+
+type NotFoundErrorLike = Error & { code?: string; meta?: Record<string, unknown> };
+
+const createNotFoundError = (modelName: Prisma.ModelName) => {
+  const error = new Error(`No ${modelName} found`) as NotFoundErrorLike;
+  error.name = "NotFoundError";
+  error.code = "P2025";
+  error.meta = { modelName };
+  return error;
 };
 
 export const prisma = globalForPrisma.prisma ?? createPrismaClient();
