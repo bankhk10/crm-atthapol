@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 export type AuditLogFilters = {
@@ -11,26 +12,26 @@ export type AuditLogFilters = {
 };
 
 const buildWhere = (filters: AuditLogFilters = {}) => {
-  const where: Record<string, unknown> = { deletedAt: null };
+  const where: Prisma.AuditLogWhereInput = { deletedAt: null };
 
   if (filters.model) where.model = filters.model;
   if (filters.action) where.action = filters.action as unknown as string;
   if (filters.userId) where.performedByUserId = filters.userId;
 
   if (filters.startDate || filters.endDate) {
-    const when: Record<string, Date> = {};
+    const when: { gte?: Date; lte?: Date } = {};
     if (filters.startDate) when.gte = new Date(filters.startDate);
     if (filters.endDate) {
       const end = new Date(filters.endDate);
       end.setHours(23, 59, 59, 999);
       when.lte = end;
     }
-    (where as any).performedAt = when;
+    where.performedAt = when;
   }
 
   if (filters.q) {
     const q = filters.q.trim();
-    (where as any).OR = [
+    where.OR = [
       { model: { contains: q, mode: "insensitive" } },
       { recordId: { contains: q, mode: "insensitive" } },
       { performedBy: { is: { name: { contains: q, mode: "insensitive" } } } },

@@ -1,4 +1,4 @@
-import { EmployeesTable } from "./_components/employees-table";
+import { EmployeesGrid } from "./_components/employees-grid";
 import { ActionButtons } from "../_components/action-buttons";
 import { getEmployees } from "./data";
 import type { EmployeeListItem } from "./types";
@@ -9,7 +9,10 @@ export default async function EmployeesPage() {
   const items: EmployeeListItem[] = employees.map((employee) => ({
     id: employee.id,
     employeeCode: employee.employeeCode,
-    name: employee.user?.name ?? "-",
+    name:
+      employee.firstName || employee.lastName
+        ? [employee.firstName, employee.lastName].filter(Boolean).join(" ")
+        : employee.user?.name ?? "-",
     email: employee.user?.email ?? "-",
     position: employee.position,
     department: employee.department,
@@ -20,7 +23,7 @@ export default async function EmployeesPage() {
   return (
     <>
       <ActionButtons resource="employees" />
-      <EmployeesTable employees={items} />
+      <EmployeesGrid employees={items} />
     </>
   );
 }
