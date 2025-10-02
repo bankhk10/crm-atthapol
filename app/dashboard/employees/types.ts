@@ -20,6 +20,7 @@ export type EmployeeFormValues = {
   department: string;
   company?: string;
   responsibilityArea?: string;
+  address?: string;
   province?: string;
   district?: string;
   subdistrict?: string;

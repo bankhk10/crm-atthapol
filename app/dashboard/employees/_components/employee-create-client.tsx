@@ -27,6 +27,7 @@ const defaultInitialValues: EmployeeFormValues = {
   position: "",
   department: "",
   company: "",
+  address: "",
   responsibilityArea: "",
   birthDate: undefined,
   age: null,

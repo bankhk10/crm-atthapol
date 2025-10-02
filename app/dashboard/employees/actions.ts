@@ -10,19 +10,26 @@ import { prisma } from "@/lib/prisma";
 import type { EmployeeFormValues } from "./types";
 
 const employeeFormSchema = z.object({
+  prefix: z.string().optional(),
   firstName: z.string().optional(),
   lastName: z.string().optional(),
   // legacy name field
   name: z.string().optional(),
   email: z.string().email("อีเมลไม่ถูกต้อง"),
   password: z.string().optional(),
+  employeeCode: z.string().min(1, "กรุณากรอกรหัสพนักงาน"),
   position: z.string().min(1, "กรุณากรอกตำแหน่ง"),
   department: z.string().min(1, "กรุณาเลือกแผนก"),
   company: z.string().optional(),
   responsibilityArea: z.string().optional(),
+  address: z.string().optional(),
+  province: z.string().optional(),
+  district: z.string().optional(),
+  subdistrict: z.string().optional(),
+  postalCode: z.coerce.string().optional(),
   birthDate: z.string().optional(),
   gender: z
-    .enum(["MALE", "FEMALE", "OTHER"])
+    .enum(["MALE", "FEMALE", "OTHER"]) 
     .optional()
     .or(z.null()),
   phone: z.string().min(1, "กรุณากรอกเบอร์โทร"),
@@ -34,7 +41,6 @@ const employeeFormSchema = z.object({
     .trim()
     .nullish()
     .transform((value) => (value && value.length > 0 ? value : null)),
-  employeeCode: z.string().min(1, "กรุณากรอกรหัสพนักงาน"),
 });
 
 async function generateEmployeeCode(tx: Prisma.TransactionClient) {
@@ -70,22 +76,20 @@ export async function createEmployee(rawValues: EmployeeFormValues) {
       const user = await tx.user.create({
         data: {
           name: fullName,
-          firstName: values.firstName ?? null,
-          lastName: values.lastName ?? null,
           email: values.email,
           passwordHash,
           role: values.role,
           roleDefinitionId: values.roleDefinitionId,
-        } as any,
+        },
       });
-
-      const employeeCode = await generateEmployeeCode(tx);
 
       await tx.employee.create({
         data: {
           userId: user.id,
           employeeCode: values.employeeCode,
-          // employeeCode,
+          prefix: values.prefix ?? null,
+          firstName: values.firstName ?? null,
+          lastName: values.lastName ?? null,
           position: values.position,
           department: values.department,
           company: values.company,
@@ -95,6 +99,11 @@ export async function createEmployee(rawValues: EmployeeFormValues) {
           phone: values.phone,
           startDate: new Date(values.startDate),
           status: values.status,
+          address: values.address ?? null,
+          province: values.province ?? null,
+          district: values.district ?? null,
+          subdistrict: values.subdistrict ?? null,
+          postalCode: values.postalCode ?? null,
         },
       });
     });
@@ -125,16 +134,17 @@ export async function updateEmployee(
       await tx.user.update({
         where: { id: employee.userId },
         data: {
-          name: [values.firstName, values.lastName].filter(Boolean).join(" ") || values.name || undefined,
-          firstName: values.firstName ?? null,
-          lastName: values.lastName ?? null,
+          name:
+            [values.firstName, values.lastName]
+              .filter(Boolean)
+              .join(" ") || values.name || undefined,
           email: values.email,
           role: values.role,
           roleDefinitionId: values.roleDefinitionId,
           ...(values.password
             ? { passwordHash: await bcrypt.hash(values.password, 10) }
             : {}),
-        } as any,
+        },
       });
 
       await tx.employee.update({
@@ -142,6 +152,9 @@ export async function updateEmployee(
         data: {
           // include employeeCode so edits to the field persist
           employeeCode: values.employeeCode,
+          prefix: values.prefix ?? null,
+          firstName: values.firstName ?? null,
+          lastName: values.lastName ?? null,
           position: values.position,
           department: values.department,
           company: values.company,
@@ -151,6 +164,11 @@ export async function updateEmployee(
           phone: values.phone,
           startDate: new Date(values.startDate),
           status: values.status,
+          address: values.address ?? null,
+          province: values.province ?? null,
+          district: values.district ?? null,
+          subdistrict: values.subdistrict ?? null,
+          postalCode: values.postalCode ?? null,
         },
       });
     });

@@ -346,8 +346,8 @@ export function EmployeeForm({
 
         <TextField
           label="ที่อยู่"
-          value={values.company ?? ""}
-          onChange={handleChange("company")}
+          value={values.address ?? ""}
+          onChange={handleChange("address")}
           fullWidth
         />
 

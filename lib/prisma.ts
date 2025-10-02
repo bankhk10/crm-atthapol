@@ -1,4 +1,15 @@
-import { AuditAction, Prisma, PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
+
+// Use string literals for audit actions at runtime to avoid issues
+// when the generated enum is not available during bundling.
+const AUDIT = {
+  CREATE: "CREATE",
+  UPDATE: "UPDATE",
+  DELETE: "DELETE",
+  APPROVE: "APPROVE",
+  REJECT: "REJECT",
+} as const;
+type AuditAction = typeof AUDIT[keyof typeof AUDIT];
 
 type GlobalPrismaStore = {
   prisma: PrismaClient | undefined;
@@ -81,8 +92,8 @@ const resolveAuditAction = (
     const statusValue = extractStatusValue(data);
     if (statusValue) {
       const normalized = statusValue.toUpperCase();
-      if (normalized === "APPROVED") return AuditAction.APPROVE;
-      if (normalized === "REJECTED") return AuditAction.REJECT;
+      if (normalized === "APPROVED") return AUDIT.APPROVE;
+      if (normalized === "REJECTED") return AUDIT.REJECT;
     }
   }
 
@@ -172,7 +183,7 @@ const createPrismaClient = (): PrismaClient => {
                 beforeData = await delegate.findMany({ where: whereForLogging });
               }
             }
-            auditAction = AuditAction.UPDATE;
+            auditAction = AUDIT.UPDATE;
           } else if (operation === "delete" || operation === "deleteMany") {
             const where = setDeletedFilter();
             whereForLogging = cloneWhere();
@@ -186,7 +197,7 @@ const createPrismaClient = (): PrismaClient => {
               }
             }
 
-            auditAction = AuditAction.DELETE;
+            auditAction = AUDIT.DELETE;
 
             if (operation === "delete") {
               const key = modelName.charAt(0).toLowerCase() + modelName.slice(1);
@@ -257,7 +268,7 @@ const createPrismaClient = (): PrismaClient => {
               return result;
             }
           } else if (operation === "create" || operation === "createMany") {
-            auditAction = AuditAction.CREATE;
+            auditAction = AUDIT.CREATE;
           }
 
           const result = await query(normalizedArgs);
@@ -281,7 +292,7 @@ const createPrismaClient = (): PrismaClient => {
             return result;
           }
 
-          if (operation === "update" || operation === "updateMany" || auditAction === AuditAction.DELETE) {
+          if (operation === "update" || operation === "updateMany" || auditAction === AUDIT.DELETE) {
             const where = whereForLogging ?? cloneWhere();
             if (delegate) {
               if (operation === "update" && delegate.findFirst) {
@@ -348,15 +359,26 @@ const maybeWriteAuditLog = async ({
     return;
   }
 
+  // If the generated client doesn't include AuditLog (out-of-date generation),
+  // or it has been tree-shaken in certain bundles, skip gracefully.
+  const auditDelegate = (helperClient as unknown as Record<string, unknown>)["auditLog"] as
+    | { create: (payload: Record<string, unknown>) => Promise<unknown> }
+    | undefined;
+  if (!auditDelegate?.create) {
+    // Avoid noisy errors in dev when client isn't regenerated to include AuditLog
+    // or when the AuditLog model/table is intentionally absent.
+    return;
+  }
+
   const { data } = args as { data?: unknown };
   const resolvedAction = resolveAuditAction(action, operation, data);
   const recordId = buildRecordIdentifier(modelName, args, result);
 
   try {
-    await helperClient.auditLog.create({
+    await auditDelegate.create({
       data: {
         model: modelName,
-        action: resolvedAction,
+        action: resolvedAction as unknown as Prisma.AuditAction,
         recordId: recordId ?? undefined,
         before: sanitizeData(beforeData) as Prisma.InputJsonValue,
         after: sanitizeData(afterData ?? result) as Prisma.InputJsonValue,
