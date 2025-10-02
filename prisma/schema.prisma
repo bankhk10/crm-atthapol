@@ -7,26 +7,6 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model User {
-  id                String   @id @default(cuid())
-  name              String?
-  firstName         String?
-  lastName          String?
-  email             String?  @unique
-  emailVerified     DateTime?
-  image             String?
-  passwordHash      String?
-  role              Role     @default(USER)
-  roleDefinitionId  String?
-
-  accounts          Account[]
-  sessions          Session[]
-  employee          Employee?
-  roleDefinition    RoleDefinition? @relation(fields: [roleDefinitionId], references: [id])
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-}
-
 enum Role {
   ADMIN
   MANAGER
@@ -45,21 +25,48 @@ enum Gender {
   OTHER
 }
 
+model User {
+  id               String    @id @default(cuid())
+  name             String?
+  email            String?   @unique
+  emailVerified    DateTime?
+  image            String?
+  passwordHash     String?
+  role             Role      @default(USER)
+  roleDefinitionId String?
+
+  accounts       Account[]
+  sessions       Session[]
+  employee       Employee?
+  roleDefinition RoleDefinition? @relation(fields: [roleDefinitionId], references: [id])
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
 model Employee {
-  id           String          @id @default(cuid())
-  employeeCode String          @unique
-  userId       String          @unique
-  position     String
-  department   String
-  company      String?
+  id                 String         @id @default(cuid())
+  userId             String         @unique
+  employeeCode       String         @unique
+  prefix             String? // คำนำหน้า (นาย, นาง, น.ส.)
+  firstName          String?
+  lastName           String?
+  position           String
+  department         String
+  company            String?
   responsibilityArea String?
-  birthDate    DateTime?
-  gender       Gender?
-  phone        String
-  startDate    DateTime
-  status       EmployeeStatus  @default(ACTIVE)
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
+  birthDate          DateTime?
+  gender             Gender?
+  phone              String
+  startDate          DateTime // วันที่เริ่มงาน (มีอยู่แล้ว)
+  status             EmployeeStatus @default(ACTIVE)
+  address            String? // ที่อยู่
+  province           String? // จังหวัด
+  district           String? // อำเภอ
+  subdistrict        String? // ตำบล
+  postalCode         String? // รหัสไปรษณีย์
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -101,26 +108,26 @@ model VerificationToken {
 }
 
 model RoleDefinition {
-  id          String           @id @default(cuid())
-  key         String           @unique
-  name        String           @unique
+  id          String   @id @default(cuid())
+  key         String   @unique
+  name        String   @unique
   description String?
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   users       User[]
   permissions RolePermission[]
 }
 
 model Permission {
-  id          String           @id @default(cuid())
+  id          String   @id @default(cuid())
   category    String
   name        String
   description String?
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  roles       RolePermission[]
+  roles RolePermission[]
 
   @@unique([category, name])
 }
