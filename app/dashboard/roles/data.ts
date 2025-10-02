@@ -28,6 +28,7 @@ export async function getRoleList(): Promise<RoleListItem[]> {
 
 export async function getPermissionLibrary(): Promise<PermissionLibraryGroup[]> {
   const permissions = await prisma.permission.findMany({
+    where: { deletedAt: null },
     orderBy: [{ category: "asc" }, { name: "asc" }],
   });
 
@@ -39,6 +40,7 @@ export async function getPermissionLibrary(): Promise<PermissionLibraryGroup[]> 
 
 async function fetchRolesFromDb() {
   return prisma.roleDefinition.findMany({
+    where: { deletedAt: null },
     include: {
       permissions: {
         include: {

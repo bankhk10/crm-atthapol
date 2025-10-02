@@ -27,6 +27,7 @@ export const employeeRoleOptions: EmployeeRoleOption[] = [
 
 export function getEmployees() {
   return prisma.employee.findMany({
+    where: { deletedAt: null },
     include: { user: true },
     orderBy: { createdAt: "desc" },
   });
@@ -34,13 +35,14 @@ export function getEmployees() {
 
 export function getEmployeeById(id: string) {
   return prisma.employee.findUnique({
-    where: { id },
+    where: { id, deletedAt: null },
     include: { user: true },
   });
 }
 
 export async function getRoleDefinitionOptions(): Promise<RoleDefinitionOption[]> {
   const roles = await prisma.roleDefinition.findMany({
+    where: { deletedAt: null },
     include: {
       permissions: {
         include: {

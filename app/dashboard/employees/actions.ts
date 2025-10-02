@@ -39,6 +39,7 @@ const employeeFormSchema = z.object({
 
 async function generateEmployeeCode(tx: Prisma.TransactionClient) {
   const lastEmployee = await tx.employee.findFirst({
+    where: { deletedAt: null },
     orderBy: { createdAt: "desc" },
     select: { employeeCode: true },
   });
