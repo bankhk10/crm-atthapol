@@ -176,6 +176,8 @@ model Customer {
   district    String?
   subdistrict String?
   postalCode  String?
+  latitude    Float?
+  longitude   Float?
   birthDate   DateTime?
   gender      Gender?
   profile     Json?

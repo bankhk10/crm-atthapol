@@ -34,5 +34,7 @@ export type CustomerFormValues = {
   district?: string;
   subdistrict?: string;
   postalCode?: string;
+  latitude?: number | string;
+  longitude?: number | string;
   profile?: CustomerProfile;
 };

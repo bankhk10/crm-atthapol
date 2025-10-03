@@ -22,6 +22,8 @@ const defaultInitialValues: CustomerFormValues = {
   district: undefined,
   subdistrict: undefined,
   postalCode: undefined,
+  latitude: "",
+  longitude: "",
   profile: {},
 };
 

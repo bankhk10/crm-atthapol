@@ -29,6 +29,14 @@ const customerFormSchema = z.object({
   district: z.string().optional(),
   subdistrict: z.string().optional(),
   postalCode: z.coerce.string().optional(),
+  latitude: z.preprocess(
+    (v) => (v === "" || v === null || v === undefined ? undefined : typeof v === "string" ? parseFloat(v) : v),
+    z.number().optional(),
+  ),
+  longitude: z.preprocess(
+    (v) => (v === "" || v === null || v === undefined ? undefined : typeof v === "string" ? parseFloat(v) : v),
+    z.number().optional(),
+  ),
   profile: z.any().optional(),
 });
 
@@ -54,6 +62,8 @@ export async function createCustomer(rawValues: CustomerFormValues) {
         district: values.district,
         subdistrict: values.subdistrict,
         postalCode: values.postalCode,
+        latitude: values.latitude,
+        longitude: values.longitude,
         prefix: values.prefix,
         firstName: values.firstName,
         lastName: values.lastName,
@@ -90,6 +100,8 @@ export async function updateCustomer(customerId: string, rawValues: CustomerForm
         district: values.district,
         subdistrict: values.subdistrict,
         postalCode: values.postalCode,
+        latitude: values.latitude,
+        longitude: values.longitude,
         prefix: values.prefix,
         firstName: values.firstName,
         lastName: values.lastName,

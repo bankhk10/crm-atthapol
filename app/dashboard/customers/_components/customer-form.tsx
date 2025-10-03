@@ -242,6 +242,25 @@ export function CustomerForm({
           />
         </Box>
 
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          <TextField
+            label="ละติจูด (Latitude)"
+            type="number"
+            inputProps={{ step: "any" }}
+            value={values.latitude ?? ""}
+            onChange={(e) => setValues((prev) => ({ ...prev, latitude: e.target.value }))}
+            fullWidth
+          />
+          <TextField
+            label="ลองจิจูด (Longitude)"
+            type="number"
+            inputProps={{ step: "any" }}
+            value={values.longitude ?? ""}
+            onChange={(e) => setValues((prev) => ({ ...prev, longitude: e.target.value }))}
+            fullWidth
+          />
+        </Stack>
+
         {/* type-specific fields */
         /* Dealer / SubDealer / Farmer */}
         {values.type === "DEALER" && (

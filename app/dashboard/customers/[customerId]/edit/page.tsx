@@ -23,6 +23,8 @@ export default async function CustomerEditPage({ params }: { params: Promise<{ c
     district: customer.district ?? undefined,
     subdistrict: customer.subdistrict ?? undefined,
     postalCode: customer.postalCode ?? undefined,
+    latitude: customer.latitude ?? "",
+    longitude: customer.longitude ?? "",
     profile: (customer.profile as any) ?? {},
   };
 
