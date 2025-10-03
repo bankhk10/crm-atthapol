@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE `Customer` ADD COLUMN `birthDate` DATETIME(3) NULL,
+    ADD COLUMN `firstName` VARCHAR(191) NULL,
+    ADD COLUMN `gender` ENUM('MALE', 'FEMALE', 'OTHER') NULL,
+    ADD COLUMN `lastName` VARCHAR(191) NULL,
+    ADD COLUMN `prefix` VARCHAR(191) NULL;

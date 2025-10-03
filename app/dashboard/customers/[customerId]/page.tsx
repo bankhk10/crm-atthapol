@@ -30,6 +30,12 @@ export default async function CustomerDetailPage({
   }
 
   const profile = (customer.profile as any) ?? {};
+  const birthDateStr = customer.birthDate
+    ? new Date(customer.birthDate).toISOString().slice(0, 10)
+    : "";
+  const age = customer.birthDate
+    ? Math.floor((Date.now() - new Date(customer.birthDate).getTime()) / (1000 * 60 * 60 * 24 * 365.25))
+    : null;
   const addressLine = [
     customer.address,
     customer.subdistrict,
@@ -80,6 +86,15 @@ export default async function CustomerDetailPage({
 
             <Grid item xs={12} md={8}>
               <Stack spacing={2}>
+                <Section title="ข้อมูลลูกค้า">
+                  <Info label="คำนำหน้า" value={customer.prefix ?? "-"} />
+                  <Info label="ชื่อ" value={customer.firstName ?? "-"} />
+                  <Info label="นามสกุล" value={customer.lastName ?? "-"} />
+                  <Info label="เพศ" value={customer.gender ?? "-"} />
+                  <Info label="วันเกิด" value={birthDateStr || "-"} />
+                  <Info label="อายุ" value={age !== null ? age : "-"} />
+                </Section>
+
                 <Section title="ข้อมูลติดต่อ">
                   <Info label="เบอร์โทรศัพท์" value={customer.phone} />
                   <Info label="อีเมล" value={customer.email ?? "-"} />

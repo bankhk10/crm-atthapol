@@ -18,7 +18,14 @@ export type CustomerProfile = {
 
 export type CustomerFormValues = {
   type: CustomerType;
-  name: string;
+  // แสดงผล/บันทึกเป็น name โดยคำนวณจาก companyName หรือ (prefix + first + last)
+  name?: string;
+  prefix: string;
+  firstName: string;
+  lastName: string;
+  gender: "MALE" | "FEMALE" | "OTHER";
+  birthDate: string; // YYYY-MM-DD
+  age?: number | null;
   email?: string;
   phone: string;
   taxId?: string;

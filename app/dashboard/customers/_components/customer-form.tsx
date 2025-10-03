@@ -1,10 +1,14 @@
 "use client";
 
 import type { ChangeEvent, FormEvent } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Alert, Button, Paper, Stack, TextField, Typography, Divider, MenuItem } from "@mui/material";
 import { Box } from "@mui/material";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { th } from "date-fns/locale";
 import ThaiAddressPicker from "@/components/ThaiAddressPicker";
 
 import type { CustomerFormValues, CustomerType } from "../types";
@@ -106,16 +110,83 @@ export function CustomerForm({
           </TextField>
         </Stack>
 
-        {/* common fields */}
+        {/* identity fields */}
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           <TextField
-            label="ชื่อลูกค้า"
-            value={values.name}
-            onChange={handleChange("name")}
+            select
+            label="คำนำหน้า*"
+            value={values.prefix}
+            onChange={handleChange("prefix") as any}
+            required
+            sx={{ minWidth: { xs: "100%", sm: 150 } }}
+          >
+            <MenuItem value="นาย">นาย</MenuItem>
+            <MenuItem value="นาง">นาง</MenuItem>
+            <MenuItem value="นางสาว">นางสาว</MenuItem>
+          </TextField>
+          <TextField
+            label="ชื่อ*"
+            value={values.firstName}
+            onChange={handleChange("firstName")}
             required
             fullWidth
-            placeholder="เช่น บริษัท เอ บี ซี จำกัด หรือ สมชาย ใจดี"
+            placeholder="เช่น สมชาย"
           />
+          <TextField
+            label="นามสกุล*"
+            value={values.lastName}
+            onChange={handleChange("lastName")}
+            required
+            fullWidth
+            placeholder="เช่น ใจดี"
+          />
+        </Stack>
+
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          <TextField
+            select
+            label="เพศ*"
+            value={values.gender}
+            onChange={handleChange("gender") as any}
+            required
+            fullWidth
+          >
+            <MenuItem value="MALE">ชาย</MenuItem>
+            <MenuItem value="FEMALE">หญิง</MenuItem>
+            <MenuItem value="OTHER">อื่นๆ</MenuItem>
+          </TextField>
+          <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={th}>
+            <DatePicker
+              label="วันเกิด*"
+              value={values.birthDate ? new Date(values.birthDate) : null}
+              onChange={(newValue) => {
+                setValues((prev) => ({
+                  ...prev,
+                  birthDate: newValue ? newValue.toISOString().slice(0, 10) : "",
+                }));
+              }}
+              slotProps={{ textField: { fullWidth: true, required: true } }}
+            />
+          </LocalizationProvider>
+          <TextField
+            label="อายุ"
+            value={
+              values.birthDate
+                ? String(
+                    Math.floor(
+                      (Date.now() - new Date(values.birthDate).getTime()) /
+                        (1000 * 60 * 60 * 24 * 365.25),
+                    ),
+                  )
+                : ""
+            }
+            InputProps={{ readOnly: true }}
+            fullWidth
+          />
+        </Stack>
+
+        {/* contact fields */}
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           <TextField
             label="เบอร์โทรศัพท์"
             value={values.phone}
@@ -124,9 +195,6 @@ export function CustomerForm({
             fullWidth
             placeholder="0xx-xxx-xxxx"
           />
-        </Stack>
-
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           <TextField
             label="อีเมล"
             type="email"
@@ -135,6 +203,9 @@ export function CustomerForm({
             fullWidth
             placeholder="name@example.com"
           />
+        </Stack>
+
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           <TextField
             label="เลขผู้เสียภาษี (ถ้ามี)"
             value={values.taxId ?? ""}
@@ -171,7 +242,8 @@ export function CustomerForm({
           />
         </Box>
 
-        {/* type-specific fields */}
+        {/* type-specific fields */
+        /* Dealer / SubDealer / Farmer */}
         {values.type === "DEALER" && (
           <>
             <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>

@@ -10,7 +10,11 @@ export default async function CustomerEditPage({ params }: { params: Promise<{ c
 
   const initialValues = {
     type: customer.type,
-    name: customer.name ?? "",
+    prefix: customer.prefix ?? "",
+    firstName: customer.firstName ?? "",
+    lastName: customer.lastName ?? "",
+    gender: (customer.gender as any) ?? "MALE",
+    birthDate: customer.birthDate ? new Date(customer.birthDate).toISOString().slice(0, 10) : "",
     email: customer.email ?? "",
     phone: customer.phone ?? "",
     taxId: customer.taxId ?? "",

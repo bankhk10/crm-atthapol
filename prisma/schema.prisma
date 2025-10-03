@@ -165,6 +165,9 @@ model Customer {
   id          String       @id @default(cuid())
   type        CustomerType
   name        String
+  prefix      String?
+  firstName   String?
+  lastName    String?
   email       String?
   phone       String
   taxId       String?
@@ -173,6 +176,8 @@ model Customer {
   district    String?
   subdistrict String?
   postalCode  String?
+  birthDate   DateTime?
+  gender      Gender?
   profile     Json?
 
   createdAt DateTime @default(now())

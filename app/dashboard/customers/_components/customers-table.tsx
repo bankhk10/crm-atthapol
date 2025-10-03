@@ -124,7 +124,9 @@ export function CustomersTable({ customers }: CustomersTableProps) {
                         variant="outlined"
                       />
                     </TableCell>
-                    <TableCell>{c.name}</TableCell>
+                    <TableCell>
+                      <Link href={`/dashboard/customers/${c.id}`}>{c.name}</Link>
+                    </TableCell>
                     <TableCell sx={{ whiteSpace: "nowrap" }}>{c.phone}</TableCell>
                     <TableCell sx={{ whiteSpace: "nowrap" }}>{c.email || "-"}</TableCell>
                     <TableCell>

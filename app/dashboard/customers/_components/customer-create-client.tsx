@@ -9,7 +9,11 @@ import { createCustomer } from "../actions";
 
 const defaultInitialValues: CustomerFormValues = {
   type: "DEALER",
-  name: "",
+  prefix: "",
+  firstName: "",
+  lastName: "",
+  gender: "MALE",
+  birthDate: "",
   email: "",
   phone: "",
   taxId: "",
