@@ -4,6 +4,7 @@ import type { ChangeEvent, FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Alert, Button, Paper, Stack, TextField, Typography, Divider, MenuItem } from "@mui/material";
+import MyLocationIcon from "@mui/icons-material/MyLocation";
 import { Box } from "@mui/material";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
@@ -31,6 +32,7 @@ export function CustomerForm({
   const [values, setValues] = useState<CustomerFormValues>(initialValues);
   const [isSubmitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
 
   useEffect(() => {
     setValues(initialValues);
@@ -65,6 +67,36 @@ export function CustomerForm({
           : "เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง";
       setError(message);
     }
+  };
+
+  const handleFillCurrentLocation = async () => {
+    if (typeof window === "undefined" || !("geolocation" in navigator)) {
+      setError("เบราว์เซอร์ไม่รองรับการระบุตำแหน่ง (Geolocation)");
+      return;
+    }
+    setIsLocating(true);
+    setError(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        setValues((prev) => ({
+          ...prev,
+          latitude: Number.isFinite(lat) ? lat.toFixed(6) : prev.latitude,
+          longitude: Number.isFinite(lng) ? lng.toFixed(6) : prev.longitude,
+        }));
+        setIsLocating(false);
+      },
+      (err) => {
+        let message = "ไม่สามารถดึงพิกัดได้";
+        if (err.code === 1) message = "กรุณาอนุญาตการเข้าถึงตำแหน่งที่ตั้ง";
+        else if (err.code === 2) message = "ไม่สามารถระบุตำแหน่งได้ โปรดลองใหม่";
+        else if (err.code === 3) message = "หมดเวลาการร้องขอพิกัด โปรดลองใหม่";
+        setError(message);
+        setIsLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+    );
   };
 
   return (
@@ -241,6 +273,18 @@ export function CustomerForm({
             }}
           />
         </Box>
+
+        <Stack direction="row" justifyContent="flex-end">
+          <Button
+            type="button"
+            variant="outlined"
+            startIcon={<MyLocationIcon />}
+            onClick={handleFillCurrentLocation}
+            disabled={isLocating}
+          >
+            {isLocating ? "กำลังดึงพิกัด..." : "ดึงพิกัดปัจจุบัน"}
+          </Button>
+        </Stack>
 
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           <TextField
