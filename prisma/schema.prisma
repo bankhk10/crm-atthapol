@@ -35,14 +35,17 @@ model User {
   role             Role      @default(USER)
   roleDefinitionId String?
 
-  accounts       Account[]
-  sessions       Session[]
-  employee       Employee?
-  roleDefinition RoleDefinition? @relation(fields: [roleDefinitionId], references: [id])
-  performedAuditLogs AuditLog[] @relation("AuditPerformedByUser")
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  deletedAt      DateTime?
+  accounts            Account[]
+  sessions            Session[]
+  employee            Employee?
+  roleDefinition      RoleDefinition? @relation(fields: [roleDefinitionId], references: [id])
+  performedAuditLogs  AuditLog[]      @relation("AuditPerformedByUser")
+  createdInteractions Interaction[]   @relation("UserCreatedInteractions")
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  deletedAt   DateTime?
+  Interaction Interaction[]
 }
 
 model Employee {
@@ -67,8 +70,8 @@ model Employee {
   subdistrict        String? // ตำบล
   postalCode         String? // รหัสไปรษณีย์
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -106,7 +109,7 @@ model Session {
 
 model VerificationToken {
   identifier String
-  token      String   @unique
+  token      String    @unique
   expires    DateTime
   deletedAt  DateTime?
 
@@ -114,12 +117,12 @@ model VerificationToken {
 }
 
 model RoleDefinition {
-  id          String   @id @default(cuid())
-  key         String   @unique
-  name        String   @unique
+  id          String    @id @default(cuid())
+  key         String    @unique
+  name        String    @unique
   description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
 
   users       User[]
@@ -127,12 +130,12 @@ model RoleDefinition {
 }
 
 model Permission {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   category    String
   name        String
   description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
 
   roles RolePermission[]
@@ -143,13 +146,38 @@ model Permission {
 model RolePermission {
   roleId       String
   permissionId String
-  assignedAt   DateTime @default(now())
+  assignedAt   DateTime  @default(now())
   deletedAt    DateTime?
 
   role       RoleDefinition @relation(fields: [roleId], references: [id], onDelete: Cascade)
   permission Permission     @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
   @@id([roleId, permissionId])
+}
+
+enum CustomerType {
+  DEALER
+  SUBDEALER
+  FARMER
+}
+
+model Customer {
+  id          String       @id @default(cuid())
+  type        CustomerType
+  name        String
+  email       String?
+  phone       String
+  taxId       String?
+  address     String?
+  province    String?
+  district    String?
+  subdistrict String?
+  postalCode  String?
+  profile     Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
 }
 
 enum AuditAction {
@@ -161,14 +189,131 @@ enum AuditAction {
 }
 
 model AuditLog {
-  id          String      @id @default(cuid())
-  model       String
-  action      AuditAction
-  recordId    String?
-  before      Json?
-  after       Json?
-  performedAt DateTime    @default(now())
+  id                String      @id @default(cuid())
+  model             String
+  action            AuditAction
+  recordId          String?
+  before            Json?
+  after             Json?
+  performedAt       DateTime    @default(now())
   performedByUserId String?
-  performedBy       User?     @relation("AuditPerformedByUser", fields: [performedByUserId], references: [id])
-  deletedAt   DateTime?
+  performedBy       User?       @relation("AuditPerformedByUser", fields: [performedByUserId], references: [id])
+  deletedAt         DateTime?
+}
+
+// ====================
+// Partner Types
+// ====================
+enum PartnerType {
+  DEALER
+  SUB_DEALER
+  FARMER
+}
+
+enum PartnerStatus {
+  ACTIVE
+  INACTIVE
+}
+
+// ====================
+// Partner Model
+// ====================
+model Partner {
+  id          String        @id @default(cuid())
+  type        PartnerType
+  code        String        @unique
+  name        String
+  contactName String?
+  phone       String?
+  email       String?
+  address     String?
+  province    String?
+  district    String?
+  subdistrict String?
+  postalCode  String?
+  latitude    Float?
+  longitude   Float?
+  status      PartnerStatus @default(ACTIVE)
+
+  parentId String?
+  parent   Partner?  @relation("PartnerHierarchy", fields: [parentId], references: [id])
+  children Partner[] @relation("PartnerHierarchy")
+
+  businessInfo BusinessInfo?
+  sales        Sale[]
+  interactions Interaction[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+}
+
+// ====================
+// Business Info (เฉพาะ Dealer/SubDealer/Farmer)
+// ====================
+model BusinessInfo {
+  id          String  @id @default(cuid())
+  partnerId   String  @unique
+  creditTerm  Int? // Dealer/SubDealer
+  creditLimit Float? // Dealer/SubDealer
+  salesTarget Float? // Dealer/SubDealer
+  areaSize    Float? // Farmer
+  cropType    String? // Farmer
+  season      String? // Farmer
+
+  partner Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+}
+
+// ====================
+// Sales Transactions
+// ====================
+model Sale {
+  id            String    @id @default(cuid())
+  partnerId     String
+  orderDate     DateTime
+  productName   String
+  quantity      Float
+  amount        Float
+  paymentStatus String
+  dueDate       DateTime?
+
+  partner Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+}
+
+// ====================
+// Interaction Logs
+// ====================
+enum InteractionChannel {
+  CALL
+  VISIT
+  EMAIL
+  LINE
+  OTHER
+}
+
+model Interaction {
+  id        String             @id @default(cuid())
+  partnerId String
+  date      DateTime
+  channel   InteractionChannel
+  notes     String?
+
+  partner Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  createdById String?
+  createdBy   User?   @relation("UserCreatedInteractions", fields: [createdById], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  User      User?     @relation(fields: [userId], references: [id])
+  userId    String?
 }

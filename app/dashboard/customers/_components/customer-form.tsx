@@ -3,11 +3,11 @@
 import type { ChangeEvent, FormEvent } from "react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Alert, Button, Paper, Stack, TextField, Typography, Divider } from "@mui/material";
+import { Alert, Button, Paper, Stack, TextField, Typography, Divider, MenuItem } from "@mui/material";
 import { Box } from "@mui/material";
 import ThaiAddressPicker from "@/components/ThaiAddressPicker";
 
-import type { CustomerFormValues } from "../types";
+import type { CustomerFormValues, CustomerType } from "../types";
 
 type CustomerFormProps = {
   title: string;
@@ -87,6 +87,26 @@ export function CustomerForm({
           <Typography variant="h6" fontWeight={960}>ข้อมูลลูกค้า</Typography>
         </Box>
 
+        {/* customer type */}
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          <TextField
+            select
+            label="ประเภท*"
+            value={values.type}
+            onChange={(e) => {
+              const nextType = (e.target.value || "DEALER") as CustomerType;
+              setValues((prev) => ({ ...prev, type: nextType, profile: {} }));
+            }}
+            required
+            sx={{ minWidth: { xs: "100%", sm: 200 } }}
+          >
+            <MenuItem value="DEALER">Dealer</MenuItem>
+            <MenuItem value="SUBDEALER">SubDealer</MenuItem>
+            <MenuItem value="FARMER">Farmer</MenuItem>
+          </TextField>
+        </Stack>
+
+        {/* common fields */}
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           <TextField
             label="ชื่อลูกค้า"
@@ -151,6 +171,131 @@ export function CustomerForm({
           />
         </Box>
 
+        {/* type-specific fields */}
+        {values.type === "DEALER" && (
+          <>
+            <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
+              <Typography variant="h6" fontWeight={960}>ข้อมูล Dealer</Typography>
+            </Box>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              <TextField
+                label="ชื่อบริษัท/ร้านค้า"
+                value={values.profile?.companyName ?? ""}
+                onChange={(e) =>
+                  setValues((prev) => ({
+                    ...prev,
+                    profile: { ...prev.profile, companyName: e.target.value },
+                  }))
+                }
+                fullWidth
+              />
+              <TextField
+                label="ผู้ติดต่อหลัก"
+                value={values.profile?.contactPerson ?? ""}
+                onChange={(e) =>
+                  setValues((prev) => ({
+                    ...prev,
+                    profile: { ...prev.profile, contactPerson: e.target.value },
+                  }))
+                }
+                fullWidth
+              />
+            </Stack>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              <TextField
+                label="วงเงินเครดิต (บาท)"
+                type="number"
+                value={values.profile?.creditLimit ?? ""}
+                onChange={(e) =>
+                  setValues((prev) => ({
+                    ...prev,
+                    profile: { ...prev.profile, creditLimit: e.target.value },
+                  }))
+                }
+                fullWidth
+              />
+            </Stack>
+          </>
+        )}
+
+        {values.type === "SUBDEALER" && (
+          <>
+            <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
+              <Typography variant="h6" fontWeight={960}>ข้อมูล SubDealer</Typography>
+            </Box>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              <TextField
+                label="ร้านค้าตัวแทน (แม่ข่าย)"
+                value={values.profile?.parentDealer ?? ""}
+                onChange={(e) =>
+                  setValues((prev) => ({
+                    ...prev,
+                    profile: { ...prev.profile, parentDealer: e.target.value },
+                  }))
+                }
+                fullWidth
+              />
+              <TextField
+                label="รหัส SubDealer"
+                value={values.profile?.subDealerCode ?? ""}
+                onChange={(e) =>
+                  setValues((prev) => ({
+                    ...prev,
+                    profile: { ...prev.profile, subDealerCode: e.target.value },
+                  }))
+                }
+                fullWidth
+              />
+            </Stack>
+          </>
+        )}
+
+        {values.type === "FARMER" && (
+          <>
+            <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
+              <Typography variant="h6" fontWeight={960}>ข้อมูลเกษตรกร</Typography>
+            </Box>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              <TextField
+                label="ชื่อฟาร์ม"
+                value={values.profile?.farmName ?? ""}
+                onChange={(e) =>
+                  setValues((prev) => ({
+                    ...prev,
+                    profile: { ...prev.profile, farmName: e.target.value },
+                  }))
+                }
+                fullWidth
+              />
+              <TextField
+                label="ขนาดพื้นที่ (ไร่)"
+                type="number"
+                value={values.profile?.farmSize ?? ""}
+                onChange={(e) =>
+                  setValues((prev) => ({
+                    ...prev,
+                    profile: { ...prev.profile, farmSize: e.target.value },
+                  }))
+                }
+                fullWidth
+              />
+            </Stack>
+            <Stack>
+              <TextField
+                label="พืชหลัก"
+                value={values.profile?.cropType ?? ""}
+                onChange={(e) =>
+                  setValues((prev) => ({
+                    ...prev,
+                    profile: { ...prev.profile, cropType: e.target.value },
+                  }))
+                }
+                fullWidth
+              />
+            </Stack>
+          </>
+        )}
+
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="flex-end">
           <Button component={Link} href="/dashboard/customers" variant="outlined" color="inherit">
             ยกเลิก
@@ -163,4 +308,3 @@ export function CustomerForm({
     </Paper>
   );
 }
-

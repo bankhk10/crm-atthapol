@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, type ReactNode } from "react";
+import Link from "next/link";
 import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import type { ButtonProps } from "@mui/material/Button";
@@ -84,6 +85,7 @@ export function ActionButtons({ resource }: ActionButtonsProps) {
     >
       {availableActions.map((action) => {
         const config = ACTION_CONFIG[action];
+        const href = action === "create" ? `/dashboard/${resource}/new` : undefined;
         return (
           <Button
             key={action}
@@ -91,6 +93,7 @@ export function ActionButtons({ resource }: ActionButtonsProps) {
             color={config.color}
             startIcon={config.icon}
             sx={{ width: { xs: "100%", sm: "auto" } }}
+            {...(href ? { component: Link as any, href } : {})}
           >
             {ACTION_LABELS[action]}
           </Button>

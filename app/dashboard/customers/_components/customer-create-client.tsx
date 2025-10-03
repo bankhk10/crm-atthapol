@@ -5,8 +5,10 @@ import { Stack } from "@mui/material";
 
 import { CustomerForm } from "./customer-form";
 import type { CustomerFormValues } from "../types";
+import { createCustomer } from "../actions";
 
 const defaultInitialValues: CustomerFormValues = {
+  type: "DEALER",
   name: "",
   email: "",
   phone: "",
@@ -16,6 +18,7 @@ const defaultInitialValues: CustomerFormValues = {
   district: undefined,
   subdistrict: undefined,
   postalCode: undefined,
+  profile: {},
 };
 
 export function CustomerCreateClient() {
@@ -32,8 +35,8 @@ export function CustomerCreateClient() {
         description=""
         initialValues={initialValues}
         submitLabel="เพิ่มลูกค้า"
-        onSubmit={async () => {
-          // TODO: บันทึกข้อมูลลูกค้าเมื่อมีโมเดลในฐานข้อมูล
+        onSubmit={async (values) => {
+          await createCustomer(values);
           router.push("/dashboard/customers");
           router.refresh();
         }}
@@ -41,4 +44,3 @@ export function CustomerCreateClient() {
     </Stack>
   );
 }
-
