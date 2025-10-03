@@ -176,8 +176,8 @@ const LinkBehavior = forwardRef<HTMLAnchorElement, LinkBehaviorProps>(function L
 
 function NavLink({ item, depth = 0, isOpen, onToggle, onLinkClick, pathname }: NavLinkProps) {
   const isActive = item.children
-    ? item.children.some((child) => pathname.startsWith(child.href))
-    : pathname === item.href;
+    ? pathname === item.href || item.children.some((child) => pathname.startsWith(child.href))
+    : pathname.startsWith(item.href);
 
   if (item.children?.length) {
     return (
@@ -210,7 +210,7 @@ function NavLink({ item, depth = 0, isOpen, onToggle, onLinkClick, pathname }: N
           >
             <List component="div" disablePadding>
               {item.children.map((child) => {
-                const childIsActive = pathname === child.href;
+                const childIsActive = pathname.startsWith(child.href);
                 return (
                   <ListItemButton
                     key={child.href}
@@ -317,8 +317,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   }, [permissionList]);
 
   useEffect(() => {
-    const parent = accessibleNavItems.find((item) =>
-      item.children?.some((child) => pathname.startsWith(child.href))
+    const parent = accessibleNavItems.find(
+      (item) => item.children?.some((child) => pathname.startsWith(child.href)) || pathname === item.href
     );
     setOpenMenu(parent ? parent.href : null);
   }, [pathname, accessibleNavItems]);
