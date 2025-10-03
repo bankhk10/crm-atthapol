@@ -36,6 +36,12 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
 
+pnpm prisma generate
+pnpm prisma migrate dev --name init
+pnpm run seed
+pnpm dev
+
+
 <!-- Tree -->
 
 next15-mui-auth-prisma/
