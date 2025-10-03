@@ -102,9 +102,9 @@ const roleSeeds: RoleSeed[] = [
 
 const userSeeds: UserSeed[] = [
   {
-    email: "admin@example.com",
+    email: "bank@admin.com",
     name: "Admin",
-    password: "Admin@123",
+    password: "bank@admin.com",
     role: "ADMIN",
     roleKey: "admin",
     employee: {
