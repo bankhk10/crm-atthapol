@@ -11,7 +11,6 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
-  Grid,
   IconButton,
   Paper,
   Stack,
@@ -48,6 +47,8 @@ export function EmployeesGrid({ employees }: EmployeesGridProps) {
   const itemsPerPage = 8;
   const [deleteTarget, setDeleteTarget] = useState<EmployeeListItem | null>(null);
 
+  // แสดง 8 รายการต่อหน้าเสมอ (4 บน, 4 ล่าง ในหน้าจอกว้าง)
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return employees;
@@ -81,7 +82,13 @@ export function EmployeesGrid({ employees }: EmployeesGridProps) {
   return (
     <Paper sx={{ p: { xs: 2, sm: 3 } }}>
       <Stack spacing={3}>
-        <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems={{ xs: "stretch", md: "center" }} justifyContent="space-between">
+        {/* search + add button */}
+        <Stack
+          direction={{ xs: "column", md: "row" }}
+          spacing={2}
+          alignItems={{ xs: "stretch", md: "center" }}
+          justifyContent="space-between"
+        >
           <Box sx={{ position: "relative", width: { xs: "100%", md: 360 } }}>
             <TextField
               fullWidth
@@ -112,73 +119,147 @@ export function EmployeesGrid({ employees }: EmployeesGridProps) {
           )}
         </Stack>
 
-        <Grid container spacing={2}>
+        {/* employee grid */}
+        <Box
+          sx={{
+            display: "grid",
+            gap: 2,
+            gridTemplateColumns: {
+              xs: "1fr",
+              sm: "repeat(2, 1fr)",
+              md: "repeat(4, 1fr)", // 4 คอลัมน์ => บน 4 ล่าง 4
+            },
+          }}
+        >
           {pageItems.map((e) => (
-            <Grid key={e.id} item xs={12} sm={6} md={4} lg={3}>
-              <Paper sx={{ p: 2, borderRadius: 3, height: "100%" }} elevation={3}>
-                <Stack spacing={2} alignItems="center">
-                  <Box sx={{ width: "100%", background: "#568fd41a", borderRadius: 3, p: 2 }}>
-                    <Stack direction="row" justifyContent="flex-end">
-                      {canDeleteEmployee && (
-                        <IconButton aria-label="delete" onClick={() => setDeleteTarget(e)}>
-                          <DeleteOutlineIcon />
-                        </IconButton>
-                      )}
-                    </Stack>
+            <Paper
+              key={e.id}
+              sx={{
+                p: 2,
+                borderRadius: 3,
+                height: "100%",
+                position: "relative",
+              }}
+              elevation={3}
+            >
+              {/* delete button มุมขวาบน */}
+              {canDeleteEmployee && (
+                <IconButton
+                  aria-label="delete"
+                  onClick={() => setDeleteTarget(e)}
+                  sx={{ position: "absolute", top: 8, right: 8 }}
+                >
+                  <DeleteOutlineIcon />
+                </IconButton>
+              )}
 
-                    <Box sx={{ position: "relative", width: 96, height: 96, borderRadius: "50%", overflow: "hidden", mx: "auto", mt: -2 }}>
-                      <Image src="/images/man-avatar.png" alt={e.name ?? "avatar"} fill style={{ objectFit: "cover" }} />
-                    </Box>
+              <Stack spacing={2} alignItems="center">
+                {/* avatar */}
+                <Box
+                  sx={{
+                    position: "relative",
+                    width: 96,
+                    height: 96,
+                    borderRadius: "50%",
+                    overflow: "hidden",
+                    mt: 1,
+                  }}
+                >
+                  <Image
+                    src="/images/man-avatar.png"
+                    alt={e.name ?? "avatar"}
+                    fill
+                    style={{ objectFit: "cover" }}
+                  />
+                </Box>
 
-                    <Typography variant="h6" fontWeight={700} align="center" mt={1}>
-                      {e.name}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" align="center" mb={1.5}>
-                      {e.position}
-                    </Typography>
+                {/* name + position */}
+                <Typography variant="h6" fontWeight={700} align="center" mt={1}>
+                  {e.name}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  align="center"
+                  mb={1.5}
+                >
+                  {e.position}
+                </Typography>
 
-                    <Stack direction="row" spacing={1} justifyContent="center">
-                      {canEditEmployee && (
-                        <Button component={Link} href={`/dashboard/employees/${e.id}/edit`} size="small" variant="outlined" color="inherit">
-                          แก้ไข
-                        </Button>
-                      )}
-                      {canViewEmployee && (
-                        <Button component={Link} href={`/dashboard/employees/${e.id}`} size="small" variant="outlined">
-                          ประวัติ
-                        </Button>
-                      )}
-                    </Stack>
-                  </Box>
-
-                  <Stack direction="row" justifyContent="space-around" width="100%" borderTop={1} borderColor="divider" pt={2}>
-                    {[{ label: "ที่เหลือ" }, { label: "กำลังทำ" }, { label: "สำเร็จ" }].map((s, idx) => (
-                      <Box key={s.label} textAlign="center">
-                        <Typography fontWeight={700} variant="h6">{(e.id.charCodeAt(0) + idx * 7) % 50}</Typography>
-                        <Typography variant="caption" color="text.secondary">{s.label}</Typography>
-                      </Box>
-                    ))}
-                  </Stack>
+                {/* edit + view buttons */}
+                <Stack direction="row" spacing={1} justifyContent="center" mb={1.5}>
+                  {canEditEmployee && (
+                    <Button
+                      component={Link}
+                      href={`/dashboard/employees/${e.id}/edit`}
+                      size="small"
+                      variant="outlined"
+                      color="inherit"
+                    >
+                      แก้ไข
+                    </Button>
+                  )}
+                  {canViewEmployee && (
+                    <Button
+                      component={Link}
+                      href={`/dashboard/employees/${e.id}`}
+                      size="small"
+                      variant="outlined"
+                    >
+                      ประวัติ
+                    </Button>
+                  )}
                 </Stack>
-              </Paper>
-            </Grid>
-          ))}
-        </Grid>
 
+                {/* footer */}
+                <Stack
+                  direction="row"
+                  justifyContent="space-around"
+                  width="100%"
+                  borderTop={1}
+                  borderColor="divider"
+                  pt={2}
+                >
+                  {[{ label: "ที่เหลือ" }, { label: "กำลังทำ" }, { label: "สำเร็จ" }].map(
+                    (s, idx) => (
+                      <Box key={s.label} textAlign="center">
+                        <Typography fontWeight={700} variant="h6">
+                          {(e.id.charCodeAt(0) + idx * 7) % 50}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {s.label}
+                        </Typography>
+                      </Box>
+                    ),
+                  )}
+                </Stack>
+              </Stack>
+            </Paper>
+          ))}
+        </Box>
+
+        {/* pagination */}
         <Stack direction="row" justifyContent="space-between" alignItems="center">
           <Typography variant="body2" color="text.secondary">
             {startDisplay}-{endDisplay} จาก {filtered.length}
           </Typography>
           <Stack direction="row" spacing={1}>
-            <IconButton disabled={currentPage === 1} onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}>
+            <IconButton
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+            >
               <ChevronLeftIcon />
             </IconButton>
-            <IconButton disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}>
+            <IconButton
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+            >
               <ChevronRightIcon />
             </IconButton>
           </Stack>
         </Stack>
 
+        {/* confirm delete dialog */}
         <Dialog open={Boolean(deleteTarget)} onClose={() => setDeleteTarget(null)}>
           <DialogTitle>ลบพนักงาน</DialogTitle>
           <DialogContent>
@@ -187,8 +268,17 @@ export function EmployeesGrid({ employees }: EmployeesGridProps) {
             </DialogContentText>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setDeleteTarget(null)} color="inherit">ยกเลิก</Button>
-            <Button onClick={handleDelete} color="error" variant="contained" startIcon={<DeleteOutlineIcon />}>ลบ</Button>
+            <Button onClick={() => setDeleteTarget(null)} color="inherit">
+              ยกเลิก
+            </Button>
+            <Button
+              onClick={handleDelete}
+              color="error"
+              variant="contained"
+              startIcon={<DeleteOutlineIcon />}
+            >
+              ลบ
+            </Button>
           </DialogActions>
         </Dialog>
       </Stack>
