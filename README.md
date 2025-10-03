@@ -41,6 +41,7 @@ pnpm prisma migrate dev --name init
 pnpm run seed
 pnpm dev
 
+ใช้ quick push (เฉพาะ dev): npx prisma db push
 
 <!-- Tree -->
 
