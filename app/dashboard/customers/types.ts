@@ -20,6 +20,7 @@ export type CustomerFormValues = {
   type: CustomerType;
   // แสดงผล/บันทึกเป็น name โดยคำนวณจาก companyName หรือ (prefix + first + last)
   name?: string;
+  code?: string; // รหัสร้านค้า (สร้างอัตโนมัติเมื่อบันทึก)
   prefix: string;
   firstName: string;
   lastName: string;
@@ -36,5 +37,6 @@ export type CustomerFormValues = {
   postalCode?: string;
   latitude?: number | string;
   longitude?: number | string;
+  responsibleEmployeeId?: string | null;
   profile?: CustomerProfile;
 };

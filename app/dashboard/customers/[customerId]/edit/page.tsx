@@ -2,11 +2,22 @@ import { Box, Stack, Typography } from "@mui/material";
 import { notFound } from "next/navigation";
 import { CustomerEditClient } from "../../_components/customer-edit-client";
 import { getCustomer } from "../../data";
+import { getEmployees } from "@/app/dashboard/employees/data";
 
 export default async function CustomerEditPage({ params }: { params: Promise<{ customerId: string }> }) {
   const { customerId } = await params;
   const customer = await getCustomer(customerId);
   if (!customer) return notFound();
+  const employees = await getEmployees();
+  const employeeOptions = employees
+    .filter((e) => !e.deletedAt)
+    .map((e) => ({
+      id: e.id,
+      label:
+        [e.prefix, e.firstName, e.lastName]
+          .filter(Boolean)
+          .join(" ") || e.user?.name || e.user?.email || e.id,
+    }));
 
   const initialValues = {
     type: customer.type,
@@ -25,6 +36,8 @@ export default async function CustomerEditPage({ params }: { params: Promise<{ c
     postalCode: customer.postalCode ?? undefined,
     latitude: customer.latitude ?? "",
     longitude: customer.longitude ?? "",
+    code: customer.code ?? "",
+    responsibleEmployeeId: customer.responsibleEmployeeId ?? null,
     profile: (customer.profile as any) ?? {},
   };
 
@@ -40,7 +53,7 @@ export default async function CustomerEditPage({ params }: { params: Promise<{ c
       }}
     >
       <Stack spacing={3} sx={{ width: "100%", maxWidth: 960 }}>
-        <CustomerEditClient customerId={customer.id} initialValues={initialValues} />
+        <CustomerEditClient customerId={customer.id} initialValues={initialValues} employeeOptions={employeeOptions} />
       </Stack>
     </Box>
   );

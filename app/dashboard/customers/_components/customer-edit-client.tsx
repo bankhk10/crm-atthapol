@@ -10,9 +10,10 @@ import { updateCustomer } from "../actions";
 type CustomerEditClientProps = {
   customerId: string;
   initialValues: CustomerFormValues;
+  employeeOptions: { id: string; label: string }[];
 };
 
-export function CustomerEditClient({ customerId, initialValues }: CustomerEditClientProps) {
+export function CustomerEditClient({ customerId, initialValues, employeeOptions }: CustomerEditClientProps) {
   const router = useRouter();
 
   return (
@@ -22,6 +23,7 @@ export function CustomerEditClient({ customerId, initialValues }: CustomerEditCl
         description=""
         initialValues={initialValues}
         submitLabel="บันทึกการแก้ไข"
+        employeeOptions={employeeOptions}
         onSubmit={async (values) => {
           await updateCustomer(customerId, values);
           router.push("/dashboard/customers");

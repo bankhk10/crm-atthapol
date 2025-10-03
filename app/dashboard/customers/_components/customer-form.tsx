@@ -4,6 +4,7 @@ import type { ChangeEvent, FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Alert, Button, Paper, Stack, TextField, Typography, Divider, MenuItem } from "@mui/material";
+import Autocomplete from "@mui/material/Autocomplete";
 import MyLocationIcon from "@mui/icons-material/MyLocation";
 import { Box } from "@mui/material";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -20,6 +21,7 @@ type CustomerFormProps = {
   initialValues: CustomerFormValues;
   submitLabel?: string;
   onSubmit?: (values: CustomerFormValues) => Promise<void> | void;
+  employeeOptions?: { id: string; label: string }[];
 };
 
 export function CustomerForm({
@@ -28,6 +30,7 @@ export function CustomerForm({
   initialValues,
   submitLabel = "บันทึกข้อมูล",
   onSubmit,
+  employeeOptions = [],
 }: CustomerFormProps) {
   const [values, setValues] = useState<CustomerFormValues>(initialValues);
   const [isSubmitting, setSubmitting] = useState(false);
@@ -312,6 +315,32 @@ export function CustomerForm({
             <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
               <Typography variant="h6" fontWeight={960}>ข้อมูล Dealer</Typography>
             </Box>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              <TextField
+                label="รหัสร้านค้า"
+                value={values.code ?? "จะสร้างอัตโนมัติเมื่อบันทึก"}
+                InputProps={{ readOnly: true }}
+                fullWidth
+              />
+              <Autocomplete
+                options={employeeOptions}
+                getOptionLabel={(option) => option.label}
+                value={
+                  employeeOptions.find((opt) => opt.id === (values.responsibleEmployeeId ?? "")) ?? null
+                }
+                onChange={(_e, option) =>
+                  setValues((prev) => ({
+                    ...prev,
+                    responsibleEmployeeId: option ? option.id : null,
+                  }))
+                }
+                renderInput={(params) => (
+                  <TextField {...params} label="พนักงานที่รับผิดชอบ" placeholder="ค้นหาชื่อพนักงาน" fullWidth />
+                )}
+                isOptionEqualToValue={(opt, val) => opt.id === val.id}
+                fullWidth
+              />
+            </Stack>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <TextField
                 label="ชื่อบริษัท/ร้านค้า"

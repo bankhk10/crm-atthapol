@@ -7,6 +7,10 @@ import { CustomerForm } from "./customer-form";
 import type { CustomerFormValues } from "../types";
 import { createCustomer } from "../actions";
 
+type CustomerCreateClientProps = {
+  employeeOptions: { id: string; label: string }[];
+};
+
 const defaultInitialValues: CustomerFormValues = {
   type: "DEALER",
   prefix: "",
@@ -24,10 +28,12 @@ const defaultInitialValues: CustomerFormValues = {
   postalCode: undefined,
   latitude: "",
   longitude: "",
+  code: "",
+  responsibleEmployeeId: null,
   profile: {},
 };
 
-export function CustomerCreateClient() {
+export function CustomerCreateClient({ employeeOptions }: CustomerCreateClientProps) {
   const router = useRouter();
 
   const initialValues: CustomerFormValues = {
@@ -41,6 +47,7 @@ export function CustomerCreateClient() {
         description=""
         initialValues={initialValues}
         submitLabel="เพิ่มลูกค้า"
+        employeeOptions={employeeOptions}
         onSubmit={async (values) => {
           await createCustomer(values);
           router.push("/dashboard/customers");

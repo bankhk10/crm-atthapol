@@ -1,7 +1,19 @@
 import { Box, Stack } from "@mui/material";
 import { CustomerCreateClient } from "../_components/customer-create-client";
+import { getEmployees } from "@/app/dashboard/employees/data";
 
-export default function CustomerCreatePage() {
+export default async function CustomerCreatePage() {
+  const employees = await getEmployees();
+  const employeeOptions = employees
+    .filter((e) => !e.deletedAt)
+    .map((e) => ({
+      id: e.id,
+      label:
+        [e.prefix, e.firstName, e.lastName]
+          .filter(Boolean)
+          .join(" ") || e.user?.name || e.user?.email || e.id,
+    }));
+
   return (
     <Box
       sx={{
@@ -14,7 +26,7 @@ export default function CustomerCreatePage() {
       }}
     >
       <Stack spacing={3} sx={{ width: "100%", maxWidth: 960 }}>
-        <CustomerCreateClient />
+        <CustomerCreateClient employeeOptions={employeeOptions} />
       </Stack>
     </Box>
   );
