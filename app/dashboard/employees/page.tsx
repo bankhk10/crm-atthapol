@@ -22,7 +22,7 @@ export default async function EmployeesPage() {
 
   return (
     <>
-      <ActionButtons resource="employees" />
+      {/* <ActionButtons resource="employees" /> */}
       <EmployeesGrid employees={items} />
     </>
   );
