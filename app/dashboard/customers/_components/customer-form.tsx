@@ -34,6 +34,7 @@ type CustomerFormProps = {
   submitLabel?: string;
   onSubmit?: (values: CustomerFormValues) => Promise<void> | void;
   employeeOptions?: { id: string; label: string }[];
+  dealerOptions?: { id: string; label: string }[];
   hideTypeSelect?: boolean;
 };
 
@@ -44,6 +45,7 @@ export function CustomerForm({
   submitLabel = "บันทึกข้อมูล",
   onSubmit,
   employeeOptions = [],
+  dealerOptions = [],
   hideTypeSelect = false,
 }: CustomerFormProps) {
   const [values, setValues] = useState<CustomerFormValues>(initialValues);
@@ -329,6 +331,24 @@ export function CustomerForm({
           {values.type === "DEALER" && (
             <TextField label="วงเงินเครดิต (บาท)" type="number" value={values.creditLimit ?? ""} onChange={handleChange("creditLimit") as any} fullWidth />
           )}
+          {values.type === "SUBDEALER" && (
+            <>
+              <Autocomplete
+                options={dealerOptions}
+                getOptionLabel={(o) => o.label}
+                value={dealerOptions.find((d) => d.id === (values.dealerId ?? "")) ?? null}
+                onChange={(_e, opt) => setValues((prev) => ({ ...prev, dealerId: opt ? opt.id : undefined }))}
+                renderInput={(params) => (
+                  <TextField {...params} label="รับของจาก Dealer" placeholder="ค้นหา Dealer" fullWidth />
+                )}
+                isOptionEqualToValue={(opt, val) => opt.id === val.id}
+                fullWidth
+              />
+              <Button component={Link} href="/dashboard/customers/new/dealer" variant="outlined">
+                เพิ่ม Dealer ใหม่
+              </Button>
+            </>
+          )}
           <Autocomplete
             options={employeeOptions}
             getOptionLabel={(option) => option.label}
@@ -345,6 +365,37 @@ export function CustomerForm({
             fullWidth
           />
         </Stack>
+
+        {values.type === "SUBDEALER" && (
+          <>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              <TextField label="คู่แข่งหลัก" value={values.competitor ?? ""} onChange={handleChange("competitor") as any} fullWidth />
+              <TextField label="พืชในพื้นที่" value={values.cropsInArea ?? ""} onChange={handleChange("cropsInArea") as any} fullWidth />
+            </Stack>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              <TextField label="ยอดซื้อเฉลี่ย/เดือน" type="number" value={values.averageMonthlyPurchase ?? ""} onChange={handleChange("averageMonthlyPurchase") as any} fullWidth />
+              <TextField label="สินค้าหลักที่ขาย" value={values.mainProducts ?? ""} onChange={handleChange("mainProducts") as any} fullWidth />
+            </Stack>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              <TextField label="ยี่ห้อที่จำหน่าย" value={values.brandsSold ?? ""} onChange={handleChange("brandsSold") as any} fullWidth />
+              <TextField label="ประเภทพื้นที่" value={values.areaType ?? ""} onChange={handleChange("areaType") as any} fullWidth />
+            </Stack>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              <TextField
+                select
+                label="คะแนนความสัมพันธ์"
+                value={(values.relationshipScore ?? "") as any}
+                onChange={(e) => setValues((prev) => ({ ...prev, relationshipScore: Number(e.target.value) }))}
+                sx={{ minWidth: { xs: "100%", sm: 200 } }}
+              >
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <MenuItem key={n} value={n}>{n}</MenuItem>
+                ))}
+              </TextField>
+              <TextField label="หมายเหตุทางธุรกิจ" value={values.businessNotes ?? ""} onChange={handleChange("businessNotes") as any} fullWidth />
+            </Stack>
+          </>
+        )}
 
         {/* ลบฟิลด์เฉพาะประเภทเพื่อให้ตรงกับเลย์เอาต์ตัวอย่าง */}
 

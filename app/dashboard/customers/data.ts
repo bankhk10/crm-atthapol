@@ -180,6 +180,15 @@ export async function getCustomer(customerId: string) {
       companyName: sub.name,
       parentDealer: sub.dealer?.name ?? null,
       subDealerCode: (sub as any).code ?? null,
+      dealerId: sub.dealerId ?? undefined,
+      competitor: (sub as any).competitor ?? null,
+      cropsInArea: (sub as any).cropsInArea ?? null,
+      averageMonthlyPurchase: (sub as any).averageMonthlyPurchase ?? null,
+      mainProducts: (sub as any).mainProducts ?? null,
+      brandsSold: (sub as any).brandsSold ?? null,
+      areaType: (sub as any).areaType ?? null,
+      relationshipScore: (sub as any).relationshipScore ?? null,
+      businessNotes: (sub as any).businessNotes ?? null,
     } as any;
   }
 
@@ -217,4 +226,13 @@ export async function getCustomer(customerId: string) {
   }
 
   return null;
+}
+
+export async function getDealerOptions() {
+  const dealers = await prisma.dealer.findMany({
+    where: { deletedAt: null },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true, code: true },
+  });
+  return dealers.map((d) => ({ id: d.id, label: d.code ? `${d.code} - ${d.name}` : d.name }));
 }

@@ -72,6 +72,14 @@ model User {
   performedAuditLogs AuditLog[]      @relation("AuditPerformedByUser")
   createdInteractions Interaction[]  @relation("UserCreatedInteractions")
 
+  // Back-relations for createdBy/updatedBy
+  createdDealers    Dealer[]    @relation("DealerCreatedBy")
+  updatedDealers    Dealer[]    @relation("DealerUpdatedBy")
+  createdSubDealers SubDealer[] @relation("SubDealerCreatedBy")
+  updatedSubDealers SubDealer[] @relation("SubDealerUpdatedBy")
+  createdFarmers    Farmer[]    @relation("FarmerCreatedBy")
+  updatedFarmers    Farmer[]    @relation("FarmerUpdatedBy")
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   deletedAt   DateTime?
@@ -232,6 +240,11 @@ model Dealer {
   responsibleEmployeeId String?
   responsibleEmployee   Employee? @relation(fields: [responsibleEmployeeId], references: [id])
 
+  createdById String?
+  updatedById String?
+  createdBy   User? @relation("DealerCreatedBy", fields: [createdById], references: [id])
+  updatedBy   User? @relation("DealerUpdatedBy", fields: [updatedById], references: [id])
+
   subDealers   SubDealer[]
   businessInfo BusinessInfo?
   sales        Sale[]
@@ -263,6 +276,21 @@ model SubDealer {
 
   dealerId     String?
   dealer       Dealer?      @relation(fields: [dealerId], references: [id], onDelete: Cascade)
+
+  // Additional business fields for SubDealer
+  competitor             String?
+  cropsInArea            String?
+  averageMonthlyPurchase Float?
+  mainProducts           String?
+  brandsSold             String?
+  areaType               String?
+  relationshipScore      Int?
+  businessNotes          String?
+
+  createdById String?
+  updatedById String?
+  createdBy   User? @relation("SubDealerCreatedBy", fields: [createdById], references: [id])
+  updatedBy   User? @relation("SubDealerUpdatedBy", fields: [updatedById], references: [id])
   farmers      Farmer[]
   businessInfo BusinessInfo?
   sales        Sale[]
@@ -301,6 +329,11 @@ model Farmer {
   businessInfo BusinessInfo?
   sales        Sale[]
   interactions Interaction[]
+
+  createdById String?
+  updatedById String?
+  createdBy   User? @relation("FarmerCreatedBy", fields: [createdById], references: [id])
+  updatedBy   User? @relation("FarmerUpdatedBy", fields: [updatedById], references: [id])
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt

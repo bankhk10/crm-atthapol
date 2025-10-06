@@ -120,6 +120,14 @@ export default async function CustomerDetailPage({
                   <Section title="ข้อมูล SubDealer">
                     <Info label="ร้านค้าตัวแทน (แม่ข่าย)" value={(customer as any).parentDealer ?? "-"} />
                     <Info label="รหัส SubDealer" value={(customer as any).subDealerCode ?? "-"} />
+                    <Info label="คู่แข่งหลัก" value={(customer as any).competitor ?? "-"} />
+                    <Info label="พืชในพื้นที่" value={(customer as any).cropsInArea ?? "-"} />
+                    <Info label="ยอดซื้อเฉลี่ย/เดือน" value={(customer as any).averageMonthlyPurchase ?? "-"} />
+                    <Info label="สินค้าหลักที่ขาย" value={(customer as any).mainProducts ?? "-"} />
+                    <Info label="ยี่ห้อที่จำหน่าย" value={(customer as any).brandsSold ?? "-"} />
+                    <Info label="ประเภทพื้นที่" value={(customer as any).areaType ?? "-"} />
+                    <Info label="คะแนนความสัมพันธ์" value={(customer as any).relationshipScore ?? "-"} />
+                    <Info label="หมายเหตุทางธุรกิจ" value={(customer as any).businessNotes ?? "-"} />
                   </Section>
                 )}
 

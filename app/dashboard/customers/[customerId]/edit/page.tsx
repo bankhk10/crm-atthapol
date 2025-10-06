@@ -2,6 +2,7 @@ import { Box, Stack, Typography } from "@mui/material";
 import { notFound } from "next/navigation";
 import { CustomerEditClient } from "../../_components/customer-edit-client";
 import { getCustomer } from "../../data";
+import { getDealerOptions } from "../../data";
 import { getEmployees } from "@/app/dashboard/employees/data";
 
 export default async function CustomerEditPage({ params }: { params: Promise<{ customerId: string }> }) {
@@ -9,6 +10,7 @@ export default async function CustomerEditPage({ params }: { params: Promise<{ c
   const customer = await getCustomer(customerId);
   if (!customer) return notFound();
   const employees = await getEmployees();
+  const dealers = await getDealerOptions();
   const employeeOptions = employees
     .filter((e) => !e.deletedAt)
     .map((e) => ({
@@ -45,6 +47,15 @@ export default async function CustomerEditPage({ params }: { params: Promise<{ c
     creditLimit: (customer as any).creditLimit ?? "",
     parentDealer: (customer as any).parentDealer ?? "",
     subDealerCode: (customer as any).subDealerCode ?? "",
+    dealerId: (customer as any).dealerId ?? undefined,
+    competitor: (customer as any).competitor ?? "",
+    cropsInArea: (customer as any).cropsInArea ?? "",
+    averageMonthlyPurchase: (customer as any).averageMonthlyPurchase ?? "",
+    mainProducts: (customer as any).mainProducts ?? "",
+    brandsSold: (customer as any).brandsSold ?? "",
+    areaType: (customer as any).areaType ?? "",
+    relationshipScore: (customer as any).relationshipScore ?? undefined,
+    businessNotes: (customer as any).businessNotes ?? "",
     farmName: (customer as any).farmName ?? "",
     farmSize: (customer as any).farmSize ?? "",
     cropType: (customer as any).cropType ?? "",
@@ -62,7 +73,7 @@ export default async function CustomerEditPage({ params }: { params: Promise<{ c
       }}
     >
       <Stack spacing={3} sx={{ width: "100%", maxWidth: 960 }}>
-        <CustomerEditClient customerId={customer.id} initialValues={initialValues} employeeOptions={employeeOptions} />
+        <CustomerEditClient customerId={customer.id} initialValues={initialValues} employeeOptions={employeeOptions} dealerOptions={dealers} />
       </Stack>
     </Box>
   );

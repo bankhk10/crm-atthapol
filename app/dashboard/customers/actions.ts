@@ -52,6 +52,23 @@ const customerFormSchema = z.object({
     z.number().optional(),
   ),
 
+  // SubDealer extras
+  dealerId: z.string().optional(),
+  competitor: z.string().optional(),
+  cropsInArea: z.string().optional(),
+  averageMonthlyPurchase: z.preprocess(
+    (v) => (v === "" || v === null || v === undefined ? undefined : typeof v === "string" ? parseFloat(v) : v),
+    z.number().optional(),
+  ),
+  mainProducts: z.string().optional(),
+  brandsSold: z.string().optional(),
+  areaType: z.string().optional(),
+  relationshipScore: z.preprocess(
+    (v) => (v === "" || v === null || v === undefined ? undefined : typeof v === "string" ? parseInt(v, 10) : v),
+    z.number().int().min(1).max(5).optional(),
+  ),
+  businessNotes: z.string().optional(),
+
   parentDealer: z.string().optional(),
   subDealerCode: z.string().optional(),
 
@@ -104,6 +121,7 @@ export async function createCustomer(rawValues: CustomerFormValues) {
             latitude: values.latitude,
             longitude: values.longitude,
             responsibleEmployeeId: values.responsibleEmployeeId ?? undefined,
+            createdById: session?.user?.id,
             businessInfo: values.creditLimit
               ? { create: { creditLimit: Number(values.creditLimit) } }
               : undefined,
@@ -131,7 +149,16 @@ export async function createCustomer(rawValues: CustomerFormValues) {
             latitude: values.latitude,
             longitude: values.longitude,
             responsibleEmployeeId: values.responsibleEmployeeId ?? undefined,
-            // dealerId left empty unless UI collects it
+            dealerId: values.dealerId ?? undefined,
+            competitor: values.competitor,
+            cropsInArea: values.cropsInArea,
+            averageMonthlyPurchase: values.averageMonthlyPurchase,
+            mainProducts: values.mainProducts,
+            brandsSold: values.brandsSold,
+            areaType: values.areaType,
+            relationshipScore: values.relationshipScore,
+            businessNotes: values.businessNotes,
+            createdById: session?.user?.id,
           },
         });
         return created.id;
@@ -160,6 +187,7 @@ export async function createCustomer(rawValues: CustomerFormValues) {
             ? Number(values.farmSize)
             : undefined,
           cropType: values.cropType ? String(values.cropType) : undefined,
+          createdById: session?.user?.id,
         },
       });
       return created.id;
@@ -196,6 +224,7 @@ export async function updateCustomer(customerId: string, rawValues: CustomerForm
           latitude: values.latitude,
           longitude: values.longitude,
           responsibleEmployeeId: values.responsibleEmployeeId ?? undefined,
+          updatedById: session?.user?.id,
         },
       });
       if (values.creditLimit !== undefined && values.creditLimit !== null && String(values.creditLimit) !== "") {
@@ -226,6 +255,16 @@ export async function updateCustomer(customerId: string, rawValues: CustomerForm
           latitude: values.latitude,
           longitude: values.longitude,
           responsibleEmployeeId: values.responsibleEmployeeId ?? undefined,
+          dealerId: values.dealerId ?? undefined,
+          competitor: values.competitor,
+          cropsInArea: values.cropsInArea,
+          averageMonthlyPurchase: values.averageMonthlyPurchase,
+          mainProducts: values.mainProducts,
+          brandsSold: values.brandsSold,
+          areaType: values.areaType,
+          relationshipScore: values.relationshipScore,
+          businessNotes: values.businessNotes,
+          updatedById: session?.user?.id,
         },
       });
       if (values.creditLimit !== undefined && values.creditLimit !== null && String(values.creditLimit) !== "") {
@@ -260,6 +299,7 @@ export async function updateCustomer(customerId: string, rawValues: CustomerForm
           ? Number(values.farmSize)
           : undefined,
         cropType: values.cropType ? String(values.cropType) : undefined,
+        updatedById: session?.user?.id,
       },
     });
   });

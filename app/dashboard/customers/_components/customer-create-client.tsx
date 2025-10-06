@@ -9,6 +9,7 @@ import { createCustomer } from "../actions";
 
 type CustomerCreateClientProps = {
   employeeOptions: { id: string; label: string }[];
+  dealerOptions: { id: string; label: string }[];
   defaultType?: CustomerType;
 };
 
@@ -38,12 +39,21 @@ const defaultInitialValues: CustomerFormValues = {
   creditLimit: "",
   parentDealer: "",
   subDealerCode: "",
+  dealerId: undefined,
+  competitor: "",
+  cropsInArea: "",
+  averageMonthlyPurchase: "",
+  mainProducts: "",
+  brandsSold: "",
+  areaType: "",
+  relationshipScore: undefined,
+  businessNotes: "",
   farmName: "",
   farmSize: "",
   cropType: "",
 };
 
-export function CustomerCreateClient({ employeeOptions, defaultType = "DEALER" }: CustomerCreateClientProps) {
+export function CustomerCreateClient({ employeeOptions, dealerOptions, defaultType = "DEALER" }: CustomerCreateClientProps) {
   const router = useRouter();
 
   const initialValues: CustomerFormValues = {
@@ -59,6 +69,7 @@ export function CustomerCreateClient({ employeeOptions, defaultType = "DEALER" }
         initialValues={initialValues}
         submitLabel="เพิ่มลูกค้า"
         employeeOptions={employeeOptions}
+        dealerOptions={dealerOptions}
         hideTypeSelect
         onSubmit={async (values) => {
           await createCustomer(values);

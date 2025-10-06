@@ -1,9 +1,11 @@
 import { Box, Stack } from "@mui/material";
 import { CustomerCreateClient } from "../_components/customer-create-client";
 import { getEmployees } from "@/app/dashboard/employees/data";
+import { getDealerOptions } from "../data";
 
 export default async function CustomerCreatePage() {
   const employees = await getEmployees();
+  const dealers = await getDealerOptions();
   const employeeOptions = employees
     .filter((e) => !e.deletedAt)
     .map((e) => ({
@@ -26,7 +28,7 @@ export default async function CustomerCreatePage() {
       }}
     >
       <Stack spacing={3} sx={{ width: "100%", maxWidth: 960 }}>
-        <CustomerCreateClient employeeOptions={employeeOptions} />
+        <CustomerCreateClient employeeOptions={employeeOptions} dealerOptions={dealers} />
       </Stack>
     </Box>
   );

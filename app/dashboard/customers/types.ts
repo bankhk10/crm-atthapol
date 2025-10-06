@@ -30,6 +30,16 @@ export type CustomerFormValues = {
   creditLimit?: number | string;
   parentDealer?: string;
   subDealerCode?: string;
+  // สำหรับ SubDealer
+  dealerId?: string;
+  competitor?: string;
+  cropsInArea?: string;
+  averageMonthlyPurchase?: number | string;
+  mainProducts?: string;
+  brandsSold?: string;
+  areaType?: string;
+  relationshipScore?: number;
+  businessNotes?: string;
   farmName?: string;
   farmSize?: number | string;
   cropType?: string;

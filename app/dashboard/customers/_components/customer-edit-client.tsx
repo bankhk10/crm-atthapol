@@ -11,9 +11,10 @@ type CustomerEditClientProps = {
   customerId: string;
   initialValues: CustomerFormValues;
   employeeOptions: { id: string; label: string }[];
+  dealerOptions: { id: string; label: string }[];
 };
 
-export function CustomerEditClient({ customerId, initialValues, employeeOptions }: CustomerEditClientProps) {
+export function CustomerEditClient({ customerId, initialValues, employeeOptions, dealerOptions }: CustomerEditClientProps) {
   const router = useRouter();
 
   return (
@@ -24,6 +25,7 @@ export function CustomerEditClient({ customerId, initialValues, employeeOptions 
         initialValues={initialValues}
         submitLabel="บันทึกการแก้ไข"
         employeeOptions={employeeOptions}
+        dealerOptions={dealerOptions}
         onSubmit={async (values) => {
           await updateCustomer(customerId, values);
           router.push("/dashboard/customers");
