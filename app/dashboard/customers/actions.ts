@@ -68,7 +68,7 @@ const customerFormSchema = z.object({
 async function generateCode(tx: Prisma.TransactionClient, model: "dealer" | "subDealer" | "farmer") {
   const prefix = model === "dealer" ? "DLR-" : model === "subDealer" ? "SBD-" : "FRM-";
   const last = await (tx as any)[model].findFirst({
-    where: { deletedAt: null, code: { not: null } },
+    where: { deletedAt: null },
     orderBy: { createdAt: "desc" },
     select: { code: true },
   });
