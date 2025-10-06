@@ -121,6 +121,11 @@ export async function createCustomer(rawValues: CustomerFormValues) {
             latitude: values.latitude,
             longitude: values.longitude,
             responsibleEmployeeId: values.responsibleEmployeeId ?? undefined,
+            averageMonthlyPurchase: values.averageMonthlyPurchase,
+            mainProducts: values.mainProducts,
+            brandsSold: values.brandsSold,
+            relationshipScore: values.relationshipScore,
+            businessNotes: values.businessNotes,
             createdById: session?.user?.id,
             businessInfo: values.creditLimit
               ? { create: { creditLimit: Number(values.creditLimit) } }
@@ -224,6 +229,11 @@ export async function updateCustomer(customerId: string, rawValues: CustomerForm
           latitude: values.latitude,
           longitude: values.longitude,
           responsibleEmployeeId: values.responsibleEmployeeId ?? undefined,
+          averageMonthlyPurchase: values.averageMonthlyPurchase,
+          mainProducts: values.mainProducts,
+          brandsSold: values.brandsSold,
+          relationshipScore: values.relationshipScore,
+          businessNotes: values.businessNotes,
           updatedById: session?.user?.id,
         },
       });

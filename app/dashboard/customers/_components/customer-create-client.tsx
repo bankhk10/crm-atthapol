@@ -39,14 +39,17 @@ const defaultInitialValues: CustomerFormValues = {
   creditLimit: "",
   parentDealer: "",
   subDealerCode: "",
-  dealerId: undefined,
-  competitor: "",
-  cropsInArea: "",
   averageMonthlyPurchase: "",
   mainProducts: "",
   brandsSold: "",
-  areaType: "",
   relationshipScore: undefined,
+  businessNotes: "",
+  dealerId: undefined,
+  competitor: "",
+  cropsInArea: "",
+  mainProducts: "",
+  brandsSold: "",
+  areaType: "",
   businessNotes: "",
   farmName: "",
   farmSize: "",
@@ -64,7 +67,7 @@ export function CustomerCreateClient({ employeeOptions, dealerOptions, defaultTy
   return (
     <Stack spacing={3}>
       <CustomerForm
-        title="เพิ่มลูกค้า"
+        title="เพิ่ม"
         description=""
         initialValues={initialValues}
         submitLabel="เพิ่มลูกค้า"

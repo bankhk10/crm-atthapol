@@ -113,6 +113,11 @@ export default async function CustomerDetailPage({
                     <Info label="ชื่อบริษัท/ร้านค้า" value={(customer as any).companyName ?? "-"} />
                     <Info label="ผู้ติดต่อหลัก" value={(customer as any).contactPerson ?? "-"} />
                     <Info label="วงเงินเครดิต (บาท)" value={(customer as any).creditLimit ?? "-"} />
+                    <Info label="ยอดซื้อเฉลี่ย/เดือน" value={(customer as any).averageMonthlyPurchase ?? "-"} />
+                    <Info label="สินค้าหลักที่ขาย" value={(customer as any).mainProducts ?? "-"} />
+                    <Info label="ยี่ห้อที่จำหน่าย" value={(customer as any).brandsSold ?? "-"} />
+                    <Info label="คะแนนความสัมพันธ์" value={(customer as any).relationshipScore ?? "-"} />
+                    <Info label="หมายเหตุทางธุรกิจ" value={(customer as any).businessNotes ?? "-"} />
                   </Section>
                 )}
 

@@ -139,7 +139,7 @@ export function CustomerForm({
             component="h1"
             align="center"
           >
-            {title}
+            {title + " " + values.type}
           </Typography>
           <Typography color="text.secondary" align="center">
             {description}
@@ -148,8 +148,12 @@ export function CustomerForm({
 
         <Divider />
 
-        <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
-          <Typography variant="h6" fontWeight={960}>ข้อมูลบริษัท</Typography>
+        <Box
+          sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}
+        >
+          <Typography variant="h6" fontWeight={960}>
+            ข้อมูลบริษัท
+          </Typography>
         </Box>
 
         {/* แถว 1: ชื่อร้านค้า, เลขผู้เสียภาษี, เบอร์โทร (บริษัท), E-mail (บริษัท) */}
@@ -209,7 +213,9 @@ export function CustomerForm({
             type="number"
             inputProps={{ step: "any" }}
             value={values.latitude ?? ""}
-            onChange={(e) => setValues((prev) => ({ ...prev, latitude: e.target.value }))}
+            onChange={(e) =>
+              setValues((prev) => ({ ...prev, latitude: e.target.value }))
+            }
             fullWidth
           />
           <TextField
@@ -217,13 +223,19 @@ export function CustomerForm({
             type="number"
             inputProps={{ step: "any" }}
             value={values.longitude ?? ""}
-            onChange={(e) => setValues((prev) => ({ ...prev, longitude: e.target.value }))}
+            onChange={(e) =>
+              setValues((prev) => ({ ...prev, longitude: e.target.value }))
+            }
             fullWidth
           />
         </Stack>
 
-        <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
-          <Typography variant="h6" fontWeight={960}>ที่อยู่</Typography>
+        <Box
+          sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}
+        >
+          <Typography variant="h6" fontWeight={960}>
+            ที่อยู่
+          </Typography>
         </Box>
 
         <TextField
@@ -260,8 +272,12 @@ export function CustomerForm({
           </Button>
         </Stack> */}
 
-        <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
-          <Typography variant="h6" fontWeight={960}>ข้อมูลบุคคล</Typography>
+        <Box
+          sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}
+        >
+          <Typography variant="h6" fontWeight={960}>
+            ข้อมูลบุคคล
+          </Typography>
         </Box>
 
         {/* แถว 1: คำนำหน้า, ชื่อ, นามสกุล, เพศ (radio) */}
@@ -278,17 +294,45 @@ export function CustomerForm({
             <MenuItem value="นาง">นาง</MenuItem>
             <MenuItem value="นางสาว">นางสาว</MenuItem>
           </TextField>
-          <TextField label="ชื่อ" value={values.firstName} onChange={handleChange("firstName")} required fullWidth placeholder="เช่น สมชาย" />
-          <TextField label="นามสกุล" value={values.lastName} onChange={handleChange("lastName")} required fullWidth placeholder="เช่น ใจดี" />
-          <Stack justifyContent="center" sx={{ minWidth: { xs: "100%", sm: 200 } }}>
-            <Typography variant="body2" color="text.secondary">เพศ</Typography>
+          <TextField
+            label="ชื่อ"
+            value={values.firstName}
+            onChange={handleChange("firstName")}
+            required
+            fullWidth
+            placeholder="เช่น สมชาย"
+          />
+          <TextField
+            label="นามสกุล"
+            value={values.lastName}
+            onChange={handleChange("lastName")}
+            required
+            fullWidth
+            placeholder="เช่น ใจดี"
+          />
+          <Stack
+            justifyContent="center"
+            sx={{ minWidth: { xs: "100%", sm: 200 } }}
+          >
+            <Typography variant="body2" color="text.secondary">
+              เพศ
+            </Typography>
             <RadioGroup
               row
               value={values.gender}
-              onChange={(e) => setValues((prev) => ({ ...prev, gender: e.target.value as any }))}
+              onChange={(e) =>
+                setValues((prev) => ({
+                  ...prev,
+                  gender: e.target.value as any,
+                }))
+              }
             >
               <FormControlLabel value="MALE" control={<Radio />} label="ชาย" />
-              <FormControlLabel value="FEMALE" control={<Radio />} label="หญิง" />
+              <FormControlLabel
+                value="FEMALE"
+                control={<Radio />}
+                label="หญิง"
+              />
               {/* ลบตัวเลือก 'อื่นๆ' ตามคำขอ */}
             </RadioGroup>
           </Stack>
@@ -303,7 +347,9 @@ export function CustomerForm({
               onChange={(newValue) => {
                 setValues((prev) => ({
                   ...prev,
-                  birthDate: newValue ? newValue.toISOString().slice(0, 10) : "",
+                  birthDate: newValue
+                    ? newValue.toISOString().slice(0, 10)
+                    : "",
                 }));
               }}
               slotProps={{ textField: { fullWidth: true } }}
@@ -313,38 +359,83 @@ export function CustomerForm({
             label="อายุ"
             value={
               values.birthDate
-                ? String(Math.floor((Date.now() - new Date(values.birthDate).getTime()) / (1000 * 60 * 60 * 24 * 365.25)))
+                ? String(
+                    Math.floor(
+                      (Date.now() - new Date(values.birthDate).getTime()) /
+                        (1000 * 60 * 60 * 24 * 365.25)
+                    )
+                  )
                 : ""
             }
             InputProps={{ readOnly: true }}
             fullWidth
           />
-          <TextField label="เบอร์โทรศัพท์ (บุคคล)" value={values.contactPhone ?? ""} onChange={handleChange("contactPhone") as any} fullWidth placeholder="0xx-xxx-xxxx" />
-          <TextField label="E-mail (บุคคล)" type="email" value={values.contactEmail ?? ""} onChange={handleChange("contactEmail") as any} fullWidth placeholder="name@example.com" />
+          <TextField
+            label="เบอร์โทรศัพท์ (บุคคล)"
+            value={values.contactPhone ?? ""}
+            onChange={handleChange("contactPhone") as any}
+            fullWidth
+            placeholder="0xx-xxx-xxxx"
+          />
+          <TextField
+            label="E-mail (บุคคล)"
+            type="email"
+            value={values.contactEmail ?? ""}
+            onChange={handleChange("contactEmail") as any}
+            fullWidth
+            placeholder="name@example.com"
+          />
         </Stack>
 
-        <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
-          <Typography variant="h6" fontWeight={960}>ข้อมูลเพิ่มเติม</Typography>
+        <Box
+          sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}
+        >
+          <Typography variant="h6" fontWeight={960}>
+            ข้อมูลเพิ่มเติม
+          </Typography>
         </Box>
 
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           {values.type === "DEALER" && (
-            <TextField label="วงเงินเครดิต (บาท)" type="number" value={values.creditLimit ?? ""} onChange={handleChange("creditLimit") as any} fullWidth />
+            <TextField
+              label="วงเงินเครดิต (บาท)"
+              type="number"
+              value={values.creditLimit ?? ""}
+              onChange={handleChange("creditLimit") as any}
+              fullWidth
+            />
           )}
           {values.type === "SUBDEALER" && (
             <>
               <Autocomplete
                 options={dealerOptions}
                 getOptionLabel={(o) => o.label}
-                value={dealerOptions.find((d) => d.id === (values.dealerId ?? "")) ?? null}
-                onChange={(_e, opt) => setValues((prev) => ({ ...prev, dealerId: opt ? opt.id : undefined }))}
+                value={
+                  dealerOptions.find((d) => d.id === (values.dealerId ?? "")) ??
+                  null
+                }
+                onChange={(_e, opt) =>
+                  setValues((prev) => ({
+                    ...prev,
+                    dealerId: opt ? opt.id : undefined,
+                  }))
+                }
                 renderInput={(params) => (
-                  <TextField {...params} label="รับของจาก Dealer" placeholder="ค้นหา Dealer" fullWidth />
+                  <TextField
+                    {...params}
+                    label="รับของจาก Dealer"
+                    placeholder="ค้นหา Dealer"
+                    fullWidth
+                  />
                 )}
                 isOptionEqualToValue={(opt, val) => opt.id === val.id}
                 fullWidth
               />
-              <Button component={Link} href="/dashboard/customers/new/dealer" variant="outlined">
+              <Button
+                component={Link}
+                href="/dashboard/customers/new/dealer"
+                variant="outlined"
+              >
                 เพิ่ม Dealer ใหม่
               </Button>
             </>
@@ -353,46 +444,155 @@ export function CustomerForm({
             options={employeeOptions}
             getOptionLabel={(option) => option.label}
             value={
-              employeeOptions.find((opt) => opt.id === (values.responsibleEmployeeId ?? "")) ?? null
+              employeeOptions.find(
+                (opt) => opt.id === (values.responsibleEmployeeId ?? "")
+              ) ?? null
             }
             onChange={(_e, option) =>
-              setValues((prev) => ({ ...prev, responsibleEmployeeId: option ? option.id : null }))
+              setValues((prev) => ({
+                ...prev,
+                responsibleEmployeeId: option ? option.id : null,
+              }))
             }
             renderInput={(params) => (
-              <TextField {...params} label="พนักงานที่รับผิดชอบ" placeholder="ค้นหาชื่อพนักงาน" fullWidth />
+              <TextField
+                {...params}
+                label="พนักงานที่รับผิดชอบ"
+                placeholder="ค้นหาชื่อพนักงาน"
+                fullWidth
+              />
             )}
             isOptionEqualToValue={(opt, val) => opt.id === val.id}
             fullWidth
           />
         </Stack>
 
+        {values.type === "DEALER" && (
+          <>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              <TextField
+                label="ยอดซื้อเฉลี่ย/เดือน"
+                type="number"
+                value={values.averageMonthlyPurchase ?? ""}
+                onChange={handleChange("averageMonthlyPurchase") as any}
+                fullWidth
+              />
+              <TextField
+                label="คะแนนความสัมพันธ์"
+                select
+                value={(values.relationshipScore ?? "") as any}
+                onChange={(e) =>
+                  setValues((prev) => ({
+                    ...prev,
+                    relationshipScore: Number(e.target.value),
+                  }))
+                }
+                sx={{ minWidth: { xs: "100%", sm: 200 } }}
+              >
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <MenuItem key={n} value={n}>
+                    {n}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Stack>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              <TextField
+                label="สินค้าหลักที่ขาย (คั่นด้วย ,)"
+                value={values.mainProducts ?? ""}
+                onChange={handleChange("mainProducts") as any}
+                fullWidth
+              />
+              <TextField
+                label="ยี่ห้อที่จำหน่าย (คั่นด้วย ,)"
+                value={values.brandsSold ?? ""}
+                onChange={handleChange("brandsSold") as any}
+                fullWidth
+              />
+            </Stack>
+            <Stack>
+              <TextField
+                label="หมายเหตุทางธุรกิจ"
+                value={values.businessNotes ?? ""}
+                onChange={handleChange("businessNotes") as any}
+                fullWidth
+                multiline
+                minRows={2}
+              />
+            </Stack>
+          </>
+        )}
+
         {values.type === "SUBDEALER" && (
           <>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-              <TextField label="คู่แข่งหลัก" value={values.competitor ?? ""} onChange={handleChange("competitor") as any} fullWidth />
-              <TextField label="พืชในพื้นที่" value={values.cropsInArea ?? ""} onChange={handleChange("cropsInArea") as any} fullWidth />
+              <TextField
+                label="คู่แข่งหลัก"
+                value={values.competitor ?? ""}
+                onChange={handleChange("competitor") as any}
+                fullWidth
+              />
+              <TextField
+                label="พืชในพื้นที่"
+                value={values.cropsInArea ?? ""}
+                onChange={handleChange("cropsInArea") as any}
+                fullWidth
+              />
             </Stack>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-              <TextField label="ยอดซื้อเฉลี่ย/เดือน" type="number" value={values.averageMonthlyPurchase ?? ""} onChange={handleChange("averageMonthlyPurchase") as any} fullWidth />
-              <TextField label="สินค้าหลักที่ขาย" value={values.mainProducts ?? ""} onChange={handleChange("mainProducts") as any} fullWidth />
+              <TextField
+                label="ยอดซื้อเฉลี่ย/เดือน"
+                type="number"
+                value={values.averageMonthlyPurchase ?? ""}
+                onChange={handleChange("averageMonthlyPurchase") as any}
+                fullWidth
+              />
+              <TextField
+                label="สินค้าหลักที่ขาย"
+                value={values.mainProducts ?? ""}
+                onChange={handleChange("mainProducts") as any}
+                fullWidth
+              />
             </Stack>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-              <TextField label="ยี่ห้อที่จำหน่าย" value={values.brandsSold ?? ""} onChange={handleChange("brandsSold") as any} fullWidth />
-              <TextField label="ประเภทพื้นที่" value={values.areaType ?? ""} onChange={handleChange("areaType") as any} fullWidth />
+              <TextField
+                label="ยี่ห้อที่จำหน่าย"
+                value={values.brandsSold ?? ""}
+                onChange={handleChange("brandsSold") as any}
+                fullWidth
+              />
+              <TextField
+                label="ประเภทพื้นที่"
+                value={values.areaType ?? ""}
+                onChange={handleChange("areaType") as any}
+                fullWidth
+              />
             </Stack>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <TextField
                 select
                 label="คะแนนความสัมพันธ์"
                 value={(values.relationshipScore ?? "") as any}
-                onChange={(e) => setValues((prev) => ({ ...prev, relationshipScore: Number(e.target.value) }))}
+                onChange={(e) =>
+                  setValues((prev) => ({
+                    ...prev,
+                    relationshipScore: Number(e.target.value),
+                  }))
+                }
                 sx={{ minWidth: { xs: "100%", sm: 200 } }}
               >
                 {[1, 2, 3, 4, 5].map((n) => (
-                  <MenuItem key={n} value={n}>{n}</MenuItem>
+                  <MenuItem key={n} value={n}>
+                    {n}
+                  </MenuItem>
                 ))}
               </TextField>
-              <TextField label="หมายเหตุทางธุรกิจ" value={values.businessNotes ?? ""} onChange={handleChange("businessNotes") as any} fullWidth />
+              <TextField
+                label="หมายเหตุทางธุรกิจ"
+                value={values.businessNotes ?? ""}
+                onChange={handleChange("businessNotes") as any}
+                fullWidth
+              />
             </Stack>
           </>
         )}

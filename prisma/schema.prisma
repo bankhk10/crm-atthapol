@@ -240,6 +240,13 @@ model Dealer {
   responsibleEmployeeId String?
   responsibleEmployee   Employee? @relation(fields: [responsibleEmployeeId], references: [id])
 
+  // Additional business fields for Dealer
+  averageMonthlyPurchase Float?
+  mainProducts           String?
+  brandsSold             String?
+  relationshipScore      Int?
+  businessNotes          String?
+
   createdById String?
   updatedById String?
   createdBy   User? @relation("DealerCreatedBy", fields: [createdById], references: [id])

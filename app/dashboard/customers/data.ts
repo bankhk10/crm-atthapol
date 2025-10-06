@@ -145,6 +145,11 @@ export async function getCustomer(customerId: string) {
       // extras expected in UI (use name as companyName, BusinessInfo.creditLimit)
       companyName: dealer.name,
       creditLimit: dealer.businessInfo?.creditLimit ?? null,
+      averageMonthlyPurchase: (dealer as any).averageMonthlyPurchase ?? null,
+      mainProducts: (dealer as any).mainProducts ?? null,
+      brandsSold: (dealer as any).brandsSold ?? null,
+      relationshipScore: (dealer as any).relationshipScore ?? null,
+      businessNotes: (dealer as any).businessNotes ?? null,
     } as any;
   }
 
