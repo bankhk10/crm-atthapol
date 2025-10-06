@@ -38,8 +38,21 @@ type SessionUser = DefaultSession["user"] & {
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
-  // ✅ เปลี่ยนเป็น JWT
-  session: { strategy: "jwt" },
+  // ✅ เปลี่ยนเป็น JWT และกำหนดอายุ session
+  session: {
+    strategy: "jwt",
+    // อายุ session (วินาที) — ปรับได้ผ่าน ENV: SESSION_MAX_AGE
+    // ค่าเริ่มต้น 30 วัน ตามค่าเริ่มต้นของ NextAuth
+    maxAge: Number(process.env.SESSION_MAX_AGE ?? 60 * 60 * 24 * 30),
+    // ความถี่ในการ refresh อายุ session (วินาที) — ENV: SESSION_UPDATE_AGE
+    // ค่าเริ่มต้น 24 ชั่วโมง
+    updateAge: Number(process.env.SESSION_UPDATE_AGE ?? 60 * 60 * 24),
+  },
+
+  // สำหรับกลยุทธ์ JWT ให้กำหนดอายุ token ให้สอดคล้องกับ session
+  jwt: {
+    maxAge: Number(process.env.SESSION_MAX_AGE ?? 60 * 60 * 24 * 30),
+  },
 
   providers: [
     Credentials({
