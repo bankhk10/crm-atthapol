@@ -75,6 +75,9 @@ model Employee {
   deletedAt DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // ลูกค้าที่พนักงานคนนี้รับผิดชอบ (back relation จาก Customer.responsibleEmployee)
+  responsibleCustomers Customer[]
 }
 
 model Account {
@@ -162,31 +165,31 @@ enum CustomerType {
 }
 
 model Customer {
-  id          String       @id @default(cuid())
-  type        CustomerType
-  name        String
-  code        String?      @unique
-  prefix      String?
-  firstName   String?
-  lastName    String?
-  email       String?
-  phone       String
-  taxId       String?
-  address     String?
-  province    String?
-  district    String?
-  subdistrict String?
-  postalCode  String?
-  latitude    Float?
-  longitude   Float?
-  birthDate   DateTime?
-  gender      Gender?
-  profile     Json?
+  id                    String       @id @default(cuid())
+  type                  CustomerType
+  name                  String
+  code                  String?      @unique
+  prefix                String?
+  firstName             String?
+  lastName              String?
+  email                 String?
+  phone                 String
+  taxId                 String?
+  address               String?
+  province              String?
+  district              String?
+  subdistrict           String?
+  postalCode            String?
+  latitude              Float?
+  longitude             Float?
+  birthDate             DateTime?
+  gender                Gender?
+  profile               Json?
   responsibleEmployeeId String?
-  responsibleEmployee   Employee? @relation(fields: [responsibleEmployeeId], references: [id])
+  responsibleEmployee   Employee?    @relation(fields: [responsibleEmployeeId], references: [id])
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 }
 
