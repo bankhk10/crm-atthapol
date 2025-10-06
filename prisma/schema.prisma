@@ -53,6 +53,57 @@ enum InteractionChannel {
 }
 
 // ====================
+// PRODUCT & STOCK
+// ====================
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+  EXPIRED
+}
+
+model Product {
+  id          String         @id @default(cuid())
+  productCode String         @unique
+  lotNumber   String?
+  nameTH      String
+  nameEN      String?
+  category    String
+  brand       String?
+  unit        String?
+  price       Float?
+  mfgDate     DateTime?
+  expDate     DateTime?
+  status      ProductStatus  @default(ACTIVE)
+  imageUrl    String?
+  description String?
+
+  stocks   Stock[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+}
+
+model Stock {
+  id          String   @id @default(cuid())
+  productId   String
+  qtyOnHand   Int      @default(0)
+  qtyReserved Int      @default(0)
+  qtyVirtual  Int      @default(0)
+  lotNumber   String?
+  note        String?
+  mfgDate     DateTime?
+  expDate     DateTime?
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+}
+
+// ====================
 // AUTHENTICATION MODELS
 // ====================
 model User {

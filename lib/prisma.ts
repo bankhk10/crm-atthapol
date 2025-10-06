@@ -41,6 +41,8 @@ const SOFT_DELETE_MODELS = new Set<Prisma.ModelName>([
   "BusinessInfo",
   "Sale",
   "Interaction",
+  "Product",
+  "Stock",
 ]);
 
 const STATUS_KEYS = ["status", "approvalStatus", "state"];

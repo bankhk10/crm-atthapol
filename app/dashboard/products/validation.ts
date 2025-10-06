@@ -1,0 +1,26 @@
+import { z } from "zod";
+
+// ฟิลด์ตามคำขอ สำหรับ table product + table stock
+export const productFormSchema = z.object({
+  productCode: z.string().min(1, "กรุณากรอกรหัสสินค้า"),
+  lotNumber: z.string().optional(),
+  nameTH: z.string().min(1, "กรุณากรอกชื่อสินค้า (ไทย)"),
+  nameEN: z.string().optional(),
+  category: z.enum(["AA1", "BB2", "CC3"]).default("AA1"),
+  brand: z.enum(["A", "B", "C"]).default("A"),
+  unit: z.enum(["อัน", "ชิ้น", "ถุง"]).default("ชิ้น"),
+  price: z.preprocess((v) => (v === "" || v === undefined || v === null ? undefined : Number(v)), z.number().nonnegative().optional()),
+  mfgDate: z.string().optional(),
+  expDate: z.string().optional(),
+  status: z.enum(["ACTIVE", "INACTIVE", "EXPIRED"]).default("ACTIVE"),
+  imageUrl: z.string().optional(),
+  description: z.string().optional(),
+
+  qtyOnHand: z.preprocess((v) => (v === "" || v === undefined || v === null ? 0 : Number(v)), z.number().int().nonnegative()).default(0),
+  qtyReserved: z.preprocess((v) => (v === "" || v === undefined || v === null ? 0 : Number(v)), z.number().int().nonnegative()).default(0),
+  qtyVirtual: z.preprocess((v) => (v === "" || v === undefined || v === null ? 0 : Number(v)), z.number().int().nonnegative()).default(0),
+  stockNote: z.string().optional(),
+});
+
+export type ProductFormValues = z.infer<typeof productFormSchema>;
+

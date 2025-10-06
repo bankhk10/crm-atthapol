@@ -161,6 +161,13 @@ CREATE TABLE `Dealer` (
     `longitude` DOUBLE NULL,
     `status` ENUM('ACTIVE', 'INACTIVE') NOT NULL DEFAULT 'ACTIVE',
     `responsibleEmployeeId` VARCHAR(191) NULL,
+    `averageMonthlyPurchase` DOUBLE NULL,
+    `mainProducts` VARCHAR(191) NULL,
+    `brandsSold` VARCHAR(191) NULL,
+    `relationshipScore` INTEGER NULL,
+    `businessNotes` VARCHAR(191) NULL,
+    `createdById` VARCHAR(191) NULL,
+    `updatedById` VARCHAR(191) NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
     `deletedAt` DATETIME(3) NULL,
@@ -187,6 +194,16 @@ CREATE TABLE `SubDealer` (
     `status` ENUM('ACTIVE', 'INACTIVE') NOT NULL DEFAULT 'ACTIVE',
     `responsibleEmployeeId` VARCHAR(191) NULL,
     `dealerId` VARCHAR(191) NULL,
+    `competitor` VARCHAR(191) NULL,
+    `cropsInArea` VARCHAR(191) NULL,
+    `averageMonthlyPurchase` DOUBLE NULL,
+    `mainProducts` VARCHAR(191) NULL,
+    `brandsSold` VARCHAR(191) NULL,
+    `areaType` VARCHAR(191) NULL,
+    `relationshipScore` INTEGER NULL,
+    `businessNotes` VARCHAR(191) NULL,
+    `createdById` VARCHAR(191) NULL,
+    `updatedById` VARCHAR(191) NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
     `deletedAt` DATETIME(3) NULL,
@@ -217,6 +234,8 @@ CREATE TABLE `Farmer` (
     `status` ENUM('ACTIVE', 'INACTIVE') NOT NULL DEFAULT 'ACTIVE',
     `responsibleEmployeeId` VARCHAR(191) NULL,
     `subDealerId` VARCHAR(191) NULL,
+    `createdById` VARCHAR(191) NULL,
+    `updatedById` VARCHAR(191) NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
     `deletedAt` DATETIME(3) NULL,
@@ -308,16 +327,34 @@ ALTER TABLE `AuditLog` ADD CONSTRAINT `AuditLog_performedByUserId_fkey` FOREIGN 
 ALTER TABLE `Dealer` ADD CONSTRAINT `Dealer_responsibleEmployeeId_fkey` FOREIGN KEY (`responsibleEmployeeId`) REFERENCES `Employee`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE `Dealer` ADD CONSTRAINT `Dealer_createdById_fkey` FOREIGN KEY (`createdById`) REFERENCES `User`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Dealer` ADD CONSTRAINT `Dealer_updatedById_fkey` FOREIGN KEY (`updatedById`) REFERENCES `User`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE `SubDealer` ADD CONSTRAINT `SubDealer_responsibleEmployeeId_fkey` FOREIGN KEY (`responsibleEmployeeId`) REFERENCES `Employee`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `SubDealer` ADD CONSTRAINT `SubDealer_dealerId_fkey` FOREIGN KEY (`dealerId`) REFERENCES `Dealer`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE `SubDealer` ADD CONSTRAINT `SubDealer_createdById_fkey` FOREIGN KEY (`createdById`) REFERENCES `User`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `SubDealer` ADD CONSTRAINT `SubDealer_updatedById_fkey` FOREIGN KEY (`updatedById`) REFERENCES `User`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE `Farmer` ADD CONSTRAINT `Farmer_responsibleEmployeeId_fkey` FOREIGN KEY (`responsibleEmployeeId`) REFERENCES `Employee`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `Farmer` ADD CONSTRAINT `Farmer_subDealerId_fkey` FOREIGN KEY (`subDealerId`) REFERENCES `SubDealer`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Farmer` ADD CONSTRAINT `Farmer_createdById_fkey` FOREIGN KEY (`createdById`) REFERENCES `User`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Farmer` ADD CONSTRAINT `Farmer_updatedById_fkey` FOREIGN KEY (`updatedById`) REFERENCES `User`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `BusinessInfo` ADD CONSTRAINT `BusinessInfo_dealerId_fkey` FOREIGN KEY (`dealerId`) REFERENCES `Dealer`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
