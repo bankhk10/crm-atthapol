@@ -4,11 +4,12 @@ import { useRouter } from "next/navigation";
 import { Stack } from "@mui/material";
 
 import { CustomerForm } from "./customer-form";
-import type { CustomerFormValues } from "../types";
+import type { CustomerFormValues, CustomerType } from "../types";
 import { createCustomer } from "../actions";
 
 type CustomerCreateClientProps = {
   employeeOptions: { id: string; label: string }[];
+  defaultType?: CustomerType;
 };
 
 const defaultInitialValues: CustomerFormValues = {
@@ -33,17 +34,18 @@ const defaultInitialValues: CustomerFormValues = {
   profile: {},
 };
 
-export function CustomerCreateClient({ employeeOptions }: CustomerCreateClientProps) {
+export function CustomerCreateClient({ employeeOptions, defaultType = "DEALER" }: CustomerCreateClientProps) {
   const router = useRouter();
 
   const initialValues: CustomerFormValues = {
     ...defaultInitialValues,
+    type: defaultType,
   };
 
   return (
     <Stack spacing={3}>
       <CustomerForm
-        title="เพิ่มข้อมูลลูกค้าใหม่"
+        title="เพิ่มลูกค้า"
         description=""
         initialValues={initialValues}
         submitLabel="เพิ่มลูกค้า"
