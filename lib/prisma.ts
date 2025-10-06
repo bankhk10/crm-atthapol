@@ -34,6 +34,13 @@ const SOFT_DELETE_MODELS = new Set<Prisma.ModelName>([
   "Permission",
   "RolePermission",
   "AuditLog",
+  // Domain models with soft-delete columns
+  "Dealer",
+  "SubDealer",
+  "Farmer",
+  "BusinessInfo",
+  "Sale",
+  "Interaction",
 ]);
 
 const STATUS_KEYS = ["status", "approvalStatus", "state"];

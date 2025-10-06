@@ -31,7 +31,16 @@ const defaultInitialValues: CustomerFormValues = {
   longitude: "",
   code: "",
   responsibleEmployeeId: null,
-  profile: {},
+  companyName: "",
+  contactPerson: "",
+  contactPhone: "",
+  contactEmail: "",
+  creditLimit: "",
+  parentDealer: "",
+  subDealerCode: "",
+  farmName: "",
+  farmSize: "",
+  cropType: "",
 };
 
 export function CustomerCreateClient({ employeeOptions, defaultType = "DEALER" }: CustomerCreateClientProps) {
@@ -50,6 +59,7 @@ export function CustomerCreateClient({ employeeOptions, defaultType = "DEALER" }
         initialValues={initialValues}
         submitLabel="เพิ่มลูกค้า"
         employeeOptions={employeeOptions}
+        hideTypeSelect
         onSubmit={async (values) => {
           await createCustomer(values);
           router.push("/dashboard/customers");

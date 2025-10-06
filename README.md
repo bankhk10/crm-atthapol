@@ -79,3 +79,7 @@ npx prisma migrate dev --name add_user_table
 
 2.(ออปชัน) seed ข้อมูล
 pnpm seed
+
+
+Dev
+npx prisma generate

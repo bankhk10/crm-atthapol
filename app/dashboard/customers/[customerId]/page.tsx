@@ -29,7 +29,6 @@ export default async function CustomerDetailPage({
     notFound();
   }
 
-  const profile = (customer.profile as any) ?? {};
   const birthDateStr = customer.birthDate
     ? new Date(customer.birthDate).toISOString().slice(0, 10)
     : "";
@@ -111,24 +110,24 @@ export default async function CustomerDetailPage({
 
                 {customer.type === "DEALER" && (
                   <Section title="ข้อมูล Dealer">
-                    <Info label="ชื่อบริษัท/ร้านค้า" value={profile.companyName ?? "-"} />
-                    <Info label="ผู้ติดต่อหลัก" value={profile.contactPerson ?? "-"} />
-                    <Info label="วงเงินเครดิต (บาท)" value={profile.creditLimit ?? "-"} />
+                    <Info label="ชื่อบริษัท/ร้านค้า" value={(customer as any).companyName ?? "-"} />
+                    <Info label="ผู้ติดต่อหลัก" value={(customer as any).contactPerson ?? "-"} />
+                    <Info label="วงเงินเครดิต (บาท)" value={(customer as any).creditLimit ?? "-"} />
                   </Section>
                 )}
 
                 {customer.type === "SUBDEALER" && (
                   <Section title="ข้อมูล SubDealer">
-                    <Info label="ร้านค้าตัวแทน (แม่ข่าย)" value={profile.parentDealer ?? "-"} />
-                    <Info label="รหัส SubDealer" value={profile.subDealerCode ?? "-"} />
+                    <Info label="ร้านค้าตัวแทน (แม่ข่าย)" value={(customer as any).parentDealer ?? "-"} />
+                    <Info label="รหัส SubDealer" value={(customer as any).subDealerCode ?? "-"} />
                   </Section>
                 )}
 
                 {customer.type === "FARMER" && (
                   <Section title="ข้อมูลเกษตรกร">
-                    <Info label="ชื่อฟาร์ม" value={profile.farmName ?? "-"} />
-                    <Info label="ขนาดพื้นที่ (ไร่)" value={profile.farmSize ?? "-"} />
-                    <Info label="พืชหลัก" value={profile.cropType ?? "-"} />
+                    <Info label="ชื่อฟาร์ม" value={(customer as any).farmName ?? "-"} />
+                    <Info label="ขนาดพื้นที่ (ไร่)" value={(customer as any).farmSize ?? "-"} />
+                    <Info label="พืชหลัก" value={(customer as any).cropType ?? "-"} />
                   </Section>
                 )}
               </Stack>

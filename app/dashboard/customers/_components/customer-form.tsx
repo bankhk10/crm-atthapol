@@ -34,6 +34,7 @@ type CustomerFormProps = {
   submitLabel?: string;
   onSubmit?: (values: CustomerFormValues) => Promise<void> | void;
   employeeOptions?: { id: string; label: string }[];
+  hideTypeSelect?: boolean;
 };
 
 export function CustomerForm({
@@ -43,6 +44,7 @@ export function CustomerForm({
   submitLabel = "บันทึกข้อมูล",
   onSubmit,
   employeeOptions = [],
+  hideTypeSelect = false,
 }: CustomerFormProps) {
   const [values, setValues] = useState<CustomerFormValues>(initialValues);
   const [isSubmitting, setSubmitting] = useState(false);
@@ -152,13 +154,8 @@ export function CustomerForm({
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           <TextField
             label="ชื่อร้านค้า"
-            value={(values.profile as any)?.companyName ?? ""}
-            onChange={(e) =>
-              setValues((prev) => ({
-                ...prev,
-                profile: { ...prev.profile, companyName: e.target.value },
-              }))
-            }
+            value={values.companyName ?? ""}
+            onChange={handleChange("companyName") as any}
             required
             fullWidth
           />
@@ -186,23 +183,25 @@ export function CustomerForm({
           />
         </Stack>
 
-        {/* แถว 2: ประเภท, latitude, longitude */}
+        {/* แถว 2: ประเภท (ซ่อนในหน้าเพิ่ม), latitude, longitude */}
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-          <TextField
-            select
-            label="ประเภท"
-            value={values.type}
-            onChange={(e) => {
-              const nextType = (e.target.value || "DEALER") as CustomerType;
-              setValues((prev) => ({ ...prev, type: nextType, profile: { ...prev.profile } }));
-            }}
-            required
-            sx={{ minWidth: { xs: "100%", sm: 200 } }}
-          >
-            <MenuItem value="DEALER">Dealer</MenuItem>
-            <MenuItem value="SUBDEALER">SubDealer</MenuItem>
-            <MenuItem value="FARMER">Farmer</MenuItem>
-          </TextField>
+          {!hideTypeSelect && (
+            <TextField
+              select
+              label="ประเภท"
+              value={values.type}
+              onChange={(e) => {
+                const nextType = (e.target.value || "DEALER") as CustomerType;
+                setValues((prev) => ({ ...prev, type: nextType }));
+              }}
+              required
+              sx={{ minWidth: { xs: "100%", sm: 200 } }}
+            >
+              <MenuItem value="DEALER">Dealer</MenuItem>
+              <MenuItem value="SUBDEALER">SubDealer</MenuItem>
+              <MenuItem value="FARMER">Farmer</MenuItem>
+            </TextField>
+          )}
           <TextField
             label="latitude (ละติจูด)"
             type="number"
@@ -288,7 +287,7 @@ export function CustomerForm({
             >
               <FormControlLabel value="MALE" control={<Radio />} label="ชาย" />
               <FormControlLabel value="FEMALE" control={<Radio />} label="หญิง" />
-              <FormControlLabel value="OTHER" control={<Radio />} label="อื่นๆ" />
+              {/* ลบตัวเลือก 'อื่นๆ' ตามคำขอ */}
             </RadioGroup>
           </Stack>
         </Stack>
@@ -318,21 +317,8 @@ export function CustomerForm({
             InputProps={{ readOnly: true }}
             fullWidth
           />
-          <TextField
-            label="เบอร์โทรศัพท์ (บุคคล)"
-            value={(values.profile as any)?.contactPhone ?? ""}
-            onChange={(e) => setValues((prev) => ({ ...prev, profile: { ...prev.profile, contactPhone: e.target.value } }))}
-            fullWidth
-            placeholder="0xx-xxx-xxxx"
-          />
-          <TextField
-            label="E-mail (บุคคล)"
-            type="email"
-            value={(values.profile as any)?.contactEmail ?? ""}
-            onChange={(e) => setValues((prev) => ({ ...prev, profile: { ...prev.profile, contactEmail: e.target.value } }))}
-            fullWidth
-            placeholder="name@example.com"
-          />
+          <TextField label="เบอร์โทรศัพท์ (บุคคล)" value={values.contactPhone ?? ""} onChange={handleChange("contactPhone") as any} fullWidth placeholder="0xx-xxx-xxxx" />
+          <TextField label="E-mail (บุคคล)" type="email" value={values.contactEmail ?? ""} onChange={handleChange("contactEmail") as any} fullWidth placeholder="name@example.com" />
         </Stack>
 
         <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
@@ -341,13 +327,7 @@ export function CustomerForm({
 
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           {values.type === "DEALER" && (
-            <TextField
-              label="วงเงินเครดิต (บาท)"
-              type="number"
-              value={(values.profile as any)?.creditLimit ?? ""}
-              onChange={(e) => setValues((prev) => ({ ...prev, profile: { ...prev.profile, creditLimit: e.target.value } }))}
-              fullWidth
-            />
+            <TextField label="วงเงินเครดิต (บาท)" type="number" value={values.creditLimit ?? ""} onChange={handleChange("creditLimit") as any} fullWidth />
           )}
           <Autocomplete
             options={employeeOptions}

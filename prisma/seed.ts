@@ -47,15 +47,25 @@ const resources: ModuleDefinition[] = [
   { key: "roles", label: "สิทธิ์" },
 ];
 
-const allPermissionKeys = resources.flatMap((resource) =>
-  PERMISSION_ACTIONS.map((action) => buildPermissionKey(resource.key, action)),
-);
+function buildPermissionKey(resource: string, action: PermissionAction) {
+  return `${resource}:${action}`;
+}
 
+function buildPermissionGroup(resource: string, actions: PermissionAction[]) {
+  return actions.map((action) => buildPermissionKey(resource, action));
+}
+
+// Default permission groups
 const approvalActions: PermissionAction[] = ["approve", "reject"];
 const manageActions: PermissionAction[] = ["view", "create", "edit", "delete", ...approvalActions];
 const contributeActions: PermissionAction[] = ["view", "create", "edit"];
 const viewOnly: PermissionAction[] = ["view"];
 const viewCreateActions: PermissionAction[] = ["view", "create"];
+
+// Roles
+const allPermissionKeys = resources.flatMap((r) =>
+  PERMISSION_ACTIONS.map((a) => buildPermissionKey(r.key, a))
+);
 
 const roleSeeds: RoleSeed[] = [
   {
@@ -65,154 +75,98 @@ const roleSeeds: RoleSeed[] = [
     permissions: allPermissionKeys,
   },
   {
-    key: "marketing_manager",
-    name: "ผู้จัดการการตลาด",
-    description: "บริหารงานการตลาดและตรวจสอบข้อมูลแผนที่",
-    permissions: [
-      ...buildPermissionGroup("marketing", manageActions),
-      ...buildPermissionGroup("map", viewOnly),
-    ],
-  },
-  {
     key: "sales_manager",
-    name: "ผู้จัดการการขาย",
+    name: "ผู้จัดการฝ่ายขาย",
     description: "ติดตามการขายและดูแลข้อมูลลูกค้าและสินค้า",
     permissions: [
       ...buildPermissionGroup("customers", manageActions),
       ...buildPermissionGroup("products", manageActions),
-      ...buildPermissionGroup("marketing", viewOnly),
+      ...buildPermissionGroup("sales", manageActions),
     ],
-  },
-  {
-    key: "marketing_staff",
-    name: "พนักงานการตลาด",
-    description: "เข้าถึงเฉพาะงานภายในแผนกการตลาด",
-    permissions: buildPermissionGroup("marketing", contributeActions),
   },
   {
     key: "sales_staff",
     name: "พนักงานฝ่ายขาย",
-    description: "ดูแลข้อมูลลูกค้าและสินค้าเพื่อการขาย",
+    description: "ดูแลข้อมูลลูกค้าและบันทึกยอดขาย",
     permissions: [
       ...buildPermissionGroup("customers", contributeActions),
-      ...buildPermissionGroup("products", viewCreateActions),
+      ...buildPermissionGroup("sales", viewCreateActions),
     ],
   },
 ];
 
 const userSeeds: UserSeed[] = [
   {
-    email: "bank@admin.com",
-    name: "Admin",
-    password: "bank@admin.com",
+    email: "admin@csone.local",
+    name: "System Admin",
+    password: "Admin@123",
     role: "ADMIN",
     roleKey: "admin",
     employee: {
-      employeeCode: "ADM-001",
-      position: "System Administrator",
-      department: "ผู้ดูแลระบบ",
-      phone: "081-000-0001",
-      startDate: new Date("2022-01-01"),
+      employeeCode: "EMP-0001",
+      position: "ผู้ดูแลระบบ",
+      department: "IT",
+      phone: "0810000001",
+      startDate: new Date("2024-01-01"),
     },
   },
   {
-    email: "marketing.manager@example.com",
-    name: "ผู้จัดการการตลาด",
-    password: "Marketing@123",
-    role: "MANAGER",
-    roleKey: "marketing_manager",
-    employee: {
-      employeeCode: "MKT-001",
-      position: "ผู้จัดการการตลาด",
-      department: "การตลาด",
-      phone: "081-000-0002",
-      startDate: new Date("2022-06-01"),
-    },
-  },
-  {
-    email: "sales.manager@example.com",
+    email: "sales.manager@csone.local",
     name: "ผู้จัดการฝ่ายขาย",
     password: "SalesManager@123",
     role: "MANAGER",
     roleKey: "sales_manager",
     employee: {
-      employeeCode: "SAL-001",
+      employeeCode: "EMP-0002",
       position: "ผู้จัดการฝ่ายขาย",
       department: "การขาย",
-      phone: "081-000-0003",
-      startDate: new Date("2022-06-15"),
+      phone: "0810000002",
+      startDate: new Date("2024-03-01"),
     },
   },
   {
-    email: "marketing.staff@example.com",
-    name: "เจ้าหน้าที่การตลาด",
-    password: "MarketingStaff@123",
-    role: "USER",
-    roleKey: "marketing_staff",
-    employee: {
-      employeeCode: "MKT-002",
-      position: "นักการตลาด",
-      department: "การตลาด",
-      phone: "081-000-0004",
-      startDate: new Date("2023-01-10"),
-    },
-  },
-  {
-    email: "sales.staff@example.com",
-    name: "เจ้าหน้าที่ฝ่ายขาย",
+    email: "sales.staff@csone.local",
+    name: "พนักงานฝ่ายขาย",
     password: "SalesStaff@123",
     role: "USER",
     roleKey: "sales_staff",
     employee: {
-      employeeCode: "SAL-002",
+      employeeCode: "EMP-0003",
       position: "เจ้าหน้าที่ฝ่ายขาย",
       department: "การขาย",
-      phone: "081-000-0005",
-      startDate: new Date("2023-02-01"),
+      phone: "0810000003",
+      startDate: new Date("2024-06-01"),
     },
   },
 ];
 
-function buildPermissionKey(resource: string, action: PermissionAction) {
-  return `${resource}:${action}`;
-}
-
-function buildPermissionGroup(resource: string, actions: PermissionAction[]) {
-  return actions.map((action) => buildPermissionKey(resource, action));
-}
-
 async function main() {
-  const roleDefinitionIdMap = new Map<string, string>();
+  console.log("🌱 Start seeding...");
 
-  // Ensure a system actor exists and set as audit actor for seeding
+  // ---------------------------
+  // 1️⃣ สร้าง SYSTEM USER
+  // ---------------------------
   const systemEmail = "system@local";
   const systemPassword = await bcrypt.hash("System@seed", 10);
   const systemUser = await prisma.user.upsert({
     where: { email: systemEmail },
-    update: {
-      name: "System",
-      passwordHash: systemPassword,
-      role: "ADMIN",
-    },
-    create: {
-      email: systemEmail,
-      name: "System",
-      passwordHash: systemPassword,
-      role: "ADMIN",
-    },
+    update: { name: "System", passwordHash: systemPassword, role: "ADMIN" },
+    create: { email: systemEmail, name: "System", passwordHash: systemPassword, role: "ADMIN" },
   });
   process.env.AUDIT_ACTOR_USER_ID = systemUser.id;
 
+  // ---------------------------
+  // 2️⃣ สร้าง Permissions / Roles
+  // ---------------------------
+  const roleDefinitionIdMap = new Map<string, string>();
+  const permissionIdMap = new Map<string, string>();
+
   await prisma.$transaction(async (tx) => {
-    // Ensure permissions exist
-    const permissionIdMap = new Map<string, string>();
     for (const resource of resources) {
       for (const action of PERMISSION_ACTIONS) {
         const permission = await tx.permission.upsert({
           where: { category_name: { category: resource.key, name: action } },
-          update: {
-            description: `${ACTION_LABELS[action]} - ${resource.label}`,
-          },
+          update: { description: `${ACTION_LABELS[action]} - ${resource.label}` },
           create: {
             category: resource.key,
             name: action,
@@ -224,104 +178,179 @@ async function main() {
     }
 
     for (const role of roleSeeds) {
-      const roleDefinition = await tx.roleDefinition.upsert({
+      const roleDef = await tx.roleDefinition.upsert({
         where: { key: role.key },
-        update: {
-          name: role.name,
-          description: role.description,
-        },
-        create: {
-          key: role.key,
-          name: role.name,
-          description: role.description,
-        },
+        update: { name: role.name, description: role.description },
+        create: { key: role.key, name: role.name, description: role.description },
       });
 
-      roleDefinitionIdMap.set(role.key, roleDefinition.id);
+      roleDefinitionIdMap.set(role.key, roleDef.id);
+      await tx.rolePermission.deleteMany({ where: { roleId: roleDef.id } });
 
-      await tx.rolePermission.deleteMany({ where: { roleId: roleDefinition.id } });
-      const permissionIds = Array.from(
-        new Set(
-          role.permissions
-            .map((key) => permissionIdMap.get(key))
-            .filter((value): value is string => Boolean(value)),
-        ),
-      );
+      const permissionIds = role.permissions
+        .map((k) => permissionIdMap.get(k))
+        .filter((v): v is string => !!v);
 
-      if (permissionIds.length > 0) {
-        await tx.rolePermission.createMany({
-          data: permissionIds.map((permissionId) => ({
-            roleId: roleDefinition.id,
-            permissionId,
-          })),
-          skipDuplicates: true,
-        });
-      }
+      await tx.rolePermission.createMany({
+        data: permissionIds.map((pid) => ({ roleId: roleDef.id, permissionId: pid })),
+        skipDuplicates: true,
+      });
     }
   });
 
-  for (const userSeed of userSeeds) {
-    const roleDefinitionId = roleDefinitionIdMap.get(userSeed.roleKey);
-    if (!roleDefinitionId) {
-      throw new Error(`Missing role definition for key ${userSeed.roleKey}`);
-    }
+  // ---------------------------
+  // 3️⃣ สร้าง Users + Employees
+  // ---------------------------
+  const employees: Record<string, string> = {};
 
-    const passwordHash = await bcrypt.hash(userSeed.password, 10);
+  for (const u of userSeeds) {
+    const roleDefinitionId = roleDefinitionIdMap.get(u.roleKey)!;
+    const passwordHash = await bcrypt.hash(u.password, 10);
 
     const user = await prisma.user.upsert({
-      where: { email: userSeed.email },
-      update: {
-        name: userSeed.name,
-        passwordHash,
-        role: userSeed.role,
-        roleDefinitionId,
-      },
+      where: { email: u.email },
+      update: { name: u.name, passwordHash, role: u.role, roleDefinitionId },
       create: {
-        email: userSeed.email,
-        name: userSeed.name,
+        email: u.email,
+        name: u.name,
         passwordHash,
-        role: userSeed.role,
+        role: u.role,
         roleDefinitionId,
       },
     });
 
-    // Set audit actor for subsequent seed writes using this admin user
-    if (!process.env.AUDIT_ACTOR_USER_ID && userSeed.role === "ADMIN") {
-      process.env.AUDIT_ACTOR_USER_ID = user.id;
-    }
-
-    if (userSeed.employee) {
-      const employee = userSeed.employee;
-      await prisma.employee.upsert({
+    if (u.employee) {
+      const emp = await prisma.employee.upsert({
         where: { userId: user.id },
         update: {
-          position: employee.position,
-          department: employee.department,
-          phone: employee.phone,
-          startDate: employee.startDate,
+          position: u.employee.position,
+          department: u.employee.department,
+          phone: u.employee.phone,
+          startDate: u.employee.startDate,
           status: "ACTIVE",
         },
         create: {
           userId: user.id,
-          employeeCode: employee.employeeCode,
-          position: employee.position,
-          department: employee.department,
-          phone: employee.phone,
-          startDate: employee.startDate,
+          employeeCode: u.employee.employeeCode,
+          position: u.employee.position,
+          department: u.employee.department,
+          phone: u.employee.phone,
+          startDate: u.employee.startDate,
           status: "ACTIVE",
         },
       });
+      employees[user.email] = emp.id;
     }
 
-    console.log(
-      `✅ Seeded user ${userSeed.email} (${userSeed.roleKey}) with password ${userSeed.password}`,
-    );
+    console.log(`✅ Created user ${u.email} (${u.roleKey})`);
   }
+
+  // ---------------------------
+  // 4️⃣ สร้าง Dealer / SubDealer / Farmer ตัวอย่าง
+  // ---------------------------
+  const dealer = await prisma.dealer.create({
+    data: {
+      code: "DLR-0001",
+      name: "บริษัท สมบูรณ์เกษตรภัณฑ์ จำกัด",
+      taxId: "0105556789012",
+      phone: "029999999",
+      province: "นนทบุรี",
+      responsibleEmployeeId: employees["sales.manager@csone.local"],
+      businessInfo: { create: { creditTerm: 60, creditLimit: 500000, salesTarget: 1000000 } },
+    },
+  });
+
+  const subDealer = await prisma.subDealer.create({
+    data: {
+      code: "SBD-0001",
+      name: "ร้านรุ่งเรืองเกษตรภัณฑ์",
+      phone: "0811112222",
+      province: "ราชบุรี",
+      dealerId: dealer.id,
+      responsibleEmployeeId: employees["sales.staff@csone.local"],
+      businessInfo: { create: { creditTerm: 30, creditLimit: 150000, salesTarget: 300000 } },
+    },
+  });
+
+  const farmer = await prisma.farmer.create({
+    data: {
+      code: "FRM-0001",
+      name: "นายสมชาย เกษตรกรดีเด่น",
+      phone: "0892223333",
+      province: "กาญจนบุรี",
+      cropType: "ข้าวโพด",
+      farmName: "ไร่สมชาย",
+      farmSize: 45,
+      subDealerId: subDealer.id,
+      responsibleEmployeeId: employees["sales.staff@csone.local"],
+      businessInfo: { create: { areaSize: 45, cropType: "ข้าวโพด", season: "ฤดูฝน 2567" } },
+    },
+  });
+
+  // ---------------------------
+  // 5️⃣ ตัวอย่าง Sale / Interaction
+  // ---------------------------
+  await prisma.sale.createMany({
+    data: [
+      {
+        dealerId: dealer.id,
+        orderDate: new Date("2025-01-10"),
+        productName: "ปุ๋ยยูเรีย 46-0-0",
+        quantity: 200,
+        amount: 80000,
+        paymentStatus: "PAID",
+      },
+      {
+        subDealerId: subDealer.id,
+        orderDate: new Date("2025-02-01"),
+        productName: "ยากำจัดวัชพืช",
+        quantity: 50,
+        amount: 35000,
+        paymentStatus: "PENDING",
+      },
+      {
+        farmerId: farmer.id,
+        orderDate: new Date("2025-03-10"),
+        productName: "เมล็ดพันธุ์ข้าวโพด Pioneer",
+        quantity: 10,
+        amount: 7000,
+        paymentStatus: "PAID",
+      },
+    ],
+  });
+
+  await prisma.interaction.createMany({
+    data: [
+      {
+        dealerId: dealer.id,
+        date: new Date("2025-02-05"),
+        channel: "VISIT",
+        notes: "เข้าเยี่ยม Dealer เพื่อติดตามยอดขาย Q1",
+        createdById: systemUser.id,
+      },
+      {
+        subDealerId: subDealer.id,
+        date: new Date("2025-03-15"),
+        channel: "CALL",
+        notes: "โทรสอบถามความต้องการสั่งสินค้าใหม่",
+        createdById: systemUser.id,
+      },
+      {
+        farmerId: farmer.id,
+        date: new Date("2025-03-20"),
+        channel: "LINE",
+        notes: "เกษตรกรสอบถามวิธีใช้ผลิตภัณฑ์",
+        createdById: systemUser.id,
+      },
+    ],
+  });
+
+  console.log("🌾 Dealer/SubDealer/Farmer data seeded successfully!");
 }
 
 main()
-  .catch((error) => {
-    console.error(error);
+  .catch((err) => {
+    console.error("❌ Seed failed:", err);
     process.exit(1);
   })
   .finally(async () => {

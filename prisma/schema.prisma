@@ -1,3 +1,6 @@
+// ====================
+// DATABASE + GENERATOR
+// ====================
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
@@ -7,6 +10,9 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// ====================
+// ENUMS
+// ====================
 enum Role {
   ADMIN
   MANAGER
@@ -25,6 +31,30 @@ enum Gender {
   OTHER
 }
 
+enum PartnerStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  APPROVE
+  REJECT
+}
+
+enum InteractionChannel {
+  CALL
+  VISIT
+  EMAIL
+  LINE
+  OTHER
+}
+
+// ====================
+// AUTHENTICATION MODELS
+// ====================
 model User {
   id               String    @id @default(cuid())
   name             String?
@@ -35,49 +65,16 @@ model User {
   role             Role      @default(USER)
   roleDefinitionId String?
 
-  accounts            Account[]
-  sessions            Session[]
-  employee            Employee?
-  roleDefinition      RoleDefinition? @relation(fields: [roleDefinitionId], references: [id])
-  performedAuditLogs  AuditLog[]      @relation("AuditPerformedByUser")
-  createdInteractions Interaction[]   @relation("UserCreatedInteractions")
+  accounts           Account[]
+  sessions           Session[]
+  employee           Employee?
+  roleDefinition     RoleDefinition? @relation(fields: [roleDefinitionId], references: [id])
+  performedAuditLogs AuditLog[]      @relation("AuditPerformedByUser")
+  createdInteractions Interaction[]  @relation("UserCreatedInteractions")
 
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
   deletedAt   DateTime?
-  Interaction Interaction[]
-}
-
-model Employee {
-  id                 String         @id @default(cuid())
-  userId             String         @unique
-  employeeCode       String         @unique
-  prefix             String? // คำนำหน้า (นาย, นาง, น.ส.)
-  firstName          String?
-  lastName           String?
-  position           String
-  department         String
-  company            String?
-  responsibilityArea String?
-  birthDate          DateTime?
-  gender             Gender?
-  phone              String
-  startDate          DateTime // วันที่เริ่มงาน (มีอยู่แล้ว)
-  status             EmployeeStatus @default(ACTIVE)
-  address            String? // ที่อยู่
-  province           String? // จังหวัด
-  district           String? // อำเภอ
-  subdistrict        String? // ตำบล
-  postalCode         String? // รหัสไปรษณีย์
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // ลูกค้าที่พนักงานคนนี้รับผิดชอบ (back relation จาก Customer.responsibleEmployee)
-  responsibleCustomers Customer[]
 }
 
 model Account {
@@ -119,6 +116,45 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+// ====================
+// EMPLOYEE MODELS
+// ====================
+model Employee {
+  id                 String         @id @default(cuid())
+  userId             String         @unique
+  employeeCode       String         @unique
+  prefix             String?
+  firstName          String?
+  lastName           String?
+  position           String
+  department         String
+  company            String?
+  responsibilityArea String?
+  birthDate          DateTime?
+  gender             Gender?
+  phone              String
+  startDate          DateTime
+  status             EmployeeStatus @default(ACTIVE)
+  address            String?
+  province           String?
+  district           String?
+  subdistrict        String?
+  postalCode         String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  responsibleDealers   Dealer[]
+  responsibleSubDealers SubDealer[]
+  responsibleFarmers    Farmer[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+}
+
+// ====================
+// RBAC MODELS
+// ====================
 model RoleDefinition {
   id          String    @id @default(cuid())
   key         String    @unique
@@ -158,49 +194,9 @@ model RolePermission {
   @@id([roleId, permissionId])
 }
 
-enum CustomerType {
-  DEALER
-  SUBDEALER
-  FARMER
-}
-
-model Customer {
-  id                    String       @id @default(cuid())
-  type                  CustomerType
-  name                  String
-  code                  String?      @unique
-  prefix                String?
-  firstName             String?
-  lastName              String?
-  email                 String?
-  phone                 String
-  taxId                 String?
-  address               String?
-  province              String?
-  district              String?
-  subdistrict           String?
-  postalCode            String?
-  latitude              Float?
-  longitude             Float?
-  birthDate             DateTime?
-  gender                Gender?
-  profile               Json?
-  responsibleEmployeeId String?
-  responsibleEmployee   Employee?    @relation(fields: [responsibleEmployeeId], references: [id])
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
-}
-
-enum AuditAction {
-  CREATE
-  UPDATE
-  DELETE
-  APPROVE
-  REJECT
-}
-
+// ====================
+// AUDIT LOG
+// ====================
 model AuditLog {
   id                String      @id @default(cuid())
   model             String
@@ -215,28 +211,13 @@ model AuditLog {
 }
 
 // ====================
-// Partner Types
+// DEALER / SUBDEALER / FARMER
 // ====================
-enum PartnerType {
-  DEALER
-  SUB_DEALER
-  FARMER
-}
-
-enum PartnerStatus {
-  ACTIVE
-  INACTIVE
-}
-
-// ====================
-// Partner Model
-// ====================
-model Partner {
+model Dealer {
   id          String        @id @default(cuid())
-  type        PartnerType
   code        String        @unique
   name        String
-  contactName String?
+  taxId       String?
   phone       String?
   email       String?
   address     String?
@@ -248,10 +229,75 @@ model Partner {
   longitude   Float?
   status      PartnerStatus @default(ACTIVE)
 
-  parentId String?
-  parent   Partner?  @relation("PartnerHierarchy", fields: [parentId], references: [id])
-  children Partner[] @relation("PartnerHierarchy")
+  responsibleEmployeeId String?
+  responsibleEmployee   Employee? @relation(fields: [responsibleEmployeeId], references: [id])
 
+  subDealers   SubDealer[]
+  businessInfo BusinessInfo?
+  sales        Sale[]
+  interactions Interaction[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+}
+
+model SubDealer {
+  id          String        @id @default(cuid())
+  code        String        @unique
+  name        String
+  taxId       String?
+  phone       String?
+  email       String?
+  address     String?
+  province    String?
+  district    String?
+  subdistrict String?
+  postalCode  String?
+  latitude    Float?
+  longitude   Float?
+  status      PartnerStatus @default(ACTIVE)
+
+  responsibleEmployeeId String?
+  responsibleEmployee   Employee? @relation(fields: [responsibleEmployeeId], references: [id])
+
+  dealerId     String?
+  dealer       Dealer?      @relation(fields: [dealerId], references: [id], onDelete: Cascade)
+  farmers      Farmer[]
+  businessInfo BusinessInfo?
+  sales        Sale[]
+  interactions Interaction[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+}
+
+model Farmer {
+  id          String        @id @default(cuid())
+  code        String        @unique
+  name        String
+  phone       String?
+  email       String?
+  address     String?
+  province    String?
+  district    String?
+  subdistrict String?
+  postalCode  String?
+  latitude    Float?
+  longitude   Float?
+  gender      Gender?
+  birthDate   DateTime?
+  farmName    String?
+  farmSize    Float?
+  cropType    String?
+  status      PartnerStatus @default(ACTIVE)
+
+  responsibleEmployeeId String?
+  responsibleEmployee   Employee? @relation(fields: [responsibleEmployeeId], references: [id])
+
+  subDealerId String?
+  subDealer   SubDealer?    @relation(fields: [subDealerId], references: [id], onDelete: Cascade)
   businessInfo BusinessInfo?
   sales        Sale[]
   interactions Interaction[]
@@ -262,19 +308,23 @@ model Partner {
 }
 
 // ====================
-// Business Info (เฉพาะ Dealer/SubDealer/Farmer)
+// BUSINESS INFO
 // ====================
 model BusinessInfo {
-  id          String  @id @default(cuid())
-  partnerId   String  @unique
-  creditTerm  Int? // Dealer/SubDealer
-  creditLimit Float? // Dealer/SubDealer
-  salesTarget Float? // Dealer/SubDealer
-  areaSize    Float? // Farmer
-  cropType    String? // Farmer
-  season      String? // Farmer
+  id          String   @id @default(cuid())
+  dealerId    String?  @unique
+  subDealerId String?  @unique
+  farmerId    String?  @unique
+  creditTerm  Int?
+  creditLimit Float?
+  salesTarget Float?
+  areaSize    Float?
+  cropType    String?
+  season      String?
 
-  partner Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  dealer     Dealer?    @relation(fields: [dealerId], references: [id], onDelete: Cascade)
+  subDealer  SubDealer? @relation(fields: [subDealerId], references: [id], onDelete: Cascade)
+  farmer     Farmer?    @relation(fields: [farmerId], references: [id], onDelete: Cascade)
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -282,11 +332,13 @@ model BusinessInfo {
 }
 
 // ====================
-// Sales Transactions
+// SALES
 // ====================
 model Sale {
   id            String    @id @default(cuid())
-  partnerId     String
+  dealerId      String?
+  subDealerId   String?
+  farmerId      String?
   orderDate     DateTime
   productName   String
   quantity      Float
@@ -294,7 +346,9 @@ model Sale {
   paymentStatus String
   dueDate       DateTime?
 
-  partner Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  dealer     Dealer?    @relation(fields: [dealerId], references: [id], onDelete: Cascade)
+  subDealer  SubDealer? @relation(fields: [subDealerId], references: [id], onDelete: Cascade)
+  farmer     Farmer?    @relation(fields: [farmerId], references: [id], onDelete: Cascade)
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -302,31 +356,26 @@ model Sale {
 }
 
 // ====================
-// Interaction Logs
+// INTERACTIONS
 // ====================
-enum InteractionChannel {
-  CALL
-  VISIT
-  EMAIL
-  LINE
-  OTHER
-}
-
 model Interaction {
   id        String             @id @default(cuid())
-  partnerId String
   date      DateTime
   channel   InteractionChannel
   notes     String?
 
-  partner Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  dealerId    String?
+  subDealerId String?
+  farmerId    String?
+
+  dealer     Dealer?    @relation(fields: [dealerId], references: [id], onDelete: Cascade)
+  subDealer  SubDealer? @relation(fields: [subDealerId], references: [id], onDelete: Cascade)
+  farmer     Farmer?    @relation(fields: [farmerId], references: [id], onDelete: Cascade)
 
   createdById String?
-  createdBy   User?   @relation("UserCreatedInteractions", fields: [createdById], references: [id])
+  createdBy   User? @relation("UserCreatedInteractions", fields: [createdById], references: [id])
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   deletedAt DateTime?
-  User      User?     @relation(fields: [userId], references: [id])
-  userId    String?
 }

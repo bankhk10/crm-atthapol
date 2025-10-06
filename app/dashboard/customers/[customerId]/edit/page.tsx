@@ -24,7 +24,7 @@ export default async function CustomerEditPage({ params }: { params: Promise<{ c
     prefix: customer.prefix ?? "",
     firstName: customer.firstName ?? "",
     lastName: customer.lastName ?? "",
-    gender: (customer.gender as any) ?? "MALE",
+    gender: (customer.gender === 'FEMALE' ? 'FEMALE' : 'MALE') as any,
     birthDate: customer.birthDate ? new Date(customer.birthDate).toISOString().slice(0, 10) : "",
     email: customer.email ?? "",
     phone: customer.phone ?? "",
@@ -38,7 +38,16 @@ export default async function CustomerEditPage({ params }: { params: Promise<{ c
     longitude: customer.longitude ?? "",
     code: customer.code ?? "",
     responsibleEmployeeId: customer.responsibleEmployeeId ?? null,
-    profile: (customer.profile as any) ?? {},
+    companyName: (customer as any).companyName ?? "",
+    contactPerson: (customer as any).contactPerson ?? "",
+    contactPhone: (customer as any).contactPhone ?? "",
+    contactEmail: (customer as any).contactEmail ?? "",
+    creditLimit: (customer as any).creditLimit ?? "",
+    parentDealer: (customer as any).parentDealer ?? "",
+    subDealerCode: (customer as any).subDealerCode ?? "",
+    farmName: (customer as any).farmName ?? "",
+    farmSize: (customer as any).farmSize ?? "",
+    cropType: (customer as any).cropType ?? "",
   };
 
   return (

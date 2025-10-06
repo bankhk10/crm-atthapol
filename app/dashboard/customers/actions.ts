@@ -15,8 +15,9 @@ const customerFormSchema = z.object({
   prefix: z.string().min(1, "กรุณาเลือกคำนำหน้า"),
   firstName: z.string().min(1, "กรุณากรอกชื่อ"),
   lastName: z.string().min(1, "กรุณากรอกนามสกุล"),
-  gender: z.enum(["MALE", "FEMALE", "OTHER"], { message: "เพศไม่ถูกต้อง" }),
+  gender: z.enum(["MALE", "FEMALE"], { message: "เพศไม่ถูกต้อง" }),
   birthDate: z.string().min(1, "กรุณาเลือกวันเกิด"),
+  // บริษัท (เก็บที่ top-level)
   phone: z.string().min(1, "กรุณากรอกเบอร์โทร"),
   code: z.string().optional(),
   email: z
@@ -39,19 +40,41 @@ const customerFormSchema = z.object({
     (v) => (v === "" || v === null || v === undefined ? undefined : typeof v === "string" ? parseFloat(v) : v),
     z.number().optional(),
   ),
+
+  // ฟิลด์ที่เคยอยู่ใน profile JSON
+  companyName: z.string().optional(),
+  contactPerson: z.string().optional(),
+  contactPhone: z.string().optional(),
+  contactEmail: z.string().email("อีเมลไม่ถูกต้อง").optional().or(z.literal(""))
+    .transform((v) => (v ? v : undefined)),
+  creditLimit: z.preprocess(
+    (v) => (v === "" || v === null || v === undefined ? undefined : typeof v === "string" ? parseFloat(v) : v),
+    z.number().optional(),
+  ),
+
+  parentDealer: z.string().optional(),
+  subDealerCode: z.string().optional(),
+
+  farmName: z.string().optional(),
+  farmSize: z.preprocess(
+    (v) => (v === "" || v === null || v === undefined ? undefined : typeof v === "string" ? parseFloat(v) : v),
+    z.number().optional(),
+  ),
+  cropType: z.string().optional(),
+
   responsibleEmployeeId: z.string().optional().or(z.null()),
-  profile: z.any().optional(),
 });
 
-async function generateDealerCode(tx: Prisma.TransactionClient) {
-  const last = await tx.customer.findFirst({
-    where: { deletedAt: null, type: "DEALER", code: { not: null } },
+async function generateCode(tx: Prisma.TransactionClient, model: "dealer" | "subDealer" | "farmer") {
+  const prefix = model === "dealer" ? "DLR-" : model === "subDealer" ? "SBD-" : "FRM-";
+  const last = await (tx as any)[model].findFirst({
+    where: { deletedAt: null, code: { not: null } },
     orderBy: { createdAt: "desc" },
     select: { code: true },
   });
   const lastNumber = last ? Number.parseInt(String(last.code).replace(/\D/g, ""), 10) : 0;
   const nextNumber = Number.isFinite(lastNumber) ? lastNumber + 1 : 1;
-  return `DEAL-${nextNumber.toString().padStart(4, "0")}`;
+  return `${prefix}${nextNumber.toString().padStart(4, "0")}`;
 }
 
 export async function createCustomer(rawValues: CustomerFormValues) {
@@ -60,20 +83,68 @@ export async function createCustomer(rawValues: CustomerFormValues) {
 
   await runWithRequestContext({ userId: session?.user?.id }, async () => {
     const displayName =
-      (values.profile && typeof values.profile === "object" && (values.profile as any).companyName && String((values.profile as any).companyName).trim()) ||
+      (values.companyName && String(values.companyName).trim()) ||
       [values.prefix, values.firstName, values.lastName].filter(Boolean).join(" ");
 
     await prisma.$transaction(async (tx) => {
-      const dealerCode = values.type === "DEALER" ? await generateDealerCode(tx) : undefined;
+      if (values.type === "DEALER") {
+        const code = await generateCode(tx, "dealer");
+        const created = await tx.dealer.create({
+          data: {
+            code,
+            name: displayName,
+            phone: values.phone,
+            email: values.email,
+            taxId: values.taxId,
+            address: values.address,
+            province: values.province,
+            district: values.district,
+            subdistrict: values.subdistrict,
+            postalCode: values.postalCode,
+            latitude: values.latitude,
+            longitude: values.longitude,
+            responsibleEmployeeId: values.responsibleEmployeeId ?? undefined,
+            businessInfo: values.creditLimit
+              ? { create: { creditLimit: Number(values.creditLimit) } }
+              : undefined,
+          },
+        });
+        return created.id;
+      }
 
-      await tx.customer.create({
+      if (values.type === "SUBDEALER") {
+        const code = values.subDealerCode && String(values.subDealerCode).trim().length
+          ? String(values.subDealerCode).trim()
+          : await generateCode(tx, "subDealer");
+        const created = await tx.subDealer.create({
+          data: {
+            code,
+            name: displayName,
+            phone: values.phone,
+            email: values.email,
+            taxId: values.taxId,
+            address: values.address,
+            province: values.province,
+            district: values.district,
+            subdistrict: values.subdistrict,
+            postalCode: values.postalCode,
+            latitude: values.latitude,
+            longitude: values.longitude,
+            responsibleEmployeeId: values.responsibleEmployeeId ?? undefined,
+            // dealerId left empty unless UI collects it
+          },
+        });
+        return created.id;
+      }
+
+      // FARMER
+      const code = await generateCode(tx, "farmer");
+      const created = await tx.farmer.create({
         data: {
-          type: values.type as any,
+          code,
           name: displayName,
-          code: dealerCode,
           phone: values.phone,
           email: values.email,
-          taxId: values.taxId,
           address: values.address,
           province: values.province,
           district: values.district,
@@ -81,15 +152,17 @@ export async function createCustomer(rawValues: CustomerFormValues) {
           postalCode: values.postalCode,
           latitude: values.latitude,
           longitude: values.longitude,
-          prefix: values.prefix,
-          firstName: values.firstName,
-          lastName: values.lastName,
           birthDate: values.birthDate ? new Date(values.birthDate) : null,
           gender: values.gender as any,
           responsibleEmployeeId: values.responsibleEmployeeId ?? undefined,
-          profile: values.profile as any,
+          farmName: values.farmName ? String(values.farmName) : undefined,
+          farmSize: values.farmSize !== undefined && values.farmSize !== null && String(values.farmSize) !== ""
+            ? Number(values.farmSize)
+            : undefined,
+          cropType: values.cropType ? String(values.cropType) : undefined,
         },
       });
+      return created.id;
     });
   });
 
@@ -102,17 +175,76 @@ export async function updateCustomer(customerId: string, rawValues: CustomerForm
 
   await runWithRequestContext({ userId: session?.user?.id }, async () => {
     const displayName =
-      (values.profile && typeof values.profile === "object" && (values.profile as any).companyName && String((values.profile as any).companyName).trim()) ||
+      (values.companyName && String(values.companyName).trim()) ||
       [values.prefix, values.firstName, values.lastName].filter(Boolean).join(" ");
 
-    await prisma.customer.update({
+    // Try update Dealer
+    const dealer = await prisma.dealer.findUnique({ where: { id: customerId } });
+    if (dealer) {
+      await prisma.dealer.update({
+        where: { id: customerId },
+        data: {
+          name: displayName,
+          phone: values.phone,
+          email: values.email,
+          taxId: values.taxId,
+          address: values.address,
+          province: values.province,
+          district: values.district,
+          subdistrict: values.subdistrict,
+          postalCode: values.postalCode,
+          latitude: values.latitude,
+          longitude: values.longitude,
+          responsibleEmployeeId: values.responsibleEmployeeId ?? undefined,
+        },
+      });
+      if (values.creditLimit !== undefined && values.creditLimit !== null && String(values.creditLimit) !== "") {
+        await prisma.businessInfo.upsert({
+          where: { dealerId: customerId },
+          update: { creditLimit: Number(values.creditLimit) },
+          create: { dealerId: customerId, creditLimit: Number(values.creditLimit) },
+        });
+      }
+      return;
+    }
+
+    // Try update SubDealer
+    const sub = await prisma.subDealer.findUnique({ where: { id: customerId } });
+    if (sub) {
+      await prisma.subDealer.update({
+        where: { id: customerId },
+        data: {
+          name: displayName,
+          phone: values.phone,
+          email: values.email,
+          taxId: values.taxId,
+          address: values.address,
+          province: values.province,
+          district: values.district,
+          subdistrict: values.subdistrict,
+          postalCode: values.postalCode,
+          latitude: values.latitude,
+          longitude: values.longitude,
+          responsibleEmployeeId: values.responsibleEmployeeId ?? undefined,
+        },
+      });
+      if (values.creditLimit !== undefined && values.creditLimit !== null && String(values.creditLimit) !== "") {
+        await prisma.businessInfo.upsert({
+          where: { subDealerId: customerId },
+          update: { creditLimit: Number(values.creditLimit) },
+          create: { subDealerId: customerId, creditLimit: Number(values.creditLimit) },
+        });
+      }
+      return;
+    }
+
+    // Otherwise update Farmer
+    await prisma.farmer.update({
       where: { id: customerId },
       data: {
-        type: values.type as any,
         name: displayName,
         phone: values.phone,
         email: values.email,
-        taxId: values.taxId,
         address: values.address,
         province: values.province,
         district: values.district,
@@ -120,13 +252,14 @@ export async function updateCustomer(customerId: string, rawValues: CustomerForm
         postalCode: values.postalCode,
         latitude: values.latitude,
         longitude: values.longitude,
-        prefix: values.prefix,
-        firstName: values.firstName,
-        lastName: values.lastName,
         birthDate: values.birthDate ? new Date(values.birthDate) : null,
         gender: values.gender as any,
         responsibleEmployeeId: values.responsibleEmployeeId ?? undefined,
-        profile: values.profile as any,
+        farmName: values.farmName ? String(values.farmName) : undefined,
+        farmSize: values.farmSize !== undefined && values.farmSize !== null && String(values.farmSize) !== ""
+          ? Number(values.farmSize)
+          : undefined,
+        cropType: values.cropType ? String(values.cropType) : undefined,
       },
     });
   });
