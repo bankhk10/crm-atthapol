@@ -153,7 +153,7 @@ export function CustomerForm({
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           <TextField
             select
-            label="ประเภท*"
+            label="ประเภท"
             value={values.type}
             onChange={(e) => {
               const nextType = (e.target.value || "DEALER") as CustomerType;
@@ -172,7 +172,7 @@ export function CustomerForm({
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           <TextField
             select
-            label="คำนำหน้า*"
+            label="คำนำหน้า"
             value={values.prefix}
             onChange={handleChange("prefix") as any}
             required
@@ -183,7 +183,7 @@ export function CustomerForm({
             <MenuItem value="นางสาว">นางสาว</MenuItem>
           </TextField>
           <TextField
-            label="ชื่อ*"
+            label="ชื่อ"
             value={values.firstName}
             onChange={handleChange("firstName")}
             required
@@ -191,7 +191,7 @@ export function CustomerForm({
             placeholder="เช่น สมชาย"
           />
           <TextField
-            label="นามสกุล*"
+            label="นามสกุล"
             value={values.lastName}
             onChange={handleChange("lastName")}
             required
@@ -203,7 +203,7 @@ export function CustomerForm({
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           <TextField
             select
-            label="เพศ*"
+            label="เพศ"
             value={values.gender}
             onChange={handleChange("gender") as any}
             required
@@ -215,7 +215,7 @@ export function CustomerForm({
           </TextField>
           <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={th}>
             <DatePicker
-              label="วันเกิด*"
+              label="วันเกิด"
               value={values.birthDate ? new Date(values.birthDate) : null}
               onChange={(newValue) => {
                 setValues((prev) => ({
