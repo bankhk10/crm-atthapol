@@ -148,7 +148,7 @@ export function CustomerForm({
           <Typography variant="h6" fontWeight={960}>ข้อมูลบริษัท</Typography>
         </Box>
 
-        {/* แถว 1: ชื่อร้านค้า, เลขผู้เสียภาษี, เบอร์โทร */}
+        {/* แถว 1: ชื่อร้านค้า, เลขผู้เสียภาษี, เบอร์โทร (บริษัท), E-mail (บริษัท) */}
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           <TextField
             label="ชื่อร้านค้า"
@@ -169,12 +169,20 @@ export function CustomerForm({
             fullWidth
           />
           <TextField
-            label="เบอร์โทรศัพท์"
+            label="เบอร์โทรศัพท์ (บริษัท)"
             value={values.phone}
             onChange={handleChange("phone")}
             required
             fullWidth
             placeholder="0xx-xxx-xxxx"
+          />
+          <TextField
+            label="E-mail (บริษัท)"
+            type="email"
+            value={values.email}
+            onChange={handleChange("email")}
+            fullWidth
+            placeholder="name@example.com"
           />
         </Stack>
 
@@ -285,7 +293,7 @@ export function CustomerForm({
           </Stack>
         </Stack>
 
-        {/* แถว 2: วันเกิด, อายุ, เบอร์โทร, อีเมล */}
+        {/* แถว 2: วันเกิด, อายุ, เบอร์โทร (บุคคล), E-mail (บุคคล) */}
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={th}>
             <DatePicker
@@ -310,8 +318,21 @@ export function CustomerForm({
             InputProps={{ readOnly: true }}
             fullWidth
           />
-          <TextField label="เบอร์โทรศัพท์" value={values.phone} onChange={handleChange("phone")} required fullWidth placeholder="0xx-xxx-xxxx" />
-          <TextField label="E-mail" type="email" value={values.email} onChange={handleChange("email")} fullWidth placeholder="name@example.com" />
+          <TextField
+            label="เบอร์โทรศัพท์ (บุคคล)"
+            value={(values.profile as any)?.contactPhone ?? ""}
+            onChange={(e) => setValues((prev) => ({ ...prev, profile: { ...prev.profile, contactPhone: e.target.value } }))}
+            fullWidth
+            placeholder="0xx-xxx-xxxx"
+          />
+          <TextField
+            label="E-mail (บุคคล)"
+            type="email"
+            value={(values.profile as any)?.contactEmail ?? ""}
+            onChange={(e) => setValues((prev) => ({ ...prev, profile: { ...prev.profile, contactEmail: e.target.value } }))}
+            fullWidth
+            placeholder="name@example.com"
+          />
         </Stack>
 
         <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>

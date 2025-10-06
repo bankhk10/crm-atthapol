@@ -4,6 +4,8 @@ export type CustomerProfile = {
   // Dealer fields
   companyName?: string;
   contactPerson?: string;
+  contactPhone?: string;
+  contactEmail?: string;
   creditLimit?: number | string;
 
   // SubDealer fields
