@@ -3,7 +3,16 @@
 import type { ChangeEvent, FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Alert, Button, Paper, Stack, TextField, Typography, Divider, MenuItem } from "@mui/material";
+import {
+  Alert,
+  Button,
+  Paper,
+  Stack,
+  TextField,
+  Typography,
+  Divider,
+  MenuItem,
+} from "@mui/material";
 import Autocomplete from "@mui/material/Autocomplete";
 import MyLocationIcon from "@mui/icons-material/MyLocation";
 import { Box } from "@mui/material";
@@ -93,17 +102,22 @@ export function CustomerForm({
       (err) => {
         let message = "ไม่สามารถดึงพิกัดได้";
         if (err.code === 1) message = "กรุณาอนุญาตการเข้าถึงตำแหน่งที่ตั้ง";
-        else if (err.code === 2) message = "ไม่สามารถระบุตำแหน่งได้ โปรดลองใหม่";
+        else if (err.code === 2)
+          message = "ไม่สามารถระบุตำแหน่งได้ โปรดลองใหม่";
         else if (err.code === 3) message = "หมดเวลาการร้องขอพิกัด โปรดลองใหม่";
         setError(message);
         setIsLocating(false);
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   };
 
   return (
-    <Paper component="form" onSubmit={handleSubmitWithErrors} sx={{ p: { xs: 2, sm: 3 }, maxWidth: 960 }}>
+    <Paper
+      component="form"
+      onSubmit={handleSubmitWithErrors}
+      sx={{ p: { xs: 2, sm: 3 }, maxWidth: 960 }}
+    >
       <Stack spacing={3}>
         {error && (
           <Alert severity="error" onClose={() => setError(null)}>
@@ -112,7 +126,12 @@ export function CustomerForm({
         )}
 
         <Stack spacing={1} alignItems="center">
-          <Typography variant="h4" fontWeight={700} component="h1" align="center">
+          <Typography
+            variant="h4"
+            fontWeight={700}
+            component="h1"
+            align="center"
+          >
             {title}
           </Typography>
           <Typography color="text.secondary" align="center">
@@ -122,8 +141,12 @@ export function CustomerForm({
 
         <Divider />
 
-        <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
-          <Typography variant="h6" fontWeight={960}>ข้อมูลลูกค้า</Typography>
+        <Box
+          sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}
+        >
+          <Typography variant="h6" fontWeight={960}>
+            ข้อมูลลูกค้า
+          </Typography>
         </Box>
 
         {/* customer type */}
@@ -197,7 +220,9 @@ export function CustomerForm({
               onChange={(newValue) => {
                 setValues((prev) => ({
                   ...prev,
-                  birthDate: newValue ? newValue.toISOString().slice(0, 10) : "",
+                  birthDate: newValue
+                    ? newValue.toISOString().slice(0, 10)
+                    : "",
                 }));
               }}
               slotProps={{ textField: { fullWidth: true, required: true } }}
@@ -210,8 +235,8 @@ export function CustomerForm({
                 ? String(
                     Math.floor(
                       (Date.now() - new Date(values.birthDate).getTime()) /
-                        (1000 * 60 * 60 * 24 * 365.25),
-                    ),
+                        (1000 * 60 * 60 * 24 * 365.25)
+                    )
                   )
                 : ""
             }
@@ -277,7 +302,7 @@ export function CustomerForm({
           />
         </Box>
 
-        <Stack direction="row" justifyContent="flex-end">
+        {/* <Stack direction="row" justifyContent="flex-end">
           <Button
             type="button"
             variant="outlined"
@@ -287,7 +312,7 @@ export function CustomerForm({
           >
             {isLocating ? "กำลังดึงพิกัด..." : "ดึงพิกัดปัจจุบัน"}
           </Button>
-        </Stack>
+        </Stack> */}
 
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           <TextField
@@ -295,7 +320,9 @@ export function CustomerForm({
             type="number"
             inputProps={{ step: "any" }}
             value={values.latitude ?? ""}
-            onChange={(e) => setValues((prev) => ({ ...prev, latitude: e.target.value }))}
+            onChange={(e) =>
+              setValues((prev) => ({ ...prev, latitude: e.target.value }))
+            }
             fullWidth
           />
           <TextField
@@ -303,7 +330,9 @@ export function CustomerForm({
             type="number"
             inputProps={{ step: "any" }}
             value={values.longitude ?? ""}
-            onChange={(e) => setValues((prev) => ({ ...prev, longitude: e.target.value }))}
+            onChange={(e) =>
+              setValues((prev) => ({ ...prev, longitude: e.target.value }))
+            }
             fullWidth
           />
         </Stack>
@@ -312,8 +341,17 @@ export function CustomerForm({
         /* Dealer / SubDealer / Farmer */}
         {values.type === "DEALER" && (
           <>
-            <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
-              <Typography variant="h6" fontWeight={960}>ข้อมูล Dealer</Typography>
+            <Box
+              sx={{
+                backgroundColor: "#d9d9dbff",
+                borderRadius: 2,
+                px: 2,
+                py: 2,
+              }}
+            >
+              <Typography variant="h6" fontWeight={960}>
+                ข้อมูล Dealer
+              </Typography>
             </Box>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <TextField
@@ -326,7 +364,9 @@ export function CustomerForm({
                 options={employeeOptions}
                 getOptionLabel={(option) => option.label}
                 value={
-                  employeeOptions.find((opt) => opt.id === (values.responsibleEmployeeId ?? "")) ?? null
+                  employeeOptions.find(
+                    (opt) => opt.id === (values.responsibleEmployeeId ?? "")
+                  ) ?? null
                 }
                 onChange={(_e, option) =>
                   setValues((prev) => ({
@@ -335,7 +375,12 @@ export function CustomerForm({
                   }))
                 }
                 renderInput={(params) => (
-                  <TextField {...params} label="พนักงานที่รับผิดชอบ" placeholder="ค้นหาชื่อพนักงาน" fullWidth />
+                  <TextField
+                    {...params}
+                    label="พนักงานที่รับผิดชอบ"
+                    placeholder="ค้นหาชื่อพนักงาน"
+                    fullWidth
+                  />
                 )}
                 isOptionEqualToValue={(opt, val) => opt.id === val.id}
                 fullWidth
@@ -384,8 +429,17 @@ export function CustomerForm({
 
         {values.type === "SUBDEALER" && (
           <>
-            <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
-              <Typography variant="h6" fontWeight={960}>ข้อมูล SubDealer</Typography>
+            <Box
+              sx={{
+                backgroundColor: "#d9d9dbff",
+                borderRadius: 2,
+                px: 2,
+                py: 2,
+              }}
+            >
+              <Typography variant="h6" fontWeight={960}>
+                ข้อมูล SubDealer
+              </Typography>
             </Box>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <TextField
@@ -416,8 +470,17 @@ export function CustomerForm({
 
         {values.type === "FARMER" && (
           <>
-            <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
-              <Typography variant="h6" fontWeight={960}>ข้อมูลเกษตรกร</Typography>
+            <Box
+              sx={{
+                backgroundColor: "#d9d9dbff",
+                borderRadius: 2,
+                px: 2,
+                py: 2,
+              }}
+            >
+              <Typography variant="h6" fontWeight={960}>
+                ข้อมูลเกษตรกร
+              </Typography>
             </Box>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <TextField
@@ -460,8 +523,17 @@ export function CustomerForm({
           </>
         )}
 
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="flex-end">
-          <Button component={Link} href="/dashboard/customers" variant="outlined" color="inherit">
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          spacing={2}
+          justifyContent="flex-end"
+        >
+          <Button
+            component={Link}
+            href="/dashboard/customers"
+            variant="outlined"
+            color="inherit"
+          >
             ยกเลิก
           </Button>
           <Button type="submit" variant="contained" disabled={isSubmitting}>
