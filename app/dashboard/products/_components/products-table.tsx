@@ -136,15 +136,7 @@ function EnhancedTableHead({
             </TableSortLabel>
           </TableCell>
         ))}
-        <TableCell align="center" padding="normal">
-          ดู
-        </TableCell>
-        <TableCell align="center" padding="normal">
-          แก้ไข
-        </TableCell>
-        <TableCell align="center" padding="normal">
-          ลบ
-        </TableCell>
+        <TableCell align="center" padding="normal">การกระทำ</TableCell>
       </TableRow>
     </TableHead>
   );
@@ -248,7 +240,7 @@ export function ProductsTable({ products }: Props) {
           <TableBody>
             {visibleRows.map((p) => (
               <TableRow hover key={p.id}>
-                <TableCell sx={{ whiteSpace: "productCode" }}>
+                <TableCell sx={{ whiteSpace: "nowrap" }}>
                   {p.productCode}
                 </TableCell>
                 <TableCell sx={{ whiteSpace: "nowrap" }}>{p.nameTH}</TableCell>
@@ -271,46 +263,30 @@ export function ProductsTable({ products }: Props) {
                     variant="outlined"
                   />
                 </TableCell>
-                <TableCell align="center" sx={{ width: 80 }}>
-                  <Tooltip title="ดูรายละเอียด" placement="top">
-                    <IconButton
-                      component={Link}
-                      href={`/dashboard/products/${p.id}`}
-                      aria-label="view"
-                      size="small"
-                    >
-                      <VisibilityOutlinedIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                </TableCell>
-                <TableCell align="center" sx={{ width: 80 }}>
-                  <Tooltip title="แก้ไข" placement="top">
-                    <IconButton
-                      component={Link}
-                      href={`/dashboard/products/${p.id}/edit`}
-                      aria-label="edit"
-                      size="small"
-                    >
-                      <EditOutlinedIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                </TableCell>
-                <TableCell align="center" sx={{ width: 80 }}>
-                  <Tooltip title="ลบ" placement="top">
-                    <IconButton
-                      aria-label="delete"
-                      size="small"
-                      onClick={() => setDeleteTarget(p)}
-                    >
-                      <DeleteOutlineIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
+                <TableCell align="center" sx={{ width: 140, px: 1 }}>
+                  <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
+                    <Tooltip title="ดูรายละเอียด" placement="top">
+                      <IconButton component={Link} href={`/dashboard/products/${p.id}`} aria-label="view" size="small" sx={{ m: 0 }}>
+                        <VisibilityOutlinedIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="แก้ไข" placement="top">
+                      <IconButton component={Link} href={`/dashboard/products/${p.id}/edit`} aria-label="edit" size="small" sx={{ m: 0 }}>
+                        <EditOutlinedIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="ลบ" placement="top">
+                      <IconButton aria-label="delete" size="small" onClick={() => setDeleteTarget(p)} sx={{ m: 0 }}>
+                        <DeleteOutlineIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
                 </TableCell>
               </TableRow>
             ))}
             {visibleRows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={headCells.length + 3} align="center">
+                <TableCell colSpan={headCells.length + 1} align="center">
                   <Typography color="text.secondary">
                     ไม่พบข้อมูลสินค้า
                   </Typography>
