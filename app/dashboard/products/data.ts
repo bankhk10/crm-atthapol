@@ -32,6 +32,7 @@ export async function getProducts(): Promise<ProductListItem[]> {
       brand: p.brand ?? null,
       unit: p.unit ?? null,
       price: p.price ?? null,
+      expDate: p.expDate ?? null,
       stockOnHand: stock,
       status: p.status as any,
       createdAt: new Date(p.createdAt).toISOString(),
