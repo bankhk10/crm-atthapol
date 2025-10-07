@@ -128,7 +128,7 @@ function EnhancedTableHead(props: EnhancedTableProps) {
     };
 
   return (
-    <TableHead>
+    <TableHead sx={{ bgcolor: 'grey.100', '& .MuiTableCell-root': { bgcolor: 'grey.100' } }}>
       <TableRow>
         {/* <TableCell padding="checkbox">
           <Checkbox
