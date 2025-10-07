@@ -136,7 +136,9 @@ function EnhancedTableHead({
             </TableSortLabel>
           </TableCell>
         ))}
-        <TableCell align="center" padding="normal">การกระทำ</TableCell>
+        <TableCell align="center" padding="normal">
+          การกระทำ
+        </TableCell>
       </TableRow>
     </TableHead>
   );
@@ -203,15 +205,7 @@ export function ProductsTable({ products }: Props) {
       variant="outlined"
       sx={{ p: 0, borderRadius: 2, overflow: "hidden" }}
     >
-      <Toolbar sx={{ pl: { sm: 2 }, pr: { xs: 1, sm: 1 } }}>
-        <Typography
-          sx={{ flex: "1 1 100%" }}
-          variant="h6"
-          id="tableTitle"
-          component="div"
-        >
-          รายการสินค้า
-        </Typography>
+      <Toolbar sx={{ pl: { sm: 2 }, pr: { xs: 2, sm: 2 }, py: 3 }}>
         <Box
           sx={{ position: "relative", width: { xs: 200, sm: 260, md: 360 } }}
         >
@@ -264,19 +258,42 @@ export function ProductsTable({ products }: Props) {
                   />
                 </TableCell>
                 <TableCell align="center" sx={{ width: 140, px: 1 }}>
-                  <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
+                  <Box
+                    sx={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 0.5,
+                    }}
+                  >
                     <Tooltip title="ดูรายละเอียด" placement="top">
-                      <IconButton component={Link} href={`/dashboard/products/${p.id}`} aria-label="view" size="small" sx={{ m: 0 }}>
+                      <IconButton
+                        component={Link}
+                        href={`/dashboard/products/${p.id}`}
+                        aria-label="view"
+                        size="small"
+                        sx={{ m: 0 }}
+                      >
                         <VisibilityOutlinedIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
                     <Tooltip title="แก้ไข" placement="top">
-                      <IconButton component={Link} href={`/dashboard/products/${p.id}/edit`} aria-label="edit" size="small" sx={{ m: 0 }}>
+                      <IconButton
+                        component={Link}
+                        href={`/dashboard/products/${p.id}/edit`}
+                        aria-label="edit"
+                        size="small"
+                        sx={{ m: 0 }}
+                      >
                         <EditOutlinedIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
                     <Tooltip title="ลบ" placement="top">
-                      <IconButton aria-label="delete" size="small" onClick={() => setDeleteTarget(p)} sx={{ m: 0 }}>
+                      <IconButton
+                        aria-label="delete"
+                        size="small"
+                        onClick={() => setDeleteTarget(p)}
+                        sx={{ m: 0 }}
+                      >
                         <DeleteOutlineIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
