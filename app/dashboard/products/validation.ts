@@ -6,8 +6,9 @@ export const productFormSchema = z.object({
   lotNumber: z.string().optional(),
   nameTH: z.string().min(1, "กรุณากรอกชื่อสินค้า (ไทย)"),
   nameEN: z.string().optional(),
-  category: z.enum(["AA1", "BB2", "CC3"]).default("AA1"),
-  brand: z.enum(["A", "B", "C"]).default("A"),
+  // อนุญาตค่าว่างเป็นค่าเริ่มต้นในหน้าเพิ่มสินค้าใหม่
+  category: z.enum(["AA1", "BB2", "CC3"]).or(z.literal("")).default(""),
+  brand: z.enum(["A", "B", "C"]).or(z.literal("")).default(""),
   unit: z.enum(["อัน", "ชิ้น", "ถุง"]).default("ชิ้น"),
   price: z.preprocess((v) => (v === "" || v === undefined || v === null ? undefined : Number(v)), z.number().nonnegative().optional()),
   mfgDate: z.string().optional(),
