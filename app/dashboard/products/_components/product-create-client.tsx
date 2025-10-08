@@ -33,6 +33,8 @@ export function ProductCreateClient() {
     <Stack spacing={3}>
       <ProductForm
         initialValues={defaultValues}
+        title="เพิ่มข้อมูลสินค้าใหม่"
+        existingImages={[]}
         onSubmit={async (values: ProductFormValues) => {
           await createProduct(values);
           router.push("/dashboard/products");

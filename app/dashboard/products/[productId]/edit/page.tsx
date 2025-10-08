@@ -36,10 +36,15 @@ export default async function ProductEditPage({ params }: { params: Promise<{ pr
     stockNote: latest?.note ?? "",
   };
 
+  // Fetch existing images (raw) for manager initial state
+  const images = await prisma.$queryRaw<{ id: string; url: string }[]>`
+    SELECT id, url FROM ProductImage WHERE productId = ${productId} ORDER BY sort ASC, createdAt ASC
+  `;
+
   return (
     <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", py: 4 }}>
       <Stack spacing={3} sx={{ width: "100%", maxWidth: 960 }}>
-        <ProductEditClient productId={productId} initialValues={initialValues} />
+        <ProductEditClient productId={productId} initialValues={initialValues} existingImages={images as any} />
       </Stack>
     </Box>
   );

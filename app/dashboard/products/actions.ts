@@ -3,6 +3,33 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { productFormSchema, type ProductFormValues } from "./validation";
+import crypto from "crypto";
+import path from "path";
+import { promises as fs } from "fs";
+
+async function safeDeleteFiles(urls: string[]) {
+  const uploadRoot = path.join(process.cwd(), "public", "uploads", "products");
+  for (const url of urls) {
+    if (!url || typeof url !== "string") continue;
+    // only allow deleting inside /uploads/products
+    const rel = url.replace(/^\/+/, "");
+    if (!rel.startsWith("uploads/products/")) continue;
+    const abs = path.join(process.cwd(), "public", rel);
+    const normalized = path.normalize(abs);
+    if (!normalized.startsWith(uploadRoot)) continue;
+    try {
+      // ensure no other references exist
+      const imgRows = await prisma.$queryRaw<any>`SELECT COUNT(*) as c FROM ProductImage WHERE url = ${url}`;
+      const prodRows = await prisma.$queryRaw<any>`SELECT COUNT(*) as c FROM Product WHERE imageUrl = ${url}`;
+      const c1 = Number(imgRows?.[0]?.c ?? 0);
+      const c2 = Number(prodRows?.[0]?.c ?? 0);
+      if (c1 + c2 > 0) continue;
+      await fs.unlink(normalized).catch(() => {});
+    } catch {
+      // ignore deletion errors
+    }
+  }
+}
 
 export async function createProduct(raw: ProductFormValues) {
   const v = productFormSchema.parse(raw);
@@ -33,6 +60,15 @@ export async function createProduct(raw: ProductFormValues) {
     throw e;
   }
 
+  // Persist additional images if provided
+  if (Array.isArray(v.imageUrls) && v.imageUrls.length > 0) {
+    for (let i = 0; i < v.imageUrls.length; i++) {
+      const url = v.imageUrls[i];
+      // Use raw insert to avoid relying on regenerated Prisma client
+      await prisma.$executeRaw`INSERT INTO ProductImage (id, productId, url, sort) VALUES (${crypto.randomUUID()}, ${product.id}, ${url}, ${i})`;
+    }
+  }
+
   await prisma.stock.create({
     data: {
       productId: product.id,
@@ -53,6 +89,9 @@ export async function createProduct(raw: ProductFormValues) {
 export async function updateProduct(productId: string, raw: ProductFormValues) {
   const v = productFormSchema.parse(raw);
   const id = String(productId);
+  // Capture previous references for cleanup
+  const prevProduct = await prisma.product.findUnique({ where: { id }, select: { imageUrl: true } });
+  const prevImages = await prisma.$queryRaw<{ url: string }[]>`SELECT url FROM ProductImage WHERE productId = ${id}`;
 
   try {
     await prisma.product.update({
@@ -69,7 +108,7 @@ export async function updateProduct(productId: string, raw: ProductFormValues) {
         mfgDate: v.mfgDate ? new Date(v.mfgDate) : null,
         expDate: v.expDate ? new Date(v.expDate) : null,
         status: v.status as any,
-        imageUrl: v.imageUrl,
+        imageUrl: v.imageUrl && v.imageUrl.length > 0 ? v.imageUrl : null,
         description: v.description,
       },
     });
@@ -78,6 +117,19 @@ export async function updateProduct(productId: string, raw: ProductFormValues) {
       throw new Error("รหัสสินค้านี้ถูกใช้แล้ว กรุณาเปลี่ยนรหัสสินค้าใหม่");
     }
     throw e;
+  }
+
+  // Replace images set if provided
+  if (Array.isArray(v.imageUrls)) {
+    const urls = v.imageUrls.filter((u) => !!u).slice(0, 10);
+    await prisma.$transaction([
+      prisma.$executeRaw`DELETE FROM ProductImage WHERE productId = ${id}`,
+      ...urls.map((url, i) => prisma.$executeRaw`INSERT INTO ProductImage (id, productId, url, sort) VALUES (${crypto.randomUUID()}, ${id}, ${url}, ${i})`),
+    ]);
+    // after replacement, delete files that are no longer referenced
+    const oldUrls = (prevImages || []).map((r) => r.url);
+    const toDelete = oldUrls.filter((u) => !urls.includes(u));
+    await safeDeleteFiles(toDelete);
   }
 
   const latest = await prisma.stock.findFirst({
@@ -114,5 +166,25 @@ export async function updateProduct(productId: string, raw: ProductFormValues) {
 
   revalidatePath("/dashboard/products");
   revalidatePath(`/dashboard/products/${id}/edit`);
+
+  // cleanup old main image file if changed and not referenced
+  if (prevProduct?.imageUrl && (v.imageUrl ?? null) !== prevProduct.imageUrl) {
+    await safeDeleteFiles([prevProduct.imageUrl]);
+  }
 }
 
+export async function replaceProductImages(productId: string, urlsRaw: string[]) {
+  const id = String(productId);
+  const urls = (urlsRaw ?? []).filter((u) => typeof u === "string" && u.trim().length > 0).slice(0, 10);
+  const prevImages = await prisma.$queryRaw<{ url: string }[]>`SELECT url FROM ProductImage WHERE productId = ${id}`;
+  await prisma.$transaction([
+    prisma.$executeRaw`DELETE FROM ProductImage WHERE productId = ${id}`,
+    ...urls.map((url, i) => prisma.$executeRaw`INSERT INTO ProductImage (id, productId, url, sort) VALUES (${crypto.randomUUID()}, ${id}, ${url}, ${i})`),
+  ]);
+  const oldUrls = (prevImages || []).map((r) => r.url);
+  const toDelete = oldUrls.filter((u) => !urls.includes(u));
+  await safeDeleteFiles(toDelete);
+  revalidatePath(`/dashboard/products/${id}`);
+  revalidatePath(`/dashboard/products/${id}/edit`);
+  revalidatePath(`/dashboard/products`);
+}

@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { Box, Chip, Divider, Grid, Paper, Stack, Typography, Table, TableBody, TableCell, TableHead, TableRow } from "@mui/material";
+import Image from "next/image";
 import { ActionButtons } from "../../_components/action-buttons";
 import { getProduct } from "../data";
 
@@ -26,6 +27,17 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             </Grid>
             <Grid size={{ xs: 12, md: 8 }}>
               <Stack spacing={2}>
+                {(product.images?.length ?? 0) > 0 && (
+                  <Section title="รูปภาพสินค้า">
+                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5 }}>
+                      {product.images.map((img: any) => (
+                        <Box key={img.id} sx={{ position: "relative", width: 140, height: 140, borderRadius: 1.5, overflow: "hidden", border: "1px solid", borderColor: "divider" }}>
+                          <Image src={img.url} alt={product.nameTH} fill style={{ objectFit: "cover" }} />
+                        </Box>
+                      ))}
+                    </Box>
+                  </Section>
+                )}
                 <Section title="ข้อมูลสินค้า">
                   <Info label="ชื่อ (EN)" value={product.nameEN ?? "-"} />
                   <Info label="หน่วยนับ" value={product.unit ?? "-"} />
@@ -49,7 +61,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {(product.stocks || []).map((s) => (
+                      {(product.stocks || []).map((s: any) => (
                         <TableRow key={s.id}>
                           <TableCell>{s.qtyOnHand}</TableCell>
                           <TableCell>{s.qtyReserved}</TableCell>

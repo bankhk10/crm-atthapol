@@ -9,14 +9,17 @@ import { updateProduct } from "../actions";
 type Props = {
   productId: string;
   initialValues: ProductFormValues;
+  existingImages: { id: string; url: string }[];
 };
 
-export function ProductEditClient({ productId, initialValues }: Props) {
+export function ProductEditClient({ productId, initialValues, existingImages }: Props) {
   const router = useRouter();
   return (
     <Stack spacing={3}>
       <ProductForm
         initialValues={initialValues}
+        title="แก้ไขข้อมูลสินค้า"
+        existingImages={existingImages}
         onSubmit={async (values) => {
           await updateProduct(productId, values);
           router.push(`/dashboard/products/${productId}`);

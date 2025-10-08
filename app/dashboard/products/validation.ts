@@ -15,6 +15,7 @@ export const productFormSchema = z.object({
   expDate: z.string().optional(),
   status: z.enum(["ACTIVE", "INACTIVE", "EXPIRED"]).default("ACTIVE"),
   imageUrl: z.string().optional(),
+  imageUrls: z.array(z.string()).optional(),
   description: z.string().optional(),
 
   qtyOnHand: z.preprocess((v) => (v === "" || v === undefined || v === null ? 0 : Number(v)), z.number().int().nonnegative()).default(0),
