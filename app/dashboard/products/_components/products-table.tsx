@@ -27,6 +27,8 @@ import {
   Tooltip,
 } from "@mui/material";
 import { visuallyHidden } from "@mui/utils";
+import { useSession } from "next-auth/react";
+import { hasPermission } from "@/lib/permissions";
 import SearchIcon from "@mui/icons-material/Search";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
@@ -98,10 +100,12 @@ function EnhancedTableHead({
   order,
   orderBy,
   onRequestSort,
+  showActions,
 }: {
   order: Order;
   orderBy: SortableKeys;
   onRequestSort: (e: React.MouseEvent<unknown>, p: SortableKeys) => void;
+  showActions: boolean;
 }) {
   const createSortHandler =
     (property: SortableKeys) => (event: React.MouseEvent<unknown>) => {
@@ -136,15 +140,16 @@ function EnhancedTableHead({
             </TableSortLabel>
           </TableCell>
         ))}
-        <TableCell align="center" padding="normal">
-          การกระทำ
-        </TableCell>
+        {showActions && (
+          <TableCell align="center" padding="normal">การกระทำ</TableCell>
+        )}
       </TableRow>
     </TableHead>
   );
 }
 
 export function ProductsTable({ products }: Props) {
+  const { data: session } = useSession();
   const [query, setQuery] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<ProductListItem | null>(
     null
@@ -200,28 +205,38 @@ export function ProductsTable({ products }: Props) {
     return `${dd}/${mm}/${yyyy}`;
   };
 
+  const canViewAll = hasPermission(session?.user?.permissions, "products", "view");
+  const canEditAll = hasPermission(session?.user?.permissions, "products", "edit");
+  const canDeleteAll = hasPermission(session?.user?.permissions, "products", "delete");
+  const showActions = canViewAll || canEditAll || canDeleteAll;
+
   return (
     <Paper
       variant="outlined"
       sx={{ p: 0, borderRadius: 2, overflow: "hidden" }}
     >
       <Toolbar sx={{ pl: { sm: 2 }, pr: { xs: 2, sm: 2 }, py: 3 }}>
-        <Box
-          sx={{ position: "relative", width: { xs: 200, sm: 260, md: 360 } }}
-        >
-          <TextField
-            fullWidth
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="ค้นหา (รหัส/ชื่อ/หมวด/ยี่ห้อ/สถานะ)"
-            InputProps={{
-              startAdornment: (
-                <SearchIcon fontSize="small" style={{ marginRight: 8 }} />
-              ),
-            }}
-            size="small"
-          />
-        </Box>
+        <Stack direction="row" spacing={1} alignItems="center" sx={{ ml: 'auto' }}>
+          <Box sx={{ position: "relative", width: { xs: 200, sm: 260, md: 360 } }}>
+            <TextField
+              fullWidth
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="ค้นหา (รหัส/ชื่อ/หมวด/ยี่ห้อ/สถานะ)"
+              InputProps={{
+                startAdornment: (
+                  <SearchIcon fontSize="small" style={{ marginRight: 8 }} />
+                ),
+              }}
+              size="small"
+            />
+          </Box>
+          {hasPermission(session?.user?.permissions, 'products', 'create') && (
+            <Button component={Link} href="/dashboard/products/new" variant="contained" color="primary" sx={{ whiteSpace: 'nowrap' }}>
+              เพิ่มสินค้า
+            </Button>
+          )}
+        </Stack>
       </Toolbar>
 
       <TableContainer>
@@ -230,9 +245,14 @@ export function ProductsTable({ products }: Props) {
             order={order}
             orderBy={orderBy}
             onRequestSort={handleRequestSort}
+            showActions={showActions}
           />
           <TableBody>
-            {visibleRows.map((p) => (
+            {visibleRows.map((p) => {
+              const canView = hasPermission(session?.user?.permissions, 'products', 'view');
+              const canEdit = hasPermission(session?.user?.permissions, 'products', 'edit');
+              const canDelete = hasPermission(session?.user?.permissions, 'products', 'delete');
+              return (
               <TableRow hover key={p.id}>
                 <TableCell sx={{ whiteSpace: "nowrap" }}>
                   {p.productCode}
@@ -257,53 +277,38 @@ export function ProductsTable({ products }: Props) {
                     variant="outlined"
                   />
                 </TableCell>
-                <TableCell align="center" sx={{ width: 140, px: 1 }}>
-                  <Box
-                    sx={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 0.5,
-                    }}
-                  >
-                    <Tooltip title="ดูรายละเอียด" placement="top">
-                      <IconButton
-                        component={Link}
-                        href={`/dashboard/products/${p.id}`}
-                        aria-label="view"
-                        size="small"
-                        sx={{ m: 0 }}
-                      >
-                        <VisibilityOutlinedIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="แก้ไข" placement="top">
-                      <IconButton
-                        component={Link}
-                        href={`/dashboard/products/${p.id}/edit`}
-                        aria-label="edit"
-                        size="small"
-                        sx={{ m: 0 }}
-                      >
-                        <EditOutlinedIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="ลบ" placement="top">
-                      <IconButton
-                        aria-label="delete"
-                        size="small"
-                        onClick={() => setDeleteTarget(p)}
-                        sx={{ m: 0 }}
-                      >
-                        <DeleteOutlineIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
+                {showActions && (
+                <TableCell align="center" sx={{ width: 140, px: 0.5 }}>
+                  <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.25 }}>
+                    {canView && (
+                      <Tooltip title="ดูรายละเอียด" placement="top">
+                        <IconButton component={Link} href={`/dashboard/products/${p.id}`} aria-label="view" size="small" sx={{ m: 0 }}>
+                          <VisibilityOutlinedIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                    {canEdit && (
+                      <Tooltip title="แก้ไข" placement="top">
+                        <IconButton component={Link} href={`/dashboard/products/${p.id}/edit`} aria-label="edit" size="small" sx={{ m: 0 }}>
+                          <EditOutlinedIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                    {canDelete && (
+                      <Tooltip title="ลบ" placement="top">
+                        <IconButton aria-label="delete" size="small" onClick={() => setDeleteTarget(p)} sx={{ m: 0 }}>
+                          <DeleteOutlineIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    )}
                   </Box>
                 </TableCell>
+                )}
               </TableRow>
-            ))}
+            );})}
             {visibleRows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={headCells.length + 1} align="center">
+                <TableCell colSpan={headCells.length + (showActions ? 1 : 0)} align="center">
                   <Typography color="text.secondary">
                     ไม่พบข้อมูลสินค้า
                   </Typography>
