@@ -27,6 +27,7 @@ import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { th } from "date-fns/locale";
 import type { ProductFormValues } from "../validation";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 
 type Props = {
   initialValues: ProductFormValues;
@@ -395,8 +396,18 @@ export function ProductForm({
           <Typography variant="subtitle1" fontWeight={700}>
             รูปภาพสินค้า
           </Typography>
+
+          {/* ปุ่มอัปโหลด + แสดงจำนวนรูป */}
           <Stack direction="row" spacing={1} alignItems="center">
-            <Button variant="outlined" component="label">
+            <Button
+              variant="outlined"
+              component="label"
+              startIcon={<CloudUploadIcon />} // 👈 เพิ่มไอคอนตรงนี้
+              sx={{
+                fontFamily: "Prompt, sans-serif",
+                fontWeight: 500,
+              }}
+            >
               เลือกรูปภาพ
               <input
                 hidden
@@ -408,6 +419,7 @@ export function ProductForm({
             </Button>
             <Chip label={`${images.length}/10 รูป`} size="small" />
           </Stack>
+
           {imageError && (
             <Typography color="error.main" variant="body2">
               {imageError}
@@ -503,19 +515,10 @@ export function ProductForm({
         <Button
           type="submit"
           variant="contained"
-          disabled={submitting}
           sx={{
-            width: { xs: "100%", sm: 180 },
-            borderRadius: 5,
-            fontWeight: 700,
-            py: 1.4,
-            textTransform: "none",
-            background: "linear-gradient(90deg, #54aef7ff 0%, #54aef7ff 100%)",
-            boxShadow: "0 3px 6px rgba(0,0,0,0.15)",
-            "&:hover": {
-              background: "linear-gradient(90deg, #1976d2 0%, #1976d2 100%)",
-              boxShadow: "0 4px 10px rgba(0,0,0,0.25)",
-            },
+            bgcolor: "#3797f0ff",
+            color: "#fcf9f9ff",
+            "&:hover": { bgcolor: "#4a8aebff" },
           }}
         >
           {submitting ? "กำลังบันทึก..." : "บันทึกสินค้า"}
