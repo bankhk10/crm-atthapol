@@ -389,7 +389,7 @@ export function ProductsTable({ products, query }: Props) {
                 </TableCell>
                 <TableCell
                   sx={{
-                    width: 80,
+                    width: 100,
                     display: { xs: "none", md: "table-cell" },
                   }}
                   align="center"
@@ -398,12 +398,12 @@ export function ProductsTable({ products, query }: Props) {
                     <span>{p.brand ?? "-"}</span>
                   </Tooltip>
                 </TableCell>
-                <TableCell sx={{ width: 120 }} align="center">
+                <TableCell sx={{ width: 80 }} align="center">
                   <Tooltip title={String(p.stockOnHand)} arrow>
                     <span>{p.stockOnHand}</span>
                   </Tooltip>
                 </TableCell>
-                <TableCell sx={{ width: 120 }} align="center">
+                <TableCell sx={{ width: 80 }} align="center">
                   <Tooltip title={String(p.stockReserved)} arrow>
                     <span>{p.stockReserved}</span>
                   </Tooltip>
