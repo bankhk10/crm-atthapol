@@ -38,7 +38,7 @@ export default function ProductsListClient({
             fullWidth
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="ค้นหา (รหัส/ชื่อ/หมวด/ยี่ห้อ/สถานะ)"
+            placeholder="ค้นหา (รหัส/ชื่อ/คงเหลือ/จอง/ยี่ห้อ/สถานะ)"
             InputProps={{
               startAdornment: (
                 <SearchIcon fontSize="small" style={{ marginRight: 8 }} />

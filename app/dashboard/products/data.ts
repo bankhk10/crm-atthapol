@@ -10,6 +10,7 @@ export type ProductListItem = {
   price?: number | null;
   expDate?: string | null;
   stockOnHand: number;
+  stockReserved: number;
   status: "ACTIVE" | "INACTIVE" | "EXPIRED";
   createdAt: string;
 };
@@ -21,9 +22,13 @@ export async function getProducts(): Promise<ProductListItem[]> {
     include: { stocks: true },
   });
     return items.map((p) => {
-      const stock = (p.stocks || []).reduce(
-        (sum, s) => sum + (s.qtyOnHand || 0) - (s.qtyReserved || 0),
-        0,
+      const totals = (p.stocks || []).reduce(
+        (acc, s) => {
+          acc.onHand += (s.qtyOnHand || 0) - (s.qtyReserved || 0);
+          acc.reserved += s.qtyReserved || 0;
+          return acc;
+        },
+        { onHand: 0, reserved: 0 },
       );
       return {
         id: p.id,
@@ -34,7 +39,8 @@ export async function getProducts(): Promise<ProductListItem[]> {
         unit: p.unit ?? null,
         price: p.price ?? null,
         expDate: p.expDate ? new Date(p.expDate).toISOString() : null,
-        stockOnHand: stock,
+        stockOnHand: totals.onHand,
+        stockReserved: totals.reserved,
         status: p.status as any,
         createdAt: new Date(p.createdAt).toISOString(),
       };

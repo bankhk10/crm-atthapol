@@ -41,8 +41,8 @@ type SortableKeys =
   | "nameTH"
   | "brand"
   | "status"
-  | "category"
-  | "expDate"
+  | "stockOnHand"
+  | "stockReserved"
   | "createdAt";
 
 interface HeadCell {
@@ -56,9 +56,9 @@ interface HeadCell {
 const headCells: readonly HeadCell[] = [
   { id: "productCode", label: "รหัสสินค้า", width: 110 },
   { id: "nameTH", label: "ชื่อสินค้า", width: 230 },
-  { id: "brand", label: "แบรนด์", width: 150 },
-  { id: "category", label: "หมวดหมู่", width: 140 },
-  { id: "expDate", label: "วันหมดอายุ", width: 140 },
+  { id: "brand", label: "แบรนด์", width: 50 },
+  { id: "stockOnHand", label: "สต็อกคงเหลือ", width: 80 },
+  { id: "stockReserved", label: "สต็อกจอง", width: 80 },
   { id: "status", label: "สถานะ", width: 130 },
 ];
 
@@ -130,9 +130,10 @@ function EnhancedTableHead({
         {headCells.map((headCell) => (
           <TableCell
             key={headCell.id}
+            align={["brand", "stockOnHand", "stockReserved", "status"].includes(headCell.id) ? "center" : "left"}
             sx={{
               width: headCell.width,
-              display: ["brand", "category", "expDate"].includes(headCell.id)
+              display: ["brand", "expDate"].includes(headCell.id)
                 ? { xs: "none", md: "table-cell" }
                 : "table-cell",
             }}
@@ -186,7 +187,14 @@ export function ProductsTable({ products, query }: Props) {
     const q = (query ?? "").trim().toLowerCase();
     if (!q) return products;
     return products.filter((p) =>
-      [p.productCode, p.nameTH, p.category, p.brand ?? "", p.status]
+      [
+        p.productCode,
+        p.nameTH,
+        p.brand ?? "",
+        p.status,
+        p.category, // ยังรองรับค้นหาด้วยหมวด แม้ไม่ได้แสดงคอลัมน์
+        String(p.stockOnHand ?? 0),
+      ]
         .join(" ")
         .toLowerCase()
         .includes(q)
@@ -305,32 +313,24 @@ export function ProductsTable({ products, query }: Props) {
                     width: 80,
                     display: { xs: "none", md: "table-cell" },
                   }}
+                  align="center"
                 >
                   <Tooltip title={p.brand ?? "-"} arrow>
                     <span>{p.brand ?? "-"}</span>
                   </Tooltip>
                 </TableCell>
-                <TableCell
-                  sx={{
-                    width: 140,
-                    display: { xs: "none", md: "table-cell" },
-                  }}
-                >
-                  <Tooltip title={p.category} arrow>
-                    <span>{p.category}</span>
+                <TableCell sx={{ width: 120 }} align="center">
+                  <Tooltip title={String(p.stockOnHand)} arrow>
+                    <span>{p.stockOnHand}</span>
                   </Tooltip>
                 </TableCell>
-                <TableCell
-                  sx={{
-                    width: 140,
-                    display: { xs: "none", md: "table-cell" },
-                  }}
-                >
-                  <Tooltip title={fmtDate(p.expDate)} arrow>
-                    <span>{fmtDate(p.expDate)}</span>
+                <TableCell sx={{ width: 120 }} align="center">
+                  <Tooltip title={String(p.stockReserved)} arrow>
+                    <span>{p.stockReserved}</span>
                   </Tooltip>
                 </TableCell>
-                <TableCell sx={{ width: 130 }}>
+                {/* removed วันหมดอายุ column */}
+                <TableCell sx={{ width: 130 }} align="center">
                   <Tooltip title={p.status} arrow>
                     <Chip
                       size="small"
