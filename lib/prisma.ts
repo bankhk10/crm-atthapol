@@ -394,10 +394,10 @@ const maybeWriteAuditLog = async ({
     await auditDelegate.create({
       data: {
         model: modelName,
-        action: resolvedAction as unknown as Prisma.AuditAction,
+        action: resolvedAction,
         recordId: recordId ?? undefined,
-        before: sanitizeData(beforeData) as Prisma.InputJsonValue,
-        after: sanitizeData(afterData ?? result) as Prisma.InputJsonValue,
+        before: sanitizeData(beforeData),
+        after: sanitizeData(afterData ?? result),
         performedByUserId: actorId,
       },
     });

@@ -26,7 +26,6 @@ import {
   TablePagination,
   Tooltip,
 } from "@mui/material";
-import { visuallyHidden } from "@mui/utils";
 import { useSession } from "next-auth/react";
 import { hasPermission } from "@/lib/permissions";
 import SearchIcon from "@mui/icons-material/Search";
@@ -65,10 +64,23 @@ const headCells: readonly HeadCell[] = [
   { id: "status", label: "สถานะ" },
 ];
 
-function descendingComparator<T extends Record<string, any>>(
-  a: T,
-  b: T,
-  orderBy: keyof T
+// Inline visually-hidden styles to avoid importing @mui/utils
+const visuallyHidden = {
+  border: 0,
+  clip: "rect(0 0 0 0)",
+  height: 1,
+  margin: -1,
+  overflow: "hidden",
+  padding: 0,
+  position: "absolute" as const,
+  width: 1,
+  whiteSpace: "nowrap" as const,
+};
+
+function descendingComparator(
+  a: ProductListItem,
+  b: ProductListItem,
+  orderBy: SortableKeys
 ) {
   const av = a[orderBy];
   const bv = b[orderBy];
@@ -77,23 +89,17 @@ function descendingComparator<T extends Record<string, any>>(
     if (bv > av) return 1;
     return 0;
   }
-  const as = (av ?? "").toString().toLowerCase();
-  const bs = (bv ?? "").toString().toLowerCase();
+  const as = String(av ?? "").toLowerCase();
+  const bs = String(bv ?? "").toLowerCase();
   if (bs < as) return -1;
   if (bs > as) return 1;
   return 0;
 }
 
-function getComparator<Key extends keyof any>(order: Order, orderBy: Key) {
+function getComparator(order: Order, orderBy: SortableKeys) {
   return order === "asc"
-    ? (
-        a: { [key in Key]: number | string | null },
-        b: { [key in Key]: number | string | null }
-      ) => descendingComparator(a, b, orderBy)
-    : (
-        a: { [key in Key]: number | string | null },
-        b: { [key in Key]: number | string | null }
-      ) => -descendingComparator(a, b, orderBy);
+    ? (a: ProductListItem, b: ProductListItem) => descendingComparator(a, b, orderBy)
+    : (a: ProductListItem, b: ProductListItem) => -descendingComparator(a, b, orderBy);
 }
 
 function EnhancedTableHead({

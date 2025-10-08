@@ -12,12 +12,16 @@ export default async function ProductEditPage({ params }: { params: Promise<{ pr
 
   const latest = p.stocks?.[0] ?? null;
 
+  const allowedCategories = ["AA1", "BB2", "CC3"] as const;
+
   const initialValues: ProductFormValues = {
     productCode: p.productCode,
     lotNumber: p.lotNumber ?? "",
     nameTH: p.nameTH,
     nameEN: p.nameEN ?? "",
-    category: p.category,
+    category: (allowedCategories as readonly string[]).includes(p.category ?? "")
+      ? (p.category as (typeof allowedCategories)[number])
+      : "",
     brand: (p.brand as any) || "A",
     unit: (p.unit as any) || "ชิ้น",
     price: p.price ?? undefined,

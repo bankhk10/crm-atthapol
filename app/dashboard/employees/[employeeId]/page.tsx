@@ -52,7 +52,7 @@ export default async function EmployeeProfilePage({
 
         <Paper sx={{ p: { xs: 2, sm: 3 } }}>
           <Grid container spacing={3}>
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <Stack spacing={2} alignItems="center">
                 <Box sx={{ position: "relative", width: 128, height: 128, borderRadius: "50%", overflow: "hidden" }}>
                   <Image src="/images/man-avatar.png" alt={fullName} fill style={{ objectFit: "cover" }} />
@@ -74,7 +74,7 @@ export default async function EmployeeProfilePage({
               </Stack>
             </Grid>
 
-            <Grid item xs={12} md={8}>
+            <Grid size={{ xs: 12, md: 8 }}>
               <Stack spacing={2}>
                 <Section title="ข้อมูลติดต่อ">
                   <Info label="อีเมล" value={employee.user.email ?? "-"} />
@@ -126,7 +126,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function Info({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <Grid item xs={12} sm={6}>
+    <Grid size={{ xs: 12, sm: 6 }}>
       <Stack spacing={0.25}>
         <Typography variant="body2" color="text.secondary">
           {label}

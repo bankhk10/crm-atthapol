@@ -239,7 +239,7 @@ async function main() {
           status: "ACTIVE",
         },
       });
-      employees[user.email] = emp.id;
+      employees[user.email as string] = emp.id;
     }
 
     console.log(`✅ Created user ${u.email} (${u.roleKey})`);

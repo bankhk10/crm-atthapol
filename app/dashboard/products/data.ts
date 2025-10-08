@@ -8,6 +8,7 @@ export type ProductListItem = {
   brand?: string | null;
   unit?: string | null;
   price?: number | null;
+  expDate?: string | null;
   stockOnHand: number;
   status: "ACTIVE" | "INACTIVE" | "EXPIRED";
   createdAt: string;
@@ -19,25 +20,25 @@ export async function getProducts(): Promise<ProductListItem[]> {
     orderBy: { createdAt: "desc" },
     include: { stocks: true },
   });
-  return items.map((p) => {
-    const stock = (p.stocks || []).reduce(
-      (sum, s) => sum + (s.qtyOnHand || 0) - (s.qtyReserved || 0),
-      0,
-    );
-    return {
-      id: p.id,
-      productCode: p.productCode,
-      nameTH: p.nameTH,
-      category: p.category,
-      brand: p.brand ?? null,
-      unit: p.unit ?? null,
-      price: p.price ?? null,
-      expDate: p.expDate ?? null,
-      stockOnHand: stock,
-      status: p.status as any,
-      createdAt: new Date(p.createdAt).toISOString(),
-    };
-  });
+    return items.map((p) => {
+      const stock = (p.stocks || []).reduce(
+        (sum, s) => sum + (s.qtyOnHand || 0) - (s.qtyReserved || 0),
+        0,
+      );
+      return {
+        id: p.id,
+        productCode: p.productCode,
+        nameTH: p.nameTH,
+        category: p.category,
+        brand: p.brand ?? null,
+        unit: p.unit ?? null,
+        price: p.price ?? null,
+        expDate: p.expDate ? new Date(p.expDate).toISOString() : null,
+        stockOnHand: stock,
+        status: p.status as any,
+        createdAt: new Date(p.createdAt).toISOString(),
+      };
+    });
 }
 
 export async function getProduct(productId: string) {
@@ -47,4 +48,3 @@ export async function getProduct(productId: string) {
   });
   return p ?? null;
 }
-

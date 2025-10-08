@@ -15,7 +15,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
         <Paper sx={{ p: { xs: 2, sm: 3 } }}>
           <Grid container spacing={3}>
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <Stack spacing={1.5}>
                 <Typography variant="h5" fontWeight={800}>{product.nameTH}</Typography>
                 <Typography color="text.secondary">รหัส: {product.productCode}</Typography>
@@ -24,7 +24,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                 {product.brand && (<Typography color="text.secondary">ยี่ห้อ: {product.brand}</Typography>)}
               </Stack>
             </Grid>
-            <Grid item xs={12} md={8}>
+            <Grid size={{ xs: 12, md: 8 }}>
               <Stack spacing={2}>
                 <Section title="ข้อมูลสินค้า">
                   <Info label="ชื่อ (EN)" value={product.nameEN ?? "-"} />
@@ -87,9 +87,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Info({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <Grid container>
-      <Grid item xs={5} sm={3}><Typography variant="body2" color="text.secondary">{label}</Typography></Grid>
-      <Grid item xs={7} sm={9}><Typography fontWeight={600}>{typeof value === 'string' || typeof value === 'number' ? String(value) : value}</Typography></Grid>
+      <Grid size={{ xs: 5, sm: 3 }}><Typography variant="body2" color="text.secondary">{label}</Typography></Grid>
+      <Grid size={{ xs: 7, sm: 9 }}><Typography fontWeight={600}>{typeof value === 'string' || typeof value === 'number' ? String(value) : value}</Typography></Grid>
     </Grid>
   );
 }
-

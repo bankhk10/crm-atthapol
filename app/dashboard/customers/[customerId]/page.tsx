@@ -61,7 +61,7 @@ export default async function CustomerDetailPage({
 
         <Paper sx={{ p: { xs: 2, sm: 3 } }}>
           <Grid container spacing={3}>
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <Stack spacing={1.5} alignItems={{ xs: "flex-start", md: "center" }}>
                 <Typography variant="h5" fontWeight={800}>
                   {customer.name}
@@ -83,7 +83,7 @@ export default async function CustomerDetailPage({
               </Stack>
             </Grid>
 
-            <Grid item xs={12} md={8}>
+            <Grid size={{ xs: 12, md: 8 }}>
               <Stack spacing={2}>
                 <Section title="ข้อมูลลูกค้า">
                   <Info label="คำนำหน้า" value={customer.prefix ?? "-"} />
@@ -170,7 +170,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function Info({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <Grid item xs={12} sm={6}>
+    <Grid size={{ xs: 12, sm: 6 }}>
       <Stack spacing={0.25}>
         <Typography variant="body2" color="text.secondary">
           {label}

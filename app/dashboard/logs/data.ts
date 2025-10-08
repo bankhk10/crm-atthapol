@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, type AuditAction } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 export type AuditLogFilters = {
@@ -15,7 +15,7 @@ const buildWhere = (filters: AuditLogFilters = {}) => {
   const where: Prisma.AuditLogWhereInput = { deletedAt: null };
 
   if (filters.model) where.model = filters.model;
-  if (filters.action) where.action = filters.action as unknown as string;
+  if (filters.action) where.action = filters.action as AuditAction;
   if (filters.userId) where.performedByUserId = filters.userId;
 
   if (filters.startDate || filters.endDate) {
@@ -32,10 +32,10 @@ const buildWhere = (filters: AuditLogFilters = {}) => {
   if (filters.q) {
     const q = filters.q.trim();
     where.OR = [
-      { model: { contains: q, mode: "insensitive" } },
-      { recordId: { contains: q, mode: "insensitive" } },
-      { performedBy: { is: { name: { contains: q, mode: "insensitive" } } } },
-      { performedBy: { is: { email: { contains: q, mode: "insensitive" } } } },
+      { model: { contains: q } },
+      { recordId: { contains: q } },
+      { performedBy: { is: { name: { contains: q } } } },
+      { performedBy: { is: { email: { contains: q } } } },
     ];
   }
 
