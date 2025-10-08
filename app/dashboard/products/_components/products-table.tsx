@@ -98,8 +98,10 @@ function descendingComparator(
 
 function getComparator(order: Order, orderBy: SortableKeys) {
   return order === "asc"
-    ? (a: ProductListItem, b: ProductListItem) => descendingComparator(a, b, orderBy)
-    : (a: ProductListItem, b: ProductListItem) => -descendingComparator(a, b, orderBy);
+    ? (a: ProductListItem, b: ProductListItem) =>
+        descendingComparator(a, b, orderBy)
+    : (a: ProductListItem, b: ProductListItem) =>
+        -descendingComparator(a, b, orderBy);
 }
 
 function EnhancedTableHead({
@@ -147,7 +149,9 @@ function EnhancedTableHead({
           </TableCell>
         ))}
         {showActions && (
-          <TableCell align="center" padding="normal">การกระทำ</TableCell>
+          <TableCell align="center" padding="normal">
+            การกระทำ
+          </TableCell>
         )}
       </TableRow>
     </TableHead>
@@ -211,9 +215,21 @@ export function ProductsTable({ products }: Props) {
     return `${dd}/${mm}/${yyyy}`;
   };
 
-  const canViewAll = hasPermission(session?.user?.permissions, "products", "view");
-  const canEditAll = hasPermission(session?.user?.permissions, "products", "edit");
-  const canDeleteAll = hasPermission(session?.user?.permissions, "products", "delete");
+  const canViewAll = hasPermission(
+    session?.user?.permissions,
+    "products",
+    "view"
+  );
+  const canEditAll = hasPermission(
+    session?.user?.permissions,
+    "products",
+    "edit"
+  );
+  const canDeleteAll = hasPermission(
+    session?.user?.permissions,
+    "products",
+    "delete"
+  );
   const showActions = canViewAll || canEditAll || canDeleteAll;
 
   return (
@@ -222,8 +238,15 @@ export function ProductsTable({ products }: Props) {
       sx={{ p: 0, borderRadius: 2, overflow: "hidden" }}
     >
       <Toolbar sx={{ pl: { sm: 2 }, pr: { xs: 2, sm: 2 }, py: 3 }}>
-        <Stack direction="row" spacing={1} alignItems="center" sx={{ ml: 'auto' }}>
-          <Box sx={{ position: "relative", width: { xs: 200, sm: 260, md: 360 } }}>
+        <Stack
+          direction="row"
+          spacing={1}
+          alignItems="center"
+          sx={{ ml: "auto" }}
+        >
+          <Box
+            sx={{ position: "relative", width: { xs: 200, sm: 260, md: 360 } }}
+          >
             <TextField
               fullWidth
               value={query}
@@ -237,8 +260,14 @@ export function ProductsTable({ products }: Props) {
               size="small"
             />
           </Box>
-          {hasPermission(session?.user?.permissions, 'products', 'create') && (
-            <Button component={Link} href="/dashboard/products/new" variant="contained" color="primary" sx={{ whiteSpace: 'nowrap' }}>
+          {hasPermission(session?.user?.permissions, "products", "create") && (
+            <Button
+              component={Link}
+              href="/dashboard/products/new"
+              variant="contained"
+              color="primary"
+              sx={{ whiteSpace: "nowrap" }}
+            >
               เพิ่มสินค้า
             </Button>
           )}
@@ -255,66 +284,125 @@ export function ProductsTable({ products }: Props) {
           />
           <TableBody>
             {visibleRows.map((p) => {
-              const canView = hasPermission(session?.user?.permissions, 'products', 'view');
-              const canEdit = hasPermission(session?.user?.permissions, 'products', 'edit');
-              const canDelete = hasPermission(session?.user?.permissions, 'products', 'delete');
+              const canView = hasPermission(
+                session?.user?.permissions,
+                "products",
+                "view"
+              );
+              const canEdit = hasPermission(
+                session?.user?.permissions,
+                "products",
+                "edit"
+              );
+              const canDelete = hasPermission(
+                session?.user?.permissions,
+                "products",
+                "delete"
+              );
               return (
-              <TableRow hover key={p.id}>
-                <TableCell sx={{ whiteSpace: "nowrap" }}>
-                  {p.productCode}
-                </TableCell>
-                <TableCell sx={{ whiteSpace: "nowrap" }}>{p.nameTH}</TableCell>
-                <TableCell sx={{ whiteSpace: "nowrap" }}>
-                  {p.brand ?? "-"}
-                </TableCell>
-                <TableCell>{p.category}</TableCell>
-                <TableCell>{fmtDate(p.expDate)}</TableCell>
-                <TableCell>
-                  <Chip
-                    size="small"
-                    label={p.status}
-                    color={
-                      p.status === "ACTIVE"
-                        ? "success"
-                        : p.status === "EXPIRED"
-                        ? "warning"
-                        : "default"
-                    }
-                    variant="outlined"
-                  />
-                </TableCell>
-                {showActions && (
-                <TableCell align="center" sx={{ width: 140, px: 0.5 }}>
-                  <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.25 }}>
-                    {canView && (
-                      <Tooltip title="ดูรายละเอียด" placement="top">
-                        <IconButton component={Link} href={`/dashboard/products/${p.id}`} aria-label="view" size="small" sx={{ m: 0 }}>
-                          <VisibilityOutlinedIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    )}
-                    {canEdit && (
-                      <Tooltip title="แก้ไข" placement="top">
-                        <IconButton component={Link} href={`/dashboard/products/${p.id}/edit`} aria-label="edit" size="small" sx={{ m: 0 }}>
-                          <EditOutlinedIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    )}
-                    {canDelete && (
-                      <Tooltip title="ลบ" placement="top">
-                        <IconButton aria-label="delete" size="small" onClick={() => setDeleteTarget(p)} sx={{ m: 0 }}>
-                          <DeleteOutlineIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    )}
-                  </Box>
-                </TableCell>
-                )}
-              </TableRow>
-            );})}
+                <TableRow hover key={p.id}>
+                  <TableCell sx={{ whiteSpace: "nowrap" }}>
+                    {p.productCode}
+                  </TableCell>
+                  <TableCell sx={{ whiteSpace: "nowrap" }}>
+                    {p.nameTH}
+                  </TableCell>
+                  <TableCell sx={{ whiteSpace: "nowrap" }}>
+                    {p.brand ?? "-"}
+                  </TableCell>
+                  <TableCell>{p.category}</TableCell>
+                  <TableCell>{fmtDate(p.expDate)}</TableCell>
+                  <TableCell>
+                    <Chip
+                      size="small"
+                      label={
+                        p.status === "ACTIVE"
+                          ? "ใช้งานอยู่"
+                          : p.status === "INACTIVE"
+                          ? "ไม่ใช้งาน"
+                          : "ปิดการใช้งาน"
+                      }
+                      sx={{
+                        borderRadius: "9999px",
+                        fontWeight: 600,
+                        px: 1.5,
+                        py: 2,
+                        color:
+                          p.status === "ACTIVE"
+                            ? "#FFFFFF"
+                            : p.status === "INACTIVE"
+                            ? "#424242"
+                            : "#FFFFFF",
+                        backgroundColor:
+                          p.status === "ACTIVE"
+                            ? "#22C55E"
+                            : p.status === "INACTIVE"
+                            ? "#E0E0E0"
+                            : "#EF4444",
+                        border: "none",
+                      }}
+                    />
+                  </TableCell>
+
+                  {showActions && (
+                    <TableCell align="center" sx={{ width: 140, px: 0.5 }}>
+                      <Box
+                        sx={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 0.25,
+                        }}
+                      >
+                        {canView && (
+                          <Tooltip title="ดูรายละเอียด" placement="top">
+                            <IconButton
+                              component={Link}
+                              href={`/dashboard/products/${p.id}`}
+                              aria-label="view"
+                              size="small"
+                              sx={{ m: 0 }}
+                            >
+                              <VisibilityOutlinedIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                        {canEdit && (
+                          <Tooltip title="แก้ไข" placement="top">
+                            <IconButton
+                              component={Link}
+                              href={`/dashboard/products/${p.id}/edit`}
+                              aria-label="edit"
+                              size="small"
+                              sx={{ m: 0 }}
+                            >
+                              <EditOutlinedIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                        {canDelete && (
+                          <Tooltip title="ลบ" placement="top">
+                            <IconButton
+                              aria-label="delete"
+                              size="small"
+                              onClick={() => setDeleteTarget(p)}
+                              sx={{ m: 0 }}
+                            >
+                              <DeleteOutlineIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </Box>
+                    </TableCell>
+                  )}
+                </TableRow>
+              );
+            })}
             {visibleRows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={headCells.length + (showActions ? 1 : 0)} align="center">
+                <TableCell
+                  colSpan={headCells.length + (showActions ? 1 : 0)}
+                  align="center"
+                >
                   <Typography color="text.secondary">
                     ไม่พบข้อมูลสินค้า
                   </Typography>

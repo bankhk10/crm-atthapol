@@ -9,7 +9,7 @@ export default async function ProductsPage() {
 
   return (
     <>
-      <ActionButtons resource="products" />
+      {/* <ActionButtons resource="products" /> */}
       {/* ปุ่มเพิ่มสินค้า ย้ายไปข้างช่องค้นหาในตาราง */}
       <Stack spacing={2}>
         <Typography variant="h4" fontWeight={700}></Typography>

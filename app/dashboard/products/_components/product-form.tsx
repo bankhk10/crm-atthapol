@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useState, type ChangeEvent, type FormEvent, type DragEvent } from "react";
+import {
+  useEffect,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+  type DragEvent,
+} from "react";
 import {
   Paper,
   Stack,
@@ -32,15 +38,26 @@ type Props = {
 const CATEGORY_OPTIONS = ["AA1", "BB2", "CC3"] as const;
 const BRAND_OPTIONS = ["A", "B", "C"] as const;
 const UNIT_OPTIONS = ["อัน", "ชิ้น", "ถุง"] as const;
-const STATUS_OPTIONS = ["ACTIVE", "INACTIVE", "EXPIRED"] as const;
+const STATUS_OPTIONS = ["ACTIVE", "INACTIVE"] as const;
+const STATUS_LABELS: Record<(typeof STATUS_OPTIONS)[number], string> = {
+  ACTIVE: "ใช้งานอยู่",
+  INACTIVE: "ไม่ใช้งาน",
+};
 
 type ImageItem = { id: string; url: string; file?: File };
 
-export function ProductForm({ initialValues, onSubmit, title, existingImages }: Props) {
+export function ProductForm({
+  initialValues,
+  onSubmit,
+  title,
+  existingImages,
+}: Props) {
   const [values, setValues] = useState<ProductFormValues>(initialValues);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [images, setImages] = useState<ImageItem[]>(existingImages?.map((i) => ({ id: i.id, url: i.url })) ?? []);
+  const [images, setImages] = useState<ImageItem[]>(
+    existingImages?.map((i) => ({ id: i.id, url: i.url })) ?? []
+  );
   const [imageError, setImageError] = useState<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
 
@@ -65,12 +82,17 @@ export function ProductForm({ initialValues, onSubmit, title, existingImages }: 
       let finalUrls: string[] | undefined;
 
       if (images.length > 0) {
-        const fileItems = images.filter((i): i is Required<ImageItem> => !!i.file) as Required<ImageItem>[];
+        const fileItems = images.filter(
+          (i): i is Required<ImageItem> => !!i.file
+        ) as Required<ImageItem>[];
         let uploaded: string[] = [];
         if (fileItems.length > 0) {
           const fd = new FormData();
           fileItems.forEach((img) => fd.append("images", img.file));
-          const res = await fetch("/api/uploads/products", { method: "POST", body: fd });
+          const res = await fetch("/api/uploads/products", {
+            method: "POST",
+            body: fd,
+          });
           if (!res.ok) {
             const data = await res.json().catch(() => ({}));
             throw new Error(data?.error ?? "อัปโหลดรูปภาพไม่สำเร็จ");
@@ -92,7 +114,7 @@ export function ProductForm({ initialValues, onSubmit, title, existingImages }: 
 
       const payload = {
         ...values,
-        imageUrl: images.length === 0 ? "" : (firstUrl ?? values.imageUrl),
+        imageUrl: images.length === 0 ? "" : firstUrl ?? values.imageUrl,
         imageUrls: finalUrls,
       } as ProductFormValues & { imageUrls?: string[] };
       await onSubmit?.(payload);
@@ -195,7 +217,9 @@ export function ProductForm({ initialValues, onSubmit, title, existingImages }: 
   useEffect(() => {
     // Cleanup object URLs on unmount
     return () => {
-      images.forEach((i) => { if (i.file) URL.revokeObjectURL(i.url); });
+      images.forEach((i) => {
+        if (i.file) URL.revokeObjectURL(i.url);
+      });
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -219,7 +243,7 @@ export function ProductForm({ initialValues, onSubmit, title, existingImages }: 
       >
         {title ?? "เพิ่มข้อมูลสินค้าใหม่"}
       </Typography>
-      <Divider  sx={{ mt: 1, mb: 4 }}/>
+      <Divider sx={{ mt: 1, mb: 4 }} />
 
       <Stack spacing={2}>
         {error && <Typography color="error.main">{error}</Typography>}
@@ -350,7 +374,7 @@ export function ProductForm({ initialValues, onSubmit, title, existingImages }: 
           >
             {STATUS_OPTIONS.map((o) => (
               <MenuItem key={o} value={o}>
-                {o}
+                {STATUS_LABELS[o]}
               </MenuItem>
             ))}
           </TextField>
@@ -406,7 +430,8 @@ export function ProductForm({ initialValues, onSubmit, title, existingImages }: 
                     borderColor: "divider",
                     backgroundColor: "background.default",
                     cursor: "grab",
-                    outline: draggingId === img.id ? "2px solid #1976d2" : "none",
+                    outline:
+                      draggingId === img.id ? "2px solid #1976d2" : "none",
                   }}
                   draggable
                   onDragStart={(e) => handleDragStart(e, img.id)}
@@ -417,7 +442,11 @@ export function ProductForm({ initialValues, onSubmit, title, existingImages }: 
                   <img
                     src={img.url}
                     alt={img.file ? img.file.name : "image"}
-                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                    }}
                   />
                   <IconButton
                     size="small"
@@ -428,16 +457,34 @@ export function ProductForm({ initialValues, onSubmit, title, existingImages }: 
                       top: 2,
                       right: 2,
                       bgcolor: "rgba(255,255,255,0.85)",
-                      '&:hover': { bgcolor: "rgba(255,255,255,0.95)" },
+                      "&:hover": { bgcolor: "rgba(255,255,255,0.95)" },
                     }}
                   >
                     <DeleteIcon fontSize="small" />
                   </IconButton>
-                  <Stack direction="row" spacing={0.5} sx={{ position: "absolute", bottom: 2, left: 2, bgcolor: "rgba(255,255,255,0.85)", borderRadius: 1 }}>
-                    <IconButton size="small" onClick={() => handleMoveImage(idx, -1)} disabled={idx === 0}>
+                  <Stack
+                    direction="row"
+                    spacing={0.5}
+                    sx={{
+                      position: "absolute",
+                      bottom: 2,
+                      left: 2,
+                      bgcolor: "rgba(255,255,255,0.85)",
+                      borderRadius: 1,
+                    }}
+                  >
+                    <IconButton
+                      size="small"
+                      onClick={() => handleMoveImage(idx, -1)}
+                      disabled={idx === 0}
+                    >
                       <ArrowBackIcon fontSize="small" />
                     </IconButton>
-                    <IconButton size="small" onClick={() => handleMoveImage(idx, +1)} disabled={idx === images.length - 1}>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleMoveImage(idx, +1)}
+                      disabled={idx === images.length - 1}
+                    >
                       <ArrowForwardIcon fontSize="small" />
                     </IconButton>
                   </Stack>
