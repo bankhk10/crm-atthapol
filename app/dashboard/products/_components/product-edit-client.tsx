@@ -22,7 +22,7 @@ export function ProductEditClient({ productId, initialValues, existingImages }: 
         existingImages={existingImages}
         onSubmit={async (values) => {
           await updateProduct(productId, values);
-          router.push(`/dashboard/products/${productId}`);
+          router.push("/dashboard/products");
           router.refresh();
         }}
       />
