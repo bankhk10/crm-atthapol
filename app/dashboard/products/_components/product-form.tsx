@@ -36,8 +36,8 @@ type Props = {
   existingImages?: { id: string; url: string }[];
 };
 
-const CATEGORY_OPTIONS = ["AA1", "BB2", "CC3"] as const;
-const BRAND_OPTIONS = ["A", "B", "C"] as const;
+const CATEGORY_OPTIONS = ["หมวด A", "หมวด B", "หมวด C"] as const;
+const BRAND_OPTIONS = ["แบรนด์ A", "แบรนด์ B", "แบรนด์ C"] as const;
 const UNIT_OPTIONS = ["อัน", "ชิ้น", "ถุง"] as const;
 const STATUS_OPTIONS = ["ACTIVE", "INACTIVE"] as const;
 const STATUS_LABELS: Record<(typeof STATUS_OPTIONS)[number], string> = {

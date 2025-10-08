@@ -12,7 +12,7 @@ export default async function ProductEditPage({ params }: { params: Promise<{ pr
 
   const latest = p.stocks?.[0] ?? null;
 
-  const allowedCategories = ["AA1", "BB2", "CC3"] as const;
+  const allowedCategories = ["หมวด A", "หมวด B", "หมวด C"] as const;
 
   const initialValues: ProductFormValues = {
     productCode: p.productCode,
@@ -22,7 +22,7 @@ export default async function ProductEditPage({ params }: { params: Promise<{ pr
     category: (allowedCategories as readonly string[]).includes(p.category ?? "")
       ? (p.category as (typeof allowedCategories)[number])
       : "",
-    brand: (p.brand as any) || "A",
+    brand: (p.brand as any) || "แบรนด์ A",
     unit: (p.unit as any) || "ชิ้น",
     price: p.price ?? undefined,
     mfgDate: p.mfgDate ? new Date(p.mfgDate).toISOString().slice(0,10) : undefined,

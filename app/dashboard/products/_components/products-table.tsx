@@ -58,7 +58,7 @@ interface HeadCell {
 const headCells: readonly HeadCell[] = [
   { id: "productCode", label: "รหัสสินค้า", width: 110 },
   { id: "nameTH", label: "ชื่อสินค้า", width: 230 },
-  { id: "brand", label: "แบรนด์", width: 50 },
+  { id: "brand", label: "แบรนด์", width: 100 },
   { id: "stockOnHand", label: "สต็อกคงเหลือ", width: 80 },
   { id: "stockReserved", label: "สต็อกจอง", width: 80 },
   { id: "status", label: "สถานะ", width: 130 },
