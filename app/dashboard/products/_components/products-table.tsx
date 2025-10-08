@@ -13,7 +13,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  TextField,
   Typography,
   Dialog,
   DialogTitle,
@@ -21,14 +20,12 @@ import {
   DialogContentText,
   DialogActions,
   Button,
-  Toolbar,
   TableSortLabel,
   TablePagination,
   Tooltip,
 } from "@mui/material";
 import { useSession } from "next-auth/react";
 import { hasPermission } from "@/lib/permissions";
-import SearchIcon from "@mui/icons-material/Search";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
@@ -36,7 +33,7 @@ import Link from "next/link";
 import type { ProductListItem } from "../data";
 import { deleteProduct } from "../delete";
 
-type Props = { products: ProductListItem[] };
+type Props = { products: ProductListItem[]; query?: string };
 
 type Order = "asc" | "desc";
 type SortableKeys =
@@ -51,20 +48,20 @@ type SortableKeys =
 interface HeadCell {
   id: SortableKeys;
   label: string;
+  width: number;
   numeric?: boolean;
   disablePadding?: boolean;
 }
 
 const headCells: readonly HeadCell[] = [
-  { id: "productCode", label: "รหัสสินค้า" },
-  { id: "nameTH", label: "ชื่อสินค้า" },
-  { id: "brand", label: "แบรนด์" },
-  { id: "category", label: "หมวดหมู่" },
-  { id: "expDate", label: "วันหมดอายุ" },
-  { id: "status", label: "สถานะ" },
+  { id: "productCode", label: "รหัสสินค้า", width: 110 },
+  { id: "nameTH", label: "ชื่อสินค้า", width: 230 },
+  { id: "brand", label: "แบรนด์", width: 150 },
+  { id: "category", label: "หมวดหมู่", width: 140 },
+  { id: "expDate", label: "วันหมดอายุ", width: 140 },
+  { id: "status", label: "สถานะ", width: 130 },
 ];
 
-// Inline visually-hidden styles to avoid importing @mui/utils
 const visuallyHidden = {
   border: 0,
   clip: "rect(0 0 0 0)",
@@ -84,11 +81,6 @@ function descendingComparator(
 ) {
   const av = a[orderBy];
   const bv = b[orderBy];
-  if (typeof av === "number" && typeof bv === "number") {
-    if (bv < av) return -1;
-    if (bv > av) return 1;
-    return 0;
-  }
   const as = String(av ?? "").toLowerCase();
   const bs = String(bv ?? "").toLowerCase();
   if (bs < as) return -1;
@@ -122,35 +114,56 @@ function EnhancedTableHead({
   return (
     <TableHead
       sx={{
-        bgcolor: "grey.100",
-        "& .MuiTableCell-root": { bgcolor: "grey.100" },
+        bgcolor: "#b92626",
+        "& .MuiTableCell-root": {
+          bgcolor: "#b92626",
+          color: "#fff",
+          fontFamily: "Prompt, sans-serif",
+          fontSize: "1rem",
+          fontWeight: 600,
+          borderBottom: "none",
+          whiteSpace: "nowrap",
+        },
       }}
     >
       <TableRow>
         {headCells.map((headCell) => (
           <TableCell
             key={headCell.id}
-            align={headCell.numeric ? "right" : "left"}
-            padding={headCell.disablePadding ? "none" : "normal"}
-            sortDirection={orderBy === headCell.id ? order : false}
+            sx={{
+              width: headCell.width,
+              display: ["brand", "category", "expDate"].includes(headCell.id)
+                ? { xs: "none", md: "table-cell" }
+                : "table-cell",
+            }}
           >
-            <TableSortLabel
-              active={orderBy === headCell.id}
-              direction={orderBy === headCell.id ? order : "asc"}
-              onClick={createSortHandler(headCell.id)}
-            >
-              {headCell.label}
-              {orderBy === headCell.id ? (
-                <Box component="span" sx={visuallyHidden}>
-                  {order === "desc" ? "sorted descending" : "sorted ascending"}
-                </Box>
-              ) : null}
-            </TableSortLabel>
+            <Tooltip title={`เรียงตาม ${headCell.label}`} arrow>
+              <TableSortLabel
+                active={orderBy === headCell.id}
+                direction={orderBy === headCell.id ? order : "asc"}
+                sx={{
+                  color: "inherit !important",
+                  "& .MuiTableSortLabel-icon": { color: "#fff !important" },
+                }}
+                onClick={createSortHandler(headCell.id)}
+              >
+                {headCell.label}
+                {orderBy === headCell.id && (
+                  <Box component="span" sx={visuallyHidden}>
+                    {order === "desc"
+                      ? "sorted descending"
+                      : "sorted ascending"}
+                  </Box>
+                )}
+              </TableSortLabel>
+            </Tooltip>
           </TableCell>
         ))}
         {showActions && (
-          <TableCell align="center" padding="normal">
-            การกระทำ
+          <TableCell align="center" sx={{ width: 120 }}>
+            <Tooltip title="การกระทำ" arrow>
+              <span>การกระทำ</span>
+            </Tooltip>
           </TableCell>
         )}
       </TableRow>
@@ -158,9 +171,8 @@ function EnhancedTableHead({
   );
 }
 
-export function ProductsTable({ products }: Props) {
+export function ProductsTable({ products, query }: Props) {
   const { data: session } = useSession();
-  const [query, setQuery] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<ProductListItem | null>(
     null
   );
@@ -171,7 +183,7 @@ export function ProductsTable({ products }: Props) {
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = (query ?? "").trim().toLowerCase();
     if (!q) return products;
     return products.filter((p) =>
       [p.productCode, p.nameTH, p.category, p.brand ?? "", p.status]
@@ -190,14 +202,6 @@ export function ProductsTable({ products }: Props) {
     setOrderBy(property);
   };
 
-  const handleChangePage = (_: unknown, newPage: number) => setPage(newPage);
-  const handleChangeRowsPerPage = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
-
   const visibleRows = useMemo(
     () =>
       [...filtered]
@@ -209,10 +213,9 @@ export function ProductsTable({ products }: Props) {
   const fmtDate = (iso?: string | null) => {
     if (!iso) return "-";
     const d = new Date(iso);
-    const dd = String(d.getDate()).padStart(2, "0");
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const yyyy = d.getFullYear();
-    return `${dd}/${mm}/${yyyy}`;
+    return `${String(d.getDate()).padStart(2, "0")}/${String(
+      d.getMonth() + 1
+    ).padStart(2, "0")}/${d.getFullYear()}`;
   };
 
   const canViewAll = hasPermission(
@@ -235,47 +238,28 @@ export function ProductsTable({ products }: Props) {
   return (
     <Paper
       variant="outlined"
-      sx={{ p: 0, borderRadius: 2, overflow: "hidden" }}
+      sx={{
+        borderRadius: 2,
+        overflow: "hidden",
+        borderColor: "#ddd",
+        fontFamily: "Prompt, sans-serif",
+      }}
     >
-      <Toolbar sx={{ pl: { sm: 2 }, pr: { xs: 2, sm: 2 }, py: 3 }}>
-        <Stack
-          direction="row"
-          spacing={1}
-          alignItems="center"
-          sx={{ ml: "auto" }}
+      <TableContainer
+        sx={{
+          borderTopLeftRadius: 12,
+          borderTopRightRadius: 12,
+          "&::-webkit-scrollbar": { width: 8 },
+          "&::-webkit-scrollbar-thumb": {
+            backgroundColor: "#ccc",
+            borderRadius: 6,
+          },
+        }}
+      >
+        <Table
+          aria-labelledby="tableTitle"
+          sx={{ minWidth: 900, tableLayout: "fixed" }}
         >
-          <Box
-            sx={{ position: "relative", width: { xs: 200, sm: 260, md: 360 } }}
-          >
-            <TextField
-              fullWidth
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="ค้นหา (รหัส/ชื่อ/หมวด/ยี่ห้อ/สถานะ)"
-              InputProps={{
-                startAdornment: (
-                  <SearchIcon fontSize="small" style={{ marginRight: 8 }} />
-                ),
-              }}
-              size="small"
-            />
-          </Box>
-          {hasPermission(session?.user?.permissions, "products", "create") && (
-            <Button
-              component={Link}
-              href="/dashboard/products/new"
-              variant="contained"
-              color="primary"
-              sx={{ whiteSpace: "nowrap" }}
-            >
-              เพิ่มสินค้า
-            </Button>
-          )}
-        </Stack>
-      </Toolbar>
-
-      <TableContainer>
-        <Table stickyHeader aria-labelledby="tableTitle" sx={{ minWidth: 900 }}>
           <EnhancedTableHead
             order={order}
             orderBy={orderBy}
@@ -283,36 +267,71 @@ export function ProductsTable({ products }: Props) {
             showActions={showActions}
           />
           <TableBody>
-            {visibleRows.map((p) => {
-              const canView = hasPermission(
-                session?.user?.permissions,
-                "products",
-                "view"
-              );
-              const canEdit = hasPermission(
-                session?.user?.permissions,
-                "products",
-                "edit"
-              );
-              const canDelete = hasPermission(
-                session?.user?.permissions,
-                "products",
-                "delete"
-              );
-              return (
-                <TableRow hover key={p.id}>
-                  <TableCell sx={{ whiteSpace: "nowrap" }}>
-                    {p.productCode}
-                  </TableCell>
-                  <TableCell sx={{ whiteSpace: "nowrap" }}>
-                    {p.nameTH}
-                  </TableCell>
-                  <TableCell sx={{ whiteSpace: "nowrap" }}>
-                    {p.brand ?? "-"}
-                  </TableCell>
-                  <TableCell>{p.category}</TableCell>
-                  <TableCell>{fmtDate(p.expDate)}</TableCell>
-                  <TableCell>
+            {visibleRows.map((p) => (
+              <TableRow
+                hover
+                key={p.id}
+                sx={{
+                  "&:nth-of-type(even)": { bgcolor: "#fafafa" },
+                  "&:hover": { bgcolor: "#f0f0f0" },
+                }}
+              >
+                <TableCell
+                  sx={{
+                    width: 230,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  <Tooltip title={p.productCode} arrow>
+                    <span>{p.productCode}</span>
+                  </Tooltip>
+                </TableCell>
+                <TableCell
+                  sx={{
+                    width: 230,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  <Tooltip title={p.nameTH} arrow>
+                    <span>{p.nameTH}</span>
+                  </Tooltip>
+                </TableCell>
+                <TableCell
+                  sx={{
+                    width: 80,
+                    display: { xs: "none", md: "table-cell" },
+                  }}
+                >
+                  <Tooltip title={p.brand ?? "-"} arrow>
+                    <span>{p.brand ?? "-"}</span>
+                  </Tooltip>
+                </TableCell>
+                <TableCell
+                  sx={{
+                    width: 140,
+                    display: { xs: "none", md: "table-cell" },
+                  }}
+                >
+                  <Tooltip title={p.category} arrow>
+                    <span>{p.category}</span>
+                  </Tooltip>
+                </TableCell>
+                <TableCell
+                  sx={{
+                    width: 140,
+                    display: { xs: "none", md: "table-cell" },
+                  }}
+                >
+                  <Tooltip title={fmtDate(p.expDate)} arrow>
+                    <span>{fmtDate(p.expDate)}</span>
+                  </Tooltip>
+                </TableCell>
+                <TableCell sx={{ width: 130 }}>
+                  <Tooltip title={p.status} arrow>
                     <Chip
                       size="small"
                       label={
@@ -320,90 +339,79 @@ export function ProductsTable({ products }: Props) {
                           ? "ใช้งานอยู่"
                           : p.status === "INACTIVE"
                           ? "ไม่ใช้งาน"
-                          : "ปิดการใช้งาน"
+                          : p.status === "EXPIRED"
+                          ? "หมดอายุ"
+                          : "ใกล้หมดอายุ"
                       }
                       sx={{
-                        borderRadius: "9999px",
                         fontWeight: 600,
                         px: 1.5,
-                        py: 2,
+                        borderRadius: "9999px",
                         color:
                           p.status === "ACTIVE"
-                            ? "#FFFFFF"
+                            ? "#fff"
                             : p.status === "INACTIVE"
                             ? "#424242"
-                            : "#FFFFFF",
-                        backgroundColor:
+                            : p.status === "EXPIRED"
+                            ? "#fff"
+                            : "#000",
+                        bgcolor:
                           p.status === "ACTIVE"
                             ? "#22C55E"
                             : p.status === "INACTIVE"
                             ? "#E0E0E0"
-                            : "#EF4444",
-                        border: "none",
+                            : p.status === "EXPIRED"
+                            ? "#EF4444"
+                            : "#FACC15",
                       }}
                     />
+                  </Tooltip>
+                </TableCell>
+                {showActions && (
+                  <TableCell align="center" sx={{ width: 120 }}>
+                    <Stack
+                      direction="row"
+                      justifyContent="center"
+                      spacing={0.5}
+                    >
+                      <Tooltip title="ดูรายละเอียด" arrow>
+                        <IconButton
+                          component={Link}
+                          href={`/dashboard/products/${p.id}`}
+                          size="small"
+                        >
+                          <VisibilityOutlinedIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="แก้ไข" arrow>
+                        <IconButton
+                          component={Link}
+                          href={`/dashboard/products/${p.id}/edit`}
+                          size="small"
+                        >
+                          <EditOutlinedIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="ลบ" arrow>
+                        <IconButton
+                          size="small"
+                          onClick={() => setDeleteTarget(p)}
+                        >
+                          <DeleteOutlineIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Stack>
                   </TableCell>
-
-                  {showActions && (
-                    <TableCell align="center" sx={{ width: 140, px: 0.5 }}>
-                      <Box
-                        sx={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 0.25,
-                        }}
-                      >
-                        {canView && (
-                          <Tooltip title="ดูรายละเอียด" placement="top">
-                            <IconButton
-                              component={Link}
-                              href={`/dashboard/products/${p.id}`}
-                              aria-label="view"
-                              size="small"
-                              sx={{ m: 0 }}
-                            >
-                              <VisibilityOutlinedIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        )}
-                        {canEdit && (
-                          <Tooltip title="แก้ไข" placement="top">
-                            <IconButton
-                              component={Link}
-                              href={`/dashboard/products/${p.id}/edit`}
-                              aria-label="edit"
-                              size="small"
-                              sx={{ m: 0 }}
-                            >
-                              <EditOutlinedIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        )}
-                        {canDelete && (
-                          <Tooltip title="ลบ" placement="top">
-                            <IconButton
-                              aria-label="delete"
-                              size="small"
-                              onClick={() => setDeleteTarget(p)}
-                              sx={{ m: 0 }}
-                            >
-                              <DeleteOutlineIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        )}
-                      </Box>
-                    </TableCell>
-                  )}
-                </TableRow>
-              );
-            })}
+                )}
+              </TableRow>
+            ))}
             {visibleRows.length === 0 && (
               <TableRow>
                 <TableCell
                   colSpan={headCells.length + (showActions ? 1 : 0)}
                   align="center"
                 >
-                  <Typography color="text.secondary">
+                  <Typography color="text.secondary" fontFamily="Prompt">
                     ไม่พบข้อมูลสินค้า
                   </Typography>
                 </TableCell>
@@ -419,17 +427,20 @@ export function ProductsTable({ products }: Props) {
         count={filtered.length}
         rowsPerPage={rowsPerPage}
         page={page}
-        onPageChange={handleChangePage}
-        onRowsPerPageChange={handleChangeRowsPerPage}
+        onPageChange={(_, p) => setPage(p)}
+        onRowsPerPageChange={(e) => {
+          setRowsPerPage(parseInt(e.target.value, 10));
+          setPage(0);
+        }}
       />
 
       <Dialog
         open={Boolean(deleteTarget)}
         onClose={() => setDeleteTarget(null)}
       >
-        <DialogTitle>ลบสินค้า</DialogTitle>
+        <DialogTitle fontFamily="Prompt">ลบสินค้า</DialogTitle>
         <DialogContent>
-          <DialogContentText>
+          <DialogContentText fontFamily="Prompt">
             ยืนยันการลบ {deleteTarget?.productCode ?? "สินค้า"}?
             การกระทำนี้ไม่สามารถย้อนกลับได้
           </DialogContentText>
@@ -444,7 +455,7 @@ export function ProductsTable({ products }: Props) {
               try {
                 await deleteProduct(deleteTarget.id);
                 setDeleteTarget(null);
-              } catch (e) {
+              } catch {
                 setDeleteTarget(null);
               }
             }}
