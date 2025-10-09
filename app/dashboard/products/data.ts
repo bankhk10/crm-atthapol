@@ -50,7 +50,10 @@ export async function getProducts(): Promise<ProductListItem[]> {
 export async function getProduct(productId: string) {
   const p = await prisma.product.findUnique({
     where: { id: productId, deletedAt: null },
-    include: { stocks: true },
+    include: { 
+      stocks: true, 
+      plants: { include: { plant: true } } 
+    },
   });
   if (!p) return null;
   // Fetch images via raw query to avoid relying on regenerated client types
