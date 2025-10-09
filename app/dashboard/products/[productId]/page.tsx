@@ -68,7 +68,7 @@ export default async function ProductDetailPage({
                     variant="outlined"
                     sx={{
                       p: 2.5,
-                      borderRadius: 3,
+                      borderRadius: 2,
                       bgcolor: "grey.50",
                     }}
                   >
@@ -94,16 +94,12 @@ export default async function ProductDetailPage({
                 variant="outlined"
                 sx={{
                   p: 2.5,
-                  borderRadius: 3,
+                  borderRadius: 2,
                   bgcolor: "grey.50",
                   height: "100%",
                 }}
               >
                 <Stack spacing={2}>
-                  <Typography variant="body1" color="text.secondary">
-                    {product.category || "สินค้า"}
-                  </Typography>
-
                   <Typography variant="h5" fontWeight={800}>
                     {product.nameTH}
                   </Typography>
@@ -124,8 +120,9 @@ export default async function ProductDetailPage({
                           : "ใกล้หมดอายุ"
                       }
                       sx={{
-                        fontWeight: 600,
-                        px: 1.5,
+                        fontWeight: 800,
+                        px: 2,
+                        py: 2,
                         borderRadius: "9999px",
                         color:
                           product.status === "ACTIVE"
@@ -153,12 +150,21 @@ export default async function ProductDetailPage({
                     {/* --- START: EDIT HERE --- */}
                     <Grid container>
                       <Grid size={{ xs: 5, sm: 3 }}>
-                        <Typography variant="body1" color="text.secondary" component="div">
-                          รหัสสินค้า
+                        <Typography
+                          variant="body1"
+                          color="text.secondary"
+                          component="div"
+                        >
+                          รหัสสินค้า :
                         </Typography>
                       </Grid>
                       <Grid size={{ xs: 7, sm: 9 }}>
-                        <Typography variant="body1" fontWeight={600} component="div" sx={{ fontFamily: 'monospace' }}>
+                        <Typography
+                          variant="body1"
+                          fontWeight={600}
+                          component="div"
+                          sx={{ fontFamily: "monospace" }}
+                        >
                           {product.productCode}
                         </Typography>
                       </Grid>
@@ -166,34 +172,21 @@ export default async function ProductDetailPage({
                     {/* --- END: EDIT HERE --- */}
 
                     <Info
-                      label="หมวดหมู่สินค้า"
+                      label="หมวดหมู่ : "
                       value={product.category ?? "-"}
                     />
-                    <Info label="ยี่ห้อ" value={product.brand ?? "-"} />
-                    <Info label="หน่วยนับ" value={product.unit ?? "-"} />
+                    <Info label="แบรนด์ : " value={product.brand ?? "-"} />
+                    <Info label="หน่วยนับ : " value={product.unit ?? "-"} />
                     {product.features && (
-                      <Info label="คุณสมบัติ" value={product.features} />
+                      <Info label="คุณสมบัติ : " value={product.features} />
                     )}
                     {product.packagingSize && (
-                      <Info label="ขนาดบรรจุ" value={product.packagingSize} />
+                      <Info label="ขนาดบรรจุ : " value={product.packagingSize} />
                     )}
-
-                    {(product.stocks || []).flatMap((s: any) => [
-                      <Info
-                        key={`${s.id}-onhand`}
-                        label="สต็อกคงเหลือ"
-                        value={s.qtyOnHand ?? "-"}
-                      />,
-                      <Info
-                        key={`${s.id}-reserved`}
-                        label="สต็อกจอง"
-                        value={s.qtyReserved ?? "-"}
-                      />,
-                    ])}
 
                     {plants.length > 0 && (
                       <Info
-                        label="ใช้กับพืช"
+                        label="ใช้กับพืช : "
                         value={
                           <Box
                             sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}
@@ -210,8 +203,21 @@ export default async function ProductDetailPage({
                       />
                     )}
 
+                    {(product.stocks || []).flatMap((s: any) => [
+                      <Info
+                        key={`${s.id}-onhand`}
+                        label="สต็อกคงเหลือ : "
+                        value={s.qtyOnHand ?? "-"}
+                      />,
+                      <Info
+                        key={`${s.id}-reserved`}
+                        label="สต็อกจอง : "
+                        value={s.qtyReserved ?? "-"}
+                      />,
+                    ])}
+
                     <Info
-                      label="วันที่ผลิต"
+                      label="วันที่ผลิต : "
                       value={
                         product.mfgDate
                           ? new Date(product.mfgDate).toISOString().slice(0, 10)
@@ -219,7 +225,7 @@ export default async function ProductDetailPage({
                       }
                     />
                     <Info
-                      label="วันหมดอายุ"
+                      label="วันหมดอายุ : "
                       value={
                         product.expDate
                           ? new Date(product.expDate).toISOString().slice(0, 10)
