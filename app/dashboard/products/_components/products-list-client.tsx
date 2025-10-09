@@ -24,7 +24,7 @@ export default function ProductsListClient({
         sx={{
           pl: { sm: 2 },
           pr: { xs: 2, sm: 2 },
-          py: 3,
+          // py: 3,
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -38,7 +38,7 @@ export default function ProductsListClient({
             fullWidth
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="ค้นหา (รหัส/ชื่อ/คงเหลือ/จอง/ยี่ห้อ/สถานะ)"
+            placeholder="ค้นหา (รหัส/ชื่อ/แบรนด์/คงเหลือ)"
             InputProps={{
               startAdornment: (
                 <SearchIcon fontSize="small" style={{ marginRight: 8 }} />

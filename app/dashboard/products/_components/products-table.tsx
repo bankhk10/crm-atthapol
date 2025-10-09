@@ -425,6 +425,7 @@ export function ProductsTable({ products, query }: Props) {
                       sx={{
                         fontWeight: 600,
                         px: 1.5,
+                        py: 2,
                         borderRadius: "9999px",
                         color:
                           p.status === "ACTIVE"
