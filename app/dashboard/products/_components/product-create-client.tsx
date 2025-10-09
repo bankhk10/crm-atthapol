@@ -6,6 +6,15 @@ import { ProductForm } from "./product-form";
 import type { ProductFormValues } from "../validation";
 import { createProduct } from "../actions";
 
+type Plant = {
+  id: string;
+  name: string;
+};
+
+type Props = {
+  plants: Plant[];
+};
+
 const defaultValues: ProductFormValues = {
   productCode: "",
   lotNumber: "",
@@ -26,7 +35,7 @@ const defaultValues: ProductFormValues = {
   stockNote: "",
 };
 
-export function ProductCreateClient() {
+export function ProductCreateClient({ plants }: Props) {
   const router = useRouter();
 
   return (
@@ -35,6 +44,7 @@ export function ProductCreateClient() {
         initialValues={defaultValues}
         title="เพิ่มข้อมูลสินค้าใหม่"
         existingImages={[]}
+        plants={plants}
         onSubmit={async (values: ProductFormValues) => {
           await createProduct(values);
           router.push("/dashboard/products");

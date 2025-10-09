@@ -8,6 +8,7 @@ import {
   type DragEvent,
 } from "react";
 import {
+  Autocomplete,
   Paper,
   Stack,
   TextField,
@@ -29,11 +30,17 @@ import { th } from "date-fns/locale";
 import type { ProductFormValues } from "../validation";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 
+type Plant = {
+  id: string;
+  name: string;
+};
+
 type Props = {
   initialValues: ProductFormValues;
   onSubmit?: (values: ProductFormValues) => Promise<void> | void;
   title?: string;
   existingImages?: { id: string; url: string }[];
+  plants: Plant[];
 };
 
 const CATEGORY_OPTIONS = ["หมวด A", "หมวด B", "หมวด C"] as const;
@@ -52,6 +59,7 @@ export function ProductForm({
   onSubmit,
   title,
   existingImages,
+  plants,
 }: Props) {
   const [values, setValues] = useState<ProductFormValues>(initialValues);
   const [submitting, setSubmitting] = useState(false);
@@ -351,6 +359,21 @@ export function ProductForm({
           </LocalizationProvider>
         </Stack>
 
+        {/* คุณสมบัติ + ขนาดบรรจุ */}
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          <TextField
+            label="คุณสมบัติ"
+            value={values.features ?? ""}
+            onChange={handleChange("features")}
+            fullWidth
+          />
+          <TextField
+            label="ขนาดบรรจุ"
+            value={values.packagingSize ?? ""}
+            onChange={handleChange("packagingSize")}
+            fullWidth
+          />
+        </Stack>
         {/* หน่วยนับ + สถานะ */}
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           <TextField
@@ -381,6 +404,23 @@ export function ProductForm({
           </TextField>
         </Stack>
 
+        {/* ใช้กับพืช */}
+        <Autocomplete
+          multiple
+          id="plant-select"
+          options={plants ?? []}
+          getOptionLabel={(option) => option.name}
+          value={plants?.filter((p) => values.plantIds?.includes(p.id)) ?? []}
+          onChange={(_, newValue) => {
+            setValues((prev) => ({
+              ...prev,
+              plantIds: newValue.map((v) => v.id),
+            }));
+          }}
+          renderInput={(params) => (
+            <TextField {...params} label="ใช้กับพืช" placeholder="เลือกพืช" />
+          )}
+        />
         {/* รายละเอียด */}
         <TextField
           label="รายละเอียดเพิ่มเติม (สินค้า)"

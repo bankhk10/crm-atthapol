@@ -51,6 +51,8 @@ export async function createProduct(raw: ProductFormValues) {
         status: v.status as any,
         imageUrl: v.imageUrl,
         description: v.description,
+        features: v.features,
+        packagingSize: v.packagingSize,
       },
     });
   } catch (e: any) {
@@ -67,6 +69,16 @@ export async function createProduct(raw: ProductFormValues) {
       // Use raw insert to avoid relying on regenerated Prisma client
       await prisma.$executeRaw`INSERT INTO ProductImage (id, productId, url, sort) VALUES (${crypto.randomUUID()}, ${product.id}, ${url}, ${i})`;
     }
+  }
+
+  // Persist plant associations
+  if (Array.isArray(v.plantIds) && v.plantIds.length > 0) {
+    await prisma.productPlant.createMany({
+      data: v.plantIds.map((plantId) => ({
+        productId: product.id,
+        plantId: plantId,
+      })),
+    });
   }
 
   await prisma.stock.create({
@@ -110,6 +122,8 @@ export async function updateProduct(productId: string, raw: ProductFormValues) {
         status: v.status as any,
         imageUrl: v.imageUrl && v.imageUrl.length > 0 ? v.imageUrl : null,
         description: v.description,
+        features: v.features,
+        packagingSize: v.packagingSize,
       },
     });
   } catch (e: any) {
@@ -130,6 +144,19 @@ export async function updateProduct(productId: string, raw: ProductFormValues) {
     const oldUrls = (prevImages || []).map((r) => r.url);
     const toDelete = oldUrls.filter((u) => !urls.includes(u));
     await safeDeleteFiles(toDelete);
+  }
+
+  // Update plant associations
+  if (Array.isArray(v.plantIds)) {
+    await prisma.$transaction([
+      prisma.productPlant.deleteMany({ where: { productId: id } }),
+      prisma.productPlant.createMany({
+        data: v.plantIds.map((plantId) => ({
+          productId: id,
+          plantId: plantId,
+        })),
+      }),
+    ]);
   }
 
   const latest = await prisma.stock.findFirst({

@@ -7,7 +7,17 @@ import type { ProductFormValues } from "../../validation";
 export default async function ProductEditPage({ params }: { params: Promise<{ productId: string }> }) {
   const { productId } = await params;
 
-  const p = await prisma.product.findUnique({ where: { id: productId } , include: { stocks: { orderBy: { updatedAt: "desc" }, take: 1 } } });
+  const [p, plants] = await Promise.all([
+    prisma.product.findUnique({
+      where: { id: productId },
+      include: {
+        stocks: { orderBy: { updatedAt: "desc" }, take: 1 },
+        plants: { select: { plantId: true } },
+      },
+    }),
+    prisma.plant.findMany({ orderBy: { name: "asc" } }),
+  ]);
+
   if (!p) return notFound();
 
   const latest = p.stocks?.[0] ?? null;
@@ -30,6 +40,9 @@ export default async function ProductEditPage({ params }: { params: Promise<{ pr
     status: p.status as any,
     imageUrl: p.imageUrl ?? "",
     description: p.description ?? "",
+    features: p.features ?? "",
+    packagingSize: p.packagingSize ?? "",
+    plantIds: p.plants.map((pl) => pl.plantId),
     qtyOnHand: latest?.qtyOnHand ?? 0,
     qtyReserved: latest?.qtyReserved ?? 0,
     qtyVirtual: latest?.qtyVirtual ?? 0,
@@ -44,7 +57,12 @@ export default async function ProductEditPage({ params }: { params: Promise<{ pr
   return (
     <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", py: 4 }}>
       <Stack spacing={3} sx={{ width: "100%", maxWidth: 960 }}>
-        <ProductEditClient productId={productId} initialValues={initialValues} existingImages={images as any} />
+        <ProductEditClient
+          productId={productId}
+          initialValues={initialValues}
+          existingImages={images as any}
+          plants={plants}
+        />
       </Stack>
     </Box>
   );

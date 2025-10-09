@@ -17,6 +17,9 @@ export const productFormSchema = z.object({
   imageUrl: z.string().optional(),
   imageUrls: z.array(z.string()).optional(),
   description: z.string().optional(),
+  features: z.string().optional(),
+  packagingSize: z.string().optional(),
+  plantIds: z.array(z.string()).optional(),
 
   qtyOnHand: z.preprocess((v) => (v === "" || v === undefined || v === null ? 0 : Number(v)), z.number().int().nonnegative()).default(0),
   qtyReserved: z.preprocess((v) => (v === "" || v === undefined || v === null ? 0 : Number(v)), z.number().int().nonnegative()).default(0),

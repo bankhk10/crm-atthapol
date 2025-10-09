@@ -77,9 +77,12 @@ model Product {
   status      ProductStatus  @default(ACTIVE)
   imageUrl    String?
   description String?
+  features    String?
+  packagingSize String?
 
   stocks   Stock[]
   images   ProductImage[]
+  plants   ProductPlant[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -112,6 +115,27 @@ model ProductImage {
   createdAt DateTime @default(now())
 
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model Plant {
+  id   String @id @default(cuid())
+  name String @unique
+
+  products ProductPlant[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+}
+
+model ProductPlant {
+  productId String
+  plantId   String
+
+  product Product @relation(fields: [productId], references: [id])
+  plant   Plant   @relation(fields: [plantId], references: [id])
+
+  @@id([productId, plantId])
 }
 
 // ====================
