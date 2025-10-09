@@ -202,6 +202,7 @@ async function main() {
   // 3️⃣ สร้าง Users + Employees
   // ---------------------------
   const employees: Record<string, string> = {};
+  const usersByEmail: Record<string, string> = {};
 
   for (const u of userSeeds) {
     const roleDefinitionId = roleDefinitionIdMap.get(u.roleKey)!;
@@ -242,6 +243,8 @@ async function main() {
       employees[user.email as string] = emp.id;
     }
 
+    usersByEmail[u.email] = user.id;
+
     console.log(`✅ Created user ${u.email} (${u.roleKey})`);
   }
 
@@ -271,34 +274,69 @@ async function main() {
   console.log(`🌱 Seeded ${plantNames.length} plants`);
 
   // ---------------------------
-  // 5️⃣ สร้าง Dealer / SubDealer / Farmer ตัวอย่าง
+  // 5️⃣ สร้าง Dealer / SubDealer / Farmer ตัวอย่าง (idempotent)
   // ---------------------------
-  const dealer = await prisma.dealer.create({
-    data: {
+  const dealer = await prisma.dealer.upsert({
+    where: { code: "DLR-0001" },
+    update: {
+      name: "บริษัท สมบูรณ์เกษตรภัณฑ์ จำกัด",
+      taxId: "0105556789012",
+      phone: "029999999",
+      province: "นนทบุรี",
+      responsibleEmployeeId: employees["sales.manager@csone.local"],
+    },
+    create: {
       code: "DLR-0001",
       name: "บริษัท สมบูรณ์เกษตรภัณฑ์ จำกัด",
       taxId: "0105556789012",
       phone: "029999999",
       province: "นนทบุรี",
       responsibleEmployeeId: employees["sales.manager@csone.local"],
-      businessInfo: { create: { creditTerm: 60, creditLimit: 500000, salesTarget: 1000000 } },
     },
   });
+  await prisma.businessInfo.upsert({
+    where: { dealerId: dealer.id },
+    update: { creditTerm: 60, creditLimit: 500000, salesTarget: 1000000 },
+    create: { dealerId: dealer.id, creditTerm: 60, creditLimit: 500000, salesTarget: 1000000 },
+  });
 
-  const subDealer = await prisma.subDealer.create({
-    data: {
+  const subDealer = await prisma.subDealer.upsert({
+    where: { code: "SBD-0001" },
+    update: {
+      name: "ร้านรุ่งเรืองเกษตรภัณฑ์",
+      phone: "0811112222",
+      province: "ราชบุรี",
+      dealerId: dealer.id,
+      responsibleEmployeeId: employees["sales.staff@csone.local"],
+    },
+    create: {
       code: "SBD-0001",
       name: "ร้านรุ่งเรืองเกษตรภัณฑ์",
       phone: "0811112222",
       province: "ราชบุรี",
       dealerId: dealer.id,
       responsibleEmployeeId: employees["sales.staff@csone.local"],
-      businessInfo: { create: { creditTerm: 30, creditLimit: 150000, salesTarget: 300000 } },
     },
   });
+  await prisma.businessInfo.upsert({
+    where: { subDealerId: subDealer.id },
+    update: { creditTerm: 30, creditLimit: 150000, salesTarget: 300000 },
+    create: { subDealerId: subDealer.id, creditTerm: 30, creditLimit: 150000, salesTarget: 300000 },
+  });
 
-  const farmer = await prisma.farmer.create({
-    data: {
+  const farmer = await prisma.farmer.upsert({
+    where: { code: "FRM-0001" },
+    update: {
+      name: "นายสมชาย เกษตรกรดีเด่น",
+      phone: "0892223333",
+      province: "กาญจนบุรี",
+      cropType: "ข้าวโพด",
+      farmName: "ไร่สมชาย",
+      farmSize: 45,
+      subDealerId: subDealer.id,
+      responsibleEmployeeId: employees["sales.staff@csone.local"],
+    },
+    create: {
       code: "FRM-0001",
       name: "นายสมชาย เกษตรกรดีเด่น",
       phone: "0892223333",
@@ -308,69 +346,88 @@ async function main() {
       farmSize: 45,
       subDealerId: subDealer.id,
       responsibleEmployeeId: employees["sales.staff@csone.local"],
-      businessInfo: { create: { areaSize: 45, cropType: "ข้าวโพด", season: "ฤดูฝน 2567" } },
     },
   });
-
-  // ---------------------------
-  // 6️⃣ ตัวอย่าง Sale / Interaction
-  // ---------------------------
-  await prisma.sale.createMany({
-    data: [
-      {
-        dealerId: dealer.id,
-        orderDate: new Date("2025-01-10"),
-        productName: "ปุ๋ยยูเรีย 46-0-0",
-        quantity: 200,
-        amount: 80000,
-        paymentStatus: "PAID",
-      },
-      {
-        subDealerId: subDealer.id,
-        orderDate: new Date("2025-02-01"),
-        productName: "ยากำจัดวัชพืช",
-        quantity: 50,
-        amount: 35000,
-        paymentStatus: "PENDING",
-      },
-      {
-        farmerId: farmer.id,
-        orderDate: new Date("2025-03-10"),
-        productName: "เมล็ดพันธุ์ข้าวโพด Pioneer",
-        quantity: 10,
-        amount: 7000,
-        paymentStatus: "PAID",
-      },
-    ],
+  await prisma.businessInfo.upsert({
+    where: { farmerId: farmer.id },
+    update: { areaSize: 45, cropType: "ข้าวโพด", season: "ฤดูฝน 2567" },
+    create: { farmerId: farmer.id, areaSize: 45, cropType: "ข้าวโพด", season: "ฤดูฝน 2567" },
   });
 
-  await prisma.interaction.createMany({
-    data: [
-      {
-        dealerId: dealer.id,
-        date: new Date("2025-02-05"),
-        channel: "VISIT",
-        notes: "เข้าเยี่ยม Dealer เพื่อติดตามยอดขาย Q1",
-        createdById: systemUser.id,
-      },
-      {
-        subDealerId: subDealer.id,
-        date: new Date("2025-03-15"),
-        channel: "CALL",
-        notes: "โทรสอบถามความต้องการสั่งสินค้าใหม่",
-        createdById: systemUser.id,
-      },
-      {
-        farmerId: farmer.id,
-        date: new Date("2025-03-20"),
-        channel: "LINE",
-        notes: "เกษตรกรสอบถามวิธีใช้ผลิตภัณฑ์",
-        createdById: systemUser.id,
-      },
-    ],
-  });
+  // ---------------------------
+  // 6️⃣ ตัวอย่าง Sale / Interaction ครอบคลุมทุกเดือนของปีปัจจุบัน
+  //     - ลบชุด SEED เดิมก่อนเพื่อ rerun ได้ปลอดภัย
+  // ---------------------------
+  await prisma.sale.deleteMany({ where: { productName: { startsWith: "SEED-" } } });
+  await prisma.interaction.deleteMany({ where: { notes: { startsWith: "SEED" } } });
 
-  console.log("🌾 Dealer/SubDealer/Farmer data seeded successfully!");
+  const year = new Date().getFullYear();
+  const channels = ["VISIT", "CALL", "EMAIL", "LINE"] as const;
+
+  const salesData: any[] = [];
+  const interactionsData: any[] = [];
+
+  for (let m = 0; m < 12; m++) {
+    const lastDay = new Date(year, m + 1, 0).getDate();
+    const midDay = Math.min(15, lastDay);
+    const earlyDay = Math.min(5, lastDay);
+
+    // Dealer — ผู้จัดการฝ่ายขายดูแล
+    salesData.push({
+      dealerId: dealer.id,
+      orderDate: new Date(year, m, midDay),
+      productName: `SEED-Dealer Product M${m + 1}`,
+      quantity: 100 + m * 5,
+      amount: 30000 + m * 2500,
+      paymentStatus: m % 3 === 0 ? "PAID" : "PENDING",
+    });
+    interactionsData.push({
+      dealerId: dealer.id,
+      date: new Date(year, m, earlyDay),
+      channel: channels[m % channels.length],
+      notes: `SEED ${year}-${String(m + 1).padStart(2, "0")} Dealer`,
+      createdById: usersByEmail["sales.manager@csone.local"],
+    });
+
+    // SubDealer — พนักงานฝ่ายขายดูแล
+    salesData.push({
+      subDealerId: subDealer.id,
+      orderDate: new Date(year, m, Math.min(midDay + 2, lastDay)),
+      productName: `SEED-SubDealer Product M${m + 1}`,
+      quantity: 50 + m * 3,
+      amount: 15000 + m * 1500,
+      paymentStatus: m % 2 === 0 ? "PAID" : "PENDING",
+    });
+    interactionsData.push({
+      subDealerId: subDealer.id,
+      date: new Date(year, m, Math.min(earlyDay + 2, lastDay)),
+      channel: channels[(m + 1) % channels.length],
+      notes: `SEED ${year}-${String(m + 1).padStart(2, "0")} SubDealer`,
+      createdById: usersByEmail["sales.staff@csone.local"],
+    });
+
+    // Farmer — พนักงานฝ่ายขายดูแล
+    salesData.push({
+      farmerId: farmer.id,
+      orderDate: new Date(year, m, Math.min(midDay + 4, lastDay)),
+      productName: `SEED-Farmer Product M${m + 1}`,
+      quantity: 10 + m,
+      amount: 5000 + m * 500,
+      paymentStatus: "PAID",
+    });
+    interactionsData.push({
+      farmerId: farmer.id,
+      date: new Date(year, m, Math.min(earlyDay + 4, lastDay)),
+      channel: channels[(m + 2) % channels.length],
+      notes: `SEED ${year}-${String(m + 1).padStart(2, "0")} Farmer`,
+      createdById: usersByEmail["sales.staff@csone.local"],
+    });
+  }
+
+  await prisma.sale.createMany({ data: salesData });
+  await prisma.interaction.createMany({ data: interactionsData });
+
+  console.log(`🌾 Seeded monthly Sales (${salesData.length}) and Interactions (${interactionsData.length}) for year ${year}.`);
 }
 
 main()

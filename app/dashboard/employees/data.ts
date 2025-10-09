@@ -40,6 +40,88 @@ export function getEmployeeById(id: string) {
   });
 }
 
+export type EmployeeActivityItem = {
+  id: string;
+  code: string;
+  title: string;
+  createdAt: string; // ISO
+  income: number;
+  expense: number;
+  days: number;
+};
+
+// Real activities sourced from Interactions created by the employee (user)
+export async function getEmployeeActivities(employeeId: string): Promise<EmployeeActivityItem[]> {
+  const employee = await prisma.employee.findUnique({
+    where: { id: employeeId, deletedAt: null },
+    select: { userId: true },
+  });
+  if (!employee?.userId) return [];
+
+  const interactions = await prisma.interaction.findMany({
+    where: { deletedAt: null, createdById: employee.userId },
+    include: {
+      dealer: { select: { id: true, code: true, name: true } },
+      subDealer: { select: { id: true, code: true, name: true } },
+      farmer: { select: { id: true, code: true, name: true } },
+    },
+    orderBy: { date: "desc" },
+    take: 300,
+  });
+
+  const results: EmployeeActivityItem[] = [];
+  for (const it of interactions) {
+    const date = it.date ?? new Date();
+    const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+    const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+    monthEnd.setHours(23, 59, 59, 999);
+
+    // Determine partner type and id
+    let title = "กิจกรรม";
+    let code = "-";
+    const where: any = {};
+    if (it.dealer) {
+      title = `เข้าพบร้านค้า`;
+      code = it.dealer.code ?? "-";
+      where.dealerId = it.dealer.id;
+    } else if (it.subDealer) {
+      title = `เข้าพบซับดีลเลอร์`;
+      code = it.subDealer.code ?? "-";
+      where.subDealerId = it.subDealer.id;
+    } else if (it.farmer) {
+      title = `เข้าพบเกษตรกร`;
+      code = it.farmer.code ?? "-";
+      where.farmerId = it.farmer.id;
+    }
+
+    // Sum sales amount for the same partner in the month of the interaction
+    const saleAgg = await prisma.sale.aggregate({
+      _sum: { amount: true },
+      where: {
+        ...where,
+        deletedAt: null,
+        orderDate: { gte: monthStart, lte: monthEnd },
+      },
+    });
+
+    const income = Number(saleAgg._sum.amount ?? 0);
+    const expense = 0; // ไม่มีข้อมูลต้นทุน/รายจ่ายใน schema
+    const days = Math.max(1, Math.ceil((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24)));
+
+    results.push({
+      id: it.id,
+      code,
+      title,
+      createdAt: date.toISOString(),
+      income,
+      expense,
+      days,
+    });
+  }
+
+  return results;
+}
+
 export async function getRoleDefinitionOptions(): Promise<RoleDefinitionOption[]> {
   const roles = await prisma.roleDefinition.findMany({
     where: { deletedAt: null },

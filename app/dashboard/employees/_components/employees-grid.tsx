@@ -28,6 +28,7 @@ import { useSession } from "next-auth/react";
 import { hasPermission } from "@/lib/permissions";
 import type { EmployeeListItem } from "../types";
 import { deleteEmployee } from "../delete";
+import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 
 type EmployeesGridProps = {
   employees: EmployeeListItem[];
@@ -45,7 +46,9 @@ export function EmployeesGrid({ employees }: EmployeesGridProps) {
   const [query, setQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
-  const [deleteTarget, setDeleteTarget] = useState<EmployeeListItem | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<EmployeeListItem | null>(
+    null
+  );
 
   // แสดง 8 รายการต่อหน้าเสมอ (4 บน, 4 ล่าง ในหน้าจอกว้าง)
 
@@ -57,7 +60,7 @@ export function EmployeesGrid({ employees }: EmployeesGridProps) {
         .filter(Boolean)
         .join(" ")
         .toLowerCase()
-        .includes(q),
+        .includes(q)
     );
   }, [employees, query]);
 
@@ -147,9 +150,15 @@ export function EmployeesGrid({ employees }: EmployeesGridProps) {
                 <IconButton
                   aria-label="delete"
                   onClick={() => setDeleteTarget(e)}
-                  sx={{ position: "absolute", top: 8, right: 8 }}
+                  sx={{
+                    position: "absolute",
+                    top: 10,
+                    right: 18,
+                    color: "#d02b28ff",
+                    "&:hover": { bgcolor: "rgba(233, 181, 181, 0.8)" },
+                  }}
                 >
-                  <DeleteOutlineIcon />
+                  <DeleteForeverIcon fontSize="large" />
                 </IconButton>
               )}
 
@@ -187,7 +196,12 @@ export function EmployeesGrid({ employees }: EmployeesGridProps) {
                 </Typography>
 
                 {/* edit + view buttons */}
-                <Stack direction="row" spacing={1} justifyContent="center" mb={1.5}>
+                <Stack
+                  direction="row"
+                  spacing={4}
+                  justifyContent="center"
+                  mb={1.5}
+                >
                   {canEditEmployee && (
                     <Button
                       component={Link}
@@ -195,6 +209,21 @@ export function EmployeesGrid({ employees }: EmployeesGridProps) {
                       size="small"
                       variant="outlined"
                       color="inherit"
+                      sx={{
+                        borderColor: "#1976D2", // สีเส้นรอบ
+                        color: "#1976D2", // สีตัวอักษร
+                        backgroundColor: "rgba(80, 132, 204, 0.08)", // สีพื้นหลังบาง ๆ
+                        fontSize: "0.85rem", // ขนาดตัวอักษร
+                        fontWeight: 600, // หนักขึ้นนิด
+                        px: 2.5, // padding ซ้าย-ขวา
+                        py: 0.5, // padding บน-ล่าง
+                        borderRadius: 2, // มุมโค้ง
+                        textTransform: "none", // ไม่ให้ตัวใหญ่หมด
+                        "&:hover": {
+                          backgroundColor: "rgba(90, 173, 208, 0.15)", // สีพื้นตอน hover
+                          borderColor: "#1976D2", // สีเส้นตอน hover
+                        },
+                      }}
                     >
                       แก้ไข
                     </Button>
@@ -205,6 +234,21 @@ export function EmployeesGrid({ employees }: EmployeesGridProps) {
                       href={`/dashboard/employees/${e.id}`}
                       size="small"
                       variant="outlined"
+                      sx={{
+                        borderColor: "#5d666bff", // สีเส้นรอบ
+                        color: "#5d666bff", // สีตัวอักษร
+                        backgroundColor: "rgba(111, 121, 134, 0.08)", // สีพื้นหลังบาง ๆ
+                        fontSize: "0.85rem", // ขนาดตัวอักษร
+                        fontWeight: 600, // หนักขึ้นนิด
+                        px: 2.5, // padding ซ้าย-ขวา
+                        py: 0.5, // padding บน-ล่าง
+                        borderRadius: 2, // มุมโค้ง
+                        textTransform: "none", // ไม่ให้ตัวใหญ่หมด
+                        "&:hover": {
+                          backgroundColor: "rgba(147, 174, 148, 0.15)", // สีพื้นตอน hover
+                          borderColor: "#5d666bff", // สีเส้นตอน hover
+                        },
+                      }}
                     >
                       ประวัติ
                     </Button>
@@ -220,18 +264,20 @@ export function EmployeesGrid({ employees }: EmployeesGridProps) {
                   borderColor="divider"
                   pt={2}
                 >
-                  {[{ label: "ที่เหลือ" }, { label: "กำลังทำ" }, { label: "สำเร็จ" }].map(
-                    (s, idx) => (
-                      <Box key={s.label} textAlign="center">
-                        <Typography fontWeight={700} variant="h6">
-                          {(e.id.charCodeAt(0) + idx * 7) % 50}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {s.label}
-                        </Typography>
-                      </Box>
-                    ),
-                  )}
+                  {[
+                    { label: "ที่เหลือ" },
+                    { label: "กำลังทำ" },
+                    { label: "สำเร็จ" },
+                  ].map((s, idx) => (
+                    <Box key={s.label} textAlign="center">
+                      <Typography fontWeight={700} variant="h6">
+                        {(e.id.charCodeAt(0) + idx * 7) % 50}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {s.label}
+                      </Typography>
+                    </Box>
+                  ))}
                 </Stack>
               </Stack>
             </Paper>
@@ -239,7 +285,11 @@ export function EmployeesGrid({ employees }: EmployeesGridProps) {
         </Box>
 
         {/* pagination */}
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+        >
           <Typography variant="body2" color="text.secondary">
             {startDisplay}-{endDisplay} จาก {filtered.length}
           </Typography>
@@ -260,11 +310,15 @@ export function EmployeesGrid({ employees }: EmployeesGridProps) {
         </Stack>
 
         {/* confirm delete dialog */}
-        <Dialog open={Boolean(deleteTarget)} onClose={() => setDeleteTarget(null)}>
+        <Dialog
+          open={Boolean(deleteTarget)}
+          onClose={() => setDeleteTarget(null)}
+        >
           <DialogTitle>ลบพนักงาน</DialogTitle>
           <DialogContent>
             <DialogContentText>
-              ยืนยันการลบ {deleteTarget?.name ?? "ผู้ใช้งาน"}? การกระทำนี้ไม่สามารถย้อนกลับได้
+              ยืนยันการลบ {deleteTarget?.name ?? "ผู้ใช้งาน"}?
+              การกระทำนี้ไม่สามารถย้อนกลับได้
             </DialogContentText>
           </DialogContent>
           <DialogActions>
