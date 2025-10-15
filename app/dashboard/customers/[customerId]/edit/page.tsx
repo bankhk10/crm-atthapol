@@ -4,14 +4,15 @@ import { CustomerEditClient } from "../../_components/customer-edit-client";
 import { getCustomer } from "../../data";
 import { getDealerOptions } from "../../data";
 import { getEmployees } from "@/app/dashboard/employees/data";
-import type { Employee, User } from "@prisma/client";
 import type { CustomerFormValues } from "../../types";
+
+type EmployeesWithUser = Awaited<ReturnType<typeof getEmployees>>;
 
 export default async function CustomerEditPage({ params }: { params: Promise<{ customerId: string }> }) {
   const { customerId } = await params;
   const customer = await getCustomer(customerId);
   if (!customer) return notFound();
-  const employees = (await getEmployees()) as (Employee & { user: User | null })[];
+  const employees: EmployeesWithUser = await getEmployees();
   const dealers = await getDealerOptions();
   const employeeOptions = employees
     .filter((e) => !e.deletedAt)
