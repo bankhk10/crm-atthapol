@@ -15,8 +15,8 @@ export default async function CustomerEditPage({ params }: { params: Promise<{ c
   const employees: EmployeesWithUser = await getEmployees();
   const dealers = await getDealerOptions();
   const employeeOptions = employees
-    .filter((e) => !e.deletedAt)
-    .map((e) => ({
+    .filter((e: EmployeesWithUser[number]) => !e.deletedAt)
+    .map((e: EmployeesWithUser[number]) => ({
       id: e.id,
       label:
         [e.prefix, e.firstName, e.lastName]
