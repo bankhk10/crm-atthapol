@@ -1,15 +1,17 @@
-import { Box, Stack, Typography } from "@mui/material";
+import { Box, Stack } from "@mui/material";
 import { notFound } from "next/navigation";
 import { CustomerEditClient } from "../../_components/customer-edit-client";
 import { getCustomer } from "../../data";
 import { getDealerOptions } from "../../data";
 import { getEmployees } from "@/app/dashboard/employees/data";
+import type { Employee, User } from "@prisma/client";
+import type { CustomerFormValues } from "../../types";
 
 export default async function CustomerEditPage({ params }: { params: Promise<{ customerId: string }> }) {
   const { customerId } = await params;
   const customer = await getCustomer(customerId);
   if (!customer) return notFound();
-  const employees = await getEmployees();
+  const employees = (await getEmployees()) as (Employee & { user: User | null })[];
   const dealers = await getDealerOptions();
   const employeeOptions = employees
     .filter((e) => !e.deletedAt)
@@ -21,12 +23,12 @@ export default async function CustomerEditPage({ params }: { params: Promise<{ c
           .join(" ") || e.user?.name || e.user?.email || e.id,
     }));
 
-  const initialValues = {
+  const initialValues: CustomerFormValues = {
     type: customer.type,
     prefix: customer.prefix ?? "",
     firstName: customer.firstName ?? "",
     lastName: customer.lastName ?? "",
-    gender: (customer.gender === 'FEMALE' ? 'FEMALE' : 'MALE') as any,
+    gender: (customer.gender === "FEMALE" ? "FEMALE" : "MALE") as "MALE" | "FEMALE",
     birthDate: customer.birthDate ? new Date(customer.birthDate).toISOString().slice(0, 10) : "",
     email: customer.email ?? "",
     phone: customer.phone ?? "",
