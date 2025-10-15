@@ -1,7 +1,8 @@
 "use server";
 
 import bcrypt from "bcrypt";
-import { Prisma } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -190,7 +191,7 @@ export async function updateEmployee(
 }
 
 function handlePrismaError(error: unknown): never {
-  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+  if (error instanceof PrismaClientKnownRequestError) {
     if (error.code === "P2002") {
       console.error("P2002 Error Meta:", error.meta); // 👈 log ออกมา
 

@@ -1,4 +1,4 @@
-import { Prisma, type AuditAction } from "@prisma/client";
+import type { Prisma, AuditAction } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 export type AuditLogFilters = {

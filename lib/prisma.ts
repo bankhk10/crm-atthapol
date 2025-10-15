@@ -1,4 +1,5 @@
-import { Prisma, PrismaClient } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { getRequestContext } from "@/lib/request-context";
 
 // Use string literals for audit actions at runtime to avoid issues
