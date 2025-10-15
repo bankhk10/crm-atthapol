@@ -136,7 +136,9 @@ export default function ProductGallery({ images, productCode, name }: Props) {
           {imgs.map((img, idx) => (
             <Box
               key={img.id}
-              ref={(el) => (thumbRefs.current[idx] = el)}
+              ref={(el: HTMLDivElement | null) => {
+                thumbRefs.current[idx] = el;
+              }}
               onClick={() => handleThumbClick(idx)}
               sx={{
                 position: "relative",
