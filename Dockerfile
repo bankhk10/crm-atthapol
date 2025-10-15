@@ -41,6 +41,7 @@ ENV PNPM_HOME=/root/.local/share/pnpm
 ENV PATH=$PNPM_HOME:$PATH
 WORKDIR /app
 RUN corepack enable
+RUN apt-get update -y && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 
 # Copy required assets from build and deps
 COPY --from=build /app/node_modules ./node_modules

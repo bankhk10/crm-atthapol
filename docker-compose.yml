@@ -1,52 +1,23 @@
 version: "3.9"
 
 services:
-  db:
-    image: postgres:16
-    container_name: crm-db
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: crm
-    ports:
-      - "5432:5432"
-    volumes:
-      - db-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-
   app:
     build:
       context: .
       target: dev
     container_name: crm-app
-    depends_on:
-      db:
-        condition: service_healthy
     ports:
       - "3000:3000"
+    env_file:
+      - .env
     environment:
-      # Database
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/crm?schema=public
-      DIRECT_URL: postgresql://postgres:postgres@db:5432/crm
-      # NextAuth
-      NEXTAUTH_URL: http://localhost:3000
-      NEXTAUTH_SECRET: devsecret-please-change
-      # Optional Supabase (set real values if you use these features)
-      SUPABASE_URL: http://localhost
-      SUPABASE_SERVICE_ROLE_KEY: dummy
-      NEXT_PUBLIC_SUPABASE_URL: http://localhost
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy
-      # Node
       NODE_ENV: development
+      # Optionally enable these on demand
+      # PRISMA_DB_PUSH: "true"      # run prisma db push at startup
+      # RUN_DB_SEED: "true"         # run seed script at startup
     volumes:
       - .:/app
       - app-node-modules:/app/node_modules
 
 volumes:
-  db-data:
   app-node-modules:
-
