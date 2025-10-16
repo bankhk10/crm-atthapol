@@ -1,4 +1,9 @@
-import { prisma } from "../lib/prisma";
+import { PrismaClient } from "@prisma/client";
+const prisma = new PrismaClient({
+  datasources: {
+    db: { url: process.env.DIRECT_URL || process.env.DATABASE_URL },
+  },
+});
 import bcrypt from "bcrypt";
 
 import {
@@ -196,7 +201,7 @@ async function main() {
         skipDuplicates: true,
       });
     }
-  });
+  }, { maxWait: 30000, timeout: 60000 });
 
   // ---------------------------
   // 3️⃣ สร้าง Users + Employees

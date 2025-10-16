@@ -45,7 +45,7 @@ pnpm dev
 
 <!-- Tree -->
 
-next15-mui-auth-prisma/
+crm-atthapol/
 ├─ app/
 │  ├─ (public)/
 │  │  ├─ login/page.tsx
