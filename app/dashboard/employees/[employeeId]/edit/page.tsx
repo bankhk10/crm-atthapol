@@ -67,7 +67,7 @@ export default async function EmployeeEditPage({
       }}
     >
       <Stack spacing={3} sx={{ width: "100%", maxWidth: 960 }}>
-        <ActionButtons resource="employees" />
+        {/* <ActionButtons resource="employees" /> */}
         <EmployeeEditClient
           employeeId={employee.id}
           employeeCode={employee.employeeCode}

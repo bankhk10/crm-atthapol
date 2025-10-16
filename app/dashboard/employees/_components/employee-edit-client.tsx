@@ -32,7 +32,7 @@ export function EmployeeEditClient({
     <Stack spacing={3}>
       <EmployeeForm
         title={`แก้ไขข้อมูลพนักงาน (${employeeCode})`}
-        description="ปรับปรุงข้อมูลพนักงาน รวมถึงอีเมลและสถานะการทำงาน"
+        description=""
         initialValues={initialValues}
         submitLabel="บันทึกการแก้ไข"
         roleOptions={roleOptions}

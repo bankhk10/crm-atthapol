@@ -52,7 +52,7 @@ export default async function EmployeeProfilePage({
   return (
     <Box sx={{ minHeight: "100%" }}>
       <Stack spacing={3} sx={{ width: "100%", maxWidth: 1200, mx: "auto" }}>
-        <ActionButtons resource="employees" />
+        {/* <ActionButtons resource="employees" /> */}
 
         <Grid container spacing={3}>
           {/* Left: Profile card */}
