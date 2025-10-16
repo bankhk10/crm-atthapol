@@ -313,6 +313,16 @@ model Dealer {
   id          String        @id @default(cuid())
   code        String        @unique
   name        String
+  // Personal info (contact person)
+  prefix      String?
+  firstName   String?
+  lastName    String?
+  gender      Gender?
+  birthDate   DateTime?
+  age         Int?
+  contactPerson String?
+  contactPhone  String?
+  contactEmail  String?
   taxId       String?
   phone       String?
   email       String?
@@ -354,6 +364,16 @@ model SubDealer {
   id          String        @id @default(cuid())
   code        String        @unique
   name        String
+  // Personal info (contact person)
+  prefix        String?
+  firstName     String?
+  lastName      String?
+  gender        Gender?
+  birthDate     DateTime?
+  age           Int?
+  contactPerson String?
+  contactPhone  String?
+  contactEmail  String?
   taxId       String?
   phone       String?
   email       String?
@@ -400,6 +420,10 @@ model Farmer {
   id          String        @id @default(cuid())
   code        String        @unique
   name        String
+  // Personal info (private individual)
+  prefix      String?
+  firstName   String?
+  lastName    String?
   phone       String?
   email       String?
   address     String?
@@ -411,6 +435,10 @@ model Farmer {
   longitude   Float?
   gender      Gender?
   birthDate   DateTime?
+  age         Int?
+  contactPerson String?
+  contactPhone  String?
+  contactEmail  String?
   farmName    String?
   farmSize    Float?
   cropType    String?

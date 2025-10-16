@@ -310,36 +310,26 @@ export function CustomerForm({
             fullWidth
             placeholder="เช่น ใจดี"
           />
-          <Stack
-            justifyContent="center"
-            sx={{ minWidth: { xs: "100%", sm: 200 } }}
-          >
-            <Typography variant="body2" color="text.secondary">
-              เพศ
-            </Typography>
-            <RadioGroup
-              row
-              value={values.gender}
-              onChange={(e) =>
-                setValues((prev) => ({
-                  ...prev,
-                  gender: e.target.value as any,
-                }))
-              }
-            >
-              <FormControlLabel value="MALE" control={<Radio />} label="ชาย" />
-              <FormControlLabel
-                value="FEMALE"
-                control={<Radio />}
-                label="หญิง"
-              />
-              {/* ลบตัวเลือก 'อื่นๆ' ตามคำขอ */}
-            </RadioGroup>
-          </Stack>
         </Stack>
 
         {/* แถว 2: วันเกิด, อายุ, เบอร์โทร (บุคคล), E-mail (บุคคล) */}
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          <TextField
+            label="เบอร์โทรศัพท์ (บุคคล)"
+            value={values.contactPhone ?? ""}
+            onChange={handleChange("contactPhone") as any}
+            fullWidth
+            placeholder="0xx-xxx-xxxx"
+          />
+          <TextField
+            label="E-mail (บุคคล)"
+            type="email"
+            value={values.contactEmail ?? ""}
+            onChange={handleChange("contactEmail") as any}
+            fullWidth
+            placeholder="name@example.com"
+          />
+
           <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={th}>
             <DatePicker
               label="วันเกิด"
@@ -368,22 +358,7 @@ export function CustomerForm({
                 : ""
             }
             InputProps={{ readOnly: true }}
-            fullWidth
-          />
-          <TextField
-            label="เบอร์โทรศัพท์ (บุคคล)"
-            value={values.contactPhone ?? ""}
-            onChange={handleChange("contactPhone") as any}
-            fullWidth
-            placeholder="0xx-xxx-xxxx"
-          />
-          <TextField
-            label="E-mail (บุคคล)"
-            type="email"
-            value={values.contactEmail ?? ""}
-            onChange={handleChange("contactEmail") as any}
-            fullWidth
-            placeholder="name@example.com"
+            sx={{ minWidth: { xs: "100%", sm: 100 } }}
           />
         </Stack>
 
@@ -431,13 +406,6 @@ export function CustomerForm({
                 isOptionEqualToValue={(opt, val) => opt.id === val.id}
                 fullWidth
               />
-              <Button
-                component={Link}
-                href="/dashboard/customers/new/dealer"
-                variant="outlined"
-              >
-                เพิ่ม Dealer ใหม่
-              </Button>
             </>
           )}
           <Autocomplete
@@ -471,6 +439,20 @@ export function CustomerForm({
           <>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <TextField
+                label="สินค้าหลักที่ขาย (คั่นด้วย ,)"
+                value={values.mainProducts ?? ""}
+                onChange={handleChange("mainProducts") as any}
+                fullWidth
+              />
+              <TextField
+                label="ยี่ห้อที่จำหน่าย (คั่นด้วย ,)"
+                value={values.brandsSold ?? ""}
+                onChange={handleChange("brandsSold") as any}
+                fullWidth
+              />
+            </Stack>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              <TextField
                 label="ยอดซื้อเฉลี่ย/เดือน"
                 type="number"
                 value={values.averageMonthlyPurchase ?? ""}
@@ -487,7 +469,7 @@ export function CustomerForm({
                     relationshipScore: Number(e.target.value),
                   }))
                 }
-                sx={{ minWidth: { xs: "100%", sm: 200 } }}
+                fullWidth
               >
                 {[1, 2, 3, 4, 5].map((n) => (
                   <MenuItem key={n} value={n}>
@@ -496,23 +478,9 @@ export function CustomerForm({
                 ))}
               </TextField>
             </Stack>
-            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-              <TextField
-                label="สินค้าหลักที่ขาย (คั่นด้วย ,)"
-                value={values.mainProducts ?? ""}
-                onChange={handleChange("mainProducts") as any}
-                fullWidth
-              />
-              <TextField
-                label="ยี่ห้อที่จำหน่าย (คั่นด้วย ,)"
-                value={values.brandsSold ?? ""}
-                onChange={handleChange("brandsSold") as any}
-                fullWidth
-              />
-            </Stack>
             <Stack>
               <TextField
-                label="หมายเหตุทางธุรกิจ"
+                label="หมายเหตุ"
                 value={values.businessNotes ?? ""}
                 onChange={handleChange("businessNotes") as any}
                 fullWidth
@@ -579,7 +547,7 @@ export function CustomerForm({
                     relationshipScore: Number(e.target.value),
                   }))
                 }
-                sx={{ minWidth: { xs: "100%", sm: 200 } }}
+               fullWidth
               >
                 {[1, 2, 3, 4, 5].map((n) => (
                   <MenuItem key={n} value={n}>
@@ -587,13 +555,15 @@ export function CustomerForm({
                   </MenuItem>
                 ))}
               </TextField>
-              <TextField
-                label="หมายเหตุทางธุรกิจ"
-                value={values.businessNotes ?? ""}
-                onChange={handleChange("businessNotes") as any}
-                fullWidth
-              />
             </Stack>
+            <TextField
+              label="หมายเหตุ"
+              value={values.businessNotes ?? ""}
+              onChange={handleChange("businessNotes") as any}
+              fullWidth
+              multiline
+              minRows={2}
+            />
           </>
         )}
 

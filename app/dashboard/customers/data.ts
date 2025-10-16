@@ -19,8 +19,14 @@ export async function getCustomers(): Promise<CustomerListItem[]> {
   const dealers = await prisma.dealer.findMany({
     where: { deletedAt: null },
     orderBy: { createdAt: "desc" },
-    select: {
+    select: ({
       id: true,
+      prefix: true,
+      firstName: true,
+      lastName: true,
+      contactPerson: true,
+      contactPhone: true,
+      contactEmail: true,
       name: true,
       phone: true,
       email: true,
@@ -30,14 +36,20 @@ export async function getCustomers(): Promise<CustomerListItem[]> {
       subdistrict: true,
       postalCode: true,
       createdAt: true,
-    },
+    } as any),
   });
 
   const subDealers = await prisma.subDealer.findMany({
     where: { deletedAt: null },
     orderBy: { createdAt: "desc" },
-    select: {
+    select: ({
       id: true,
+      prefix: true,
+      firstName: true,
+      lastName: true,
+      contactPerson: true,
+      contactPhone: true,
+      contactEmail: true,
       name: true,
       phone: true,
       email: true,
@@ -47,14 +59,20 @@ export async function getCustomers(): Promise<CustomerListItem[]> {
       subdistrict: true,
       postalCode: true,
       createdAt: true,
-    },
+    } as any),
   });
 
   const farmers = await prisma.farmer.findMany({
     where: { deletedAt: null },
     orderBy: { createdAt: "desc" },
-    select: {
+    select: ({
       id: true,
+      prefix: true,
+      firstName: true,
+      lastName: true,
+      contactPerson: true,
+      contactPhone: true,
+      contactEmail: true,
       name: true,
       phone: true,
       email: true,
@@ -64,10 +82,10 @@ export async function getCustomers(): Promise<CustomerListItem[]> {
       subdistrict: true,
       postalCode: true,
       createdAt: true,
-    },
+    } as any),
   });
 
-  const mapped: CustomerListItem[] = [
+  const mapped: CustomerListItem[] = ([
     ...dealers.map((c) => ({
       id: c.id,
       type: "DEALER" as const,
@@ -79,7 +97,10 @@ export async function getCustomers(): Promise<CustomerListItem[]> {
       district: c.district ?? null,
       subdistrict: c.subdistrict ?? null,
       postalCode: c.postalCode ?? null,
-      createdAt: new Date(c.createdAt).toISOString(),
+      createdAt:
+        (c as any)?.createdAt && typeof (c as any).createdAt?.toISOString === "function"
+          ? (c as any).createdAt.toISOString()
+          : String((c as any)?.createdAt ?? ""),
     })),
     ...subDealers.map((c) => ({
       id: c.id,
@@ -92,7 +113,10 @@ export async function getCustomers(): Promise<CustomerListItem[]> {
       district: c.district ?? null,
       subdistrict: c.subdistrict ?? null,
       postalCode: c.postalCode ?? null,
-      createdAt: new Date(c.createdAt).toISOString(),
+      createdAt:
+        (c as any)?.createdAt && typeof (c as any).createdAt?.toISOString === "function"
+          ? (c as any).createdAt.toISOString()
+          : String((c as any)?.createdAt ?? ""),
     })),
     ...farmers.map((c) => ({
       id: c.id,
@@ -105,9 +129,12 @@ export async function getCustomers(): Promise<CustomerListItem[]> {
       district: c.district ?? null,
       subdistrict: c.subdistrict ?? null,
       postalCode: c.postalCode ?? null,
-      createdAt: new Date(c.createdAt).toISOString(),
+      createdAt:
+        (c as any)?.createdAt && typeof (c as any).createdAt?.toISOString === "function"
+          ? (c as any).createdAt.toISOString()
+          : String((c as any)?.createdAt ?? ""),
     })),
-  ];
+  ]) as any;
 
   // Sort by createdAt desc across union
   return mapped.sort((a, b) => (a.createdAt > b.createdAt ? -1 : a.createdAt < b.createdAt ? 1 : 0));
@@ -124,6 +151,15 @@ export async function getCustomer(customerId: string) {
       id: dealer.id,
       type: "DEALER" as const,
       name: dealer.name,
+      prefix: (dealer as any).prefix ?? null,
+      firstName: (dealer as any).firstName ?? null,
+      lastName: (dealer as any).lastName ?? null,
+      birthDate: (dealer as any).birthDate ?? null,
+      gender: (dealer as any).gender ?? null,
+      age: (dealer as any).age ?? null,
+      contactPerson: (dealer as any).contactPerson ?? null,
+      contactPhone: (dealer as any).contactPhone ?? null,
+      contactEmail: (dealer as any).contactEmail ?? null,
       phone: dealer.phone ?? "",
       email: dealer.email ?? null,
       taxId: dealer.taxId ?? null,
@@ -134,11 +170,7 @@ export async function getCustomer(customerId: string) {
       postalCode: dealer.postalCode ?? null,
       latitude: dealer.latitude ?? null,
       longitude: dealer.longitude ?? null,
-      prefix: null,
-      firstName: null,
-      lastName: null,
-      birthDate: null,
-      gender: null,
+      // legacy placeholders removed; now persisted at top level
       code: (dealer as any).code ?? null,
       responsibleEmployeeId: dealer.responsibleEmployeeId ?? null,
       createdAt: dealer.createdAt,
@@ -163,6 +195,15 @@ export async function getCustomer(customerId: string) {
       id: sub.id,
       type: "SUBDEALER" as const,
       name: sub.name,
+      prefix: (sub as any).prefix ?? null,
+      firstName: (sub as any).firstName ?? null,
+      lastName: (sub as any).lastName ?? null,
+      birthDate: (sub as any).birthDate ?? null,
+      gender: (sub as any).gender ?? null,
+      age: (sub as any).age ?? null,
+      contactPerson: (sub as any).contactPerson ?? null,
+      contactPhone: (sub as any).contactPhone ?? null,
+      contactEmail: (sub as any).contactEmail ?? null,
       phone: sub.phone ?? "",
       email: sub.email ?? null,
       taxId: sub.taxId ?? null,
@@ -173,11 +214,6 @@ export async function getCustomer(customerId: string) {
       postalCode: sub.postalCode ?? null,
       latitude: sub.latitude ?? null,
       longitude: sub.longitude ?? null,
-      prefix: null,
-      firstName: null,
-      lastName: null,
-      birthDate: null,
-      gender: null,
       code: (sub as any).code ?? null,
       responsibleEmployeeId: sub.responsibleEmployeeId ?? null,
       createdAt: sub.createdAt,
@@ -206,6 +242,12 @@ export async function getCustomer(customerId: string) {
       id: farmer.id,
       type: "FARMER" as const,
       name: farmer.name,
+      prefix: (farmer as any).prefix ?? null,
+      firstName: (farmer as any).firstName ?? null,
+      lastName: (farmer as any).lastName ?? null,
+      contactPerson: (farmer as any).contactPerson ?? null,
+      contactPhone: (farmer as any).contactPhone ?? null,
+      contactEmail: (farmer as any).contactEmail ?? null,
       phone: farmer.phone ?? "",
       email: farmer.email ?? null,
       address: farmer.address ?? null,
@@ -215,11 +257,9 @@ export async function getCustomer(customerId: string) {
       postalCode: farmer.postalCode ?? null,
       latitude: farmer.latitude ?? null,
       longitude: farmer.longitude ?? null,
-      prefix: null,
-      firstName: null,
-      lastName: null,
       birthDate: farmer.birthDate ?? null,
       gender: farmer.gender ?? null,
+      age: (farmer as any).age ?? null,
       code: (farmer as any).code ?? null,
       responsibleEmployeeId: farmer.responsibleEmployeeId ?? null,
       createdAt: farmer.createdAt,

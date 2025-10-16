@@ -17,6 +17,10 @@ const customerFormSchema = z.object({
   lastName: z.string().min(1, "กรุณากรอกนามสกุล"),
   gender: z.enum(["MALE", "FEMALE"], { message: "เพศไม่ถูกต้อง" }),
   birthDate: z.string().min(1, "กรุณาเลือกวันเกิด"),
+  age: z.preprocess(
+    (v) => (v === "" || v === null || v === undefined ? undefined : typeof v === "string" ? parseInt(v, 10) : v),
+    z.number().int().positive().optional(),
+  ),
   // บริษัท (เก็บที่ top-level)
   phone: z.string().min(1, "กรุณากรอกเบอร์โทร"),
   code: z.string().optional(),
@@ -82,6 +86,17 @@ const customerFormSchema = z.object({
   responsibleEmployeeId: z.string().optional().or(z.null()),
 });
 
+function computeAgeFromBirthDate(birthDate?: string | null) {
+  if (!birthDate) return undefined;
+  const d = new Date(birthDate);
+  if (Number.isNaN(d.getTime())) return undefined;
+  const now = new Date();
+  let age = now.getFullYear() - d.getFullYear();
+  const m = now.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--;
+  return age >= 0 ? age : undefined;
+}
+
 async function generateCode(tx: Prisma.TransactionClient, model: "dealer" | "subDealer" | "farmer") {
   const prefix = model === "dealer" ? "DLR-" : model === "subDealer" ? "SBD-" : "FRM-";
   const last = await (tx as any)[model].findFirst({
@@ -110,6 +125,18 @@ export async function createCustomer(rawValues: CustomerFormValues) {
           data: {
             code,
             name: displayName,
+            prefix: values.prefix,
+            firstName: values.firstName,
+            lastName: values.lastName,
+            birthDate: values.birthDate ? new Date(values.birthDate) : null,
+            gender: values.gender as any,
+            age: computeAgeFromBirthDate(values.birthDate) ?? (values.age as number | undefined),
+            contactPerson:
+              values.contactPerson && values.contactPerson.trim().length
+                ? values.contactPerson
+                : [values.prefix, values.firstName, values.lastName].filter(Boolean).join(" "),
+            contactPhone: values.contactPhone,
+            contactEmail: values.contactEmail,
             phone: values.phone,
             email: values.email,
             taxId: values.taxId,
@@ -130,7 +157,7 @@ export async function createCustomer(rawValues: CustomerFormValues) {
             businessInfo: values.creditLimit
               ? { create: { creditLimit: Number(values.creditLimit) } }
               : undefined,
-          },
+          } as any,
         });
         return created.id;
       }
@@ -143,6 +170,18 @@ export async function createCustomer(rawValues: CustomerFormValues) {
           data: {
             code,
             name: displayName,
+            prefix: values.prefix,
+            firstName: values.firstName,
+            lastName: values.lastName,
+            birthDate: values.birthDate ? new Date(values.birthDate) : null,
+            gender: values.gender as any,
+            age: computeAgeFromBirthDate(values.birthDate) ?? (values.age as number | undefined),
+            contactPerson:
+              values.contactPerson && values.contactPerson.trim().length
+                ? values.contactPerson
+                : [values.prefix, values.firstName, values.lastName].filter(Boolean).join(" "),
+            contactPhone: values.contactPhone,
+            contactEmail: values.contactEmail,
             phone: values.phone,
             email: values.email,
             taxId: values.taxId,
@@ -164,7 +203,7 @@ export async function createCustomer(rawValues: CustomerFormValues) {
             relationshipScore: values.relationshipScore,
             businessNotes: values.businessNotes,
             createdById: session?.user?.id,
-          },
+          } as any,
         });
         return created.id;
       }
@@ -175,6 +214,9 @@ export async function createCustomer(rawValues: CustomerFormValues) {
         data: {
           code,
           name: displayName,
+          prefix: values.prefix,
+          firstName: values.firstName,
+          lastName: values.lastName,
           phone: values.phone,
           email: values.email,
           address: values.address,
@@ -186,6 +228,13 @@ export async function createCustomer(rawValues: CustomerFormValues) {
           longitude: values.longitude,
           birthDate: values.birthDate ? new Date(values.birthDate) : null,
           gender: values.gender as any,
+          age: computeAgeFromBirthDate(values.birthDate) ?? (values.age as number | undefined),
+          contactPerson:
+            values.contactPerson && values.contactPerson.trim().length
+              ? values.contactPerson
+              : [values.prefix, values.firstName, values.lastName].filter(Boolean).join(" "),
+          contactPhone: values.contactPhone,
+          contactEmail: values.contactEmail,
           responsibleEmployeeId: values.responsibleEmployeeId ?? undefined,
           farmName: values.farmName ? String(values.farmName) : undefined,
           farmSize: values.farmSize !== undefined && values.farmSize !== null && String(values.farmSize) !== ""
@@ -193,7 +242,7 @@ export async function createCustomer(rawValues: CustomerFormValues) {
             : undefined,
           cropType: values.cropType ? String(values.cropType) : undefined,
           createdById: session?.user?.id,
-        },
+        } as any,
       });
       return created.id;
     });
@@ -216,8 +265,20 @@ export async function updateCustomer(customerId: string, rawValues: CustomerForm
     if (dealer) {
       await prisma.dealer.update({
         where: { id: customerId },
-        data: {
+        data: ({
           name: displayName,
+          prefix: values.prefix,
+          firstName: values.firstName,
+          lastName: values.lastName,
+          birthDate: values.birthDate ? new Date(values.birthDate) : null,
+          gender: values.gender as any,
+          age: computeAgeFromBirthDate(values.birthDate) ?? (values.age as number | undefined),
+          contactPerson:
+            values.contactPerson && values.contactPerson.trim().length
+              ? values.contactPerson
+              : [values.prefix, values.firstName, values.lastName].filter(Boolean).join(" "),
+          contactPhone: values.contactPhone,
+          contactEmail: values.contactEmail,
           phone: values.phone,
           email: values.email,
           taxId: values.taxId,
@@ -235,7 +296,7 @@ export async function updateCustomer(customerId: string, rawValues: CustomerForm
           relationshipScore: values.relationshipScore,
           businessNotes: values.businessNotes,
           updatedById: session?.user?.id,
-        },
+        } as any),
       });
       if (values.creditLimit !== undefined && values.creditLimit !== null && String(values.creditLimit) !== "") {
         await prisma.businessInfo.upsert({
@@ -252,8 +313,20 @@ export async function updateCustomer(customerId: string, rawValues: CustomerForm
     if (sub) {
       await prisma.subDealer.update({
         where: { id: customerId },
-        data: {
+        data: ({
           name: displayName,
+          prefix: values.prefix,
+          firstName: values.firstName,
+          lastName: values.lastName,
+          birthDate: values.birthDate ? new Date(values.birthDate) : null,
+          gender: values.gender as any,
+          age: computeAgeFromBirthDate(values.birthDate) ?? (values.age as number | undefined),
+          contactPerson:
+            values.contactPerson && values.contactPerson.trim().length
+              ? values.contactPerson
+              : [values.prefix, values.firstName, values.lastName].filter(Boolean).join(" "),
+          contactPhone: values.contactPhone,
+          contactEmail: values.contactEmail,
           phone: values.phone,
           email: values.email,
           taxId: values.taxId,
@@ -275,7 +348,7 @@ export async function updateCustomer(customerId: string, rawValues: CustomerForm
           relationshipScore: values.relationshipScore,
           businessNotes: values.businessNotes,
           updatedById: session?.user?.id,
-        },
+        } as any),
       });
       if (values.creditLimit !== undefined && values.creditLimit !== null && String(values.creditLimit) !== "") {
         await prisma.businessInfo.upsert({
@@ -290,8 +363,11 @@ export async function updateCustomer(customerId: string, rawValues: CustomerForm
     // Otherwise update Farmer
     await prisma.farmer.update({
       where: { id: customerId },
-      data: {
+      data: ({
         name: displayName,
+        prefix: values.prefix,
+        firstName: values.firstName,
+        lastName: values.lastName,
         phone: values.phone,
         email: values.email,
         address: values.address,
@@ -303,6 +379,13 @@ export async function updateCustomer(customerId: string, rawValues: CustomerForm
         longitude: values.longitude,
         birthDate: values.birthDate ? new Date(values.birthDate) : null,
         gender: values.gender as any,
+        age: computeAgeFromBirthDate(values.birthDate) ?? (values.age as number | undefined),
+        contactPerson:
+          values.contactPerson && values.contactPerson.trim().length
+            ? values.contactPerson
+            : [values.prefix, values.firstName, values.lastName].filter(Boolean).join(" "),
+        contactPhone: values.contactPhone,
+        contactEmail: values.contactEmail,
         responsibleEmployeeId: values.responsibleEmployeeId ?? undefined,
         farmName: values.farmName ? String(values.farmName) : undefined,
         farmSize: values.farmSize !== undefined && values.farmSize !== null && String(values.farmSize) !== ""
@@ -310,7 +393,7 @@ export async function updateCustomer(customerId: string, rawValues: CustomerForm
           : undefined,
         cropType: values.cropType ? String(values.cropType) : undefined,
         updatedById: session?.user?.id,
-      },
+      } as any),
     });
   });
 
