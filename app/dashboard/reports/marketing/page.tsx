@@ -2,14 +2,18 @@ import { Box, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHe
 import { ActionButtons } from "../../_components/action-buttons";
 import { KpiCard } from "../_components/KpiCard";
 import { BarList } from "../_components/BarList";
-import { marketingMock } from "../_mock";
+import { getMarketingForPeriod } from "../_mock/derive";
+import { ReportPeriodFilter } from "../_components/ReportPeriodFilter";
+import { formatPeriodLabel, parseSearchParams } from "@/lib/report-period";
 
 function currency(n: number) {
   return n.toLocaleString("th-TH", { maximumFractionDigits: 0 });
 }
 
-export default function MarketingReportPage() {
-  const funnelTotal = marketingMock.funnel[0]?.value ?? 0; // visits
+export default function MarketingReportPage({ searchParams }: any) {
+  const period = parseSearchParams(searchParams);
+  const data = getMarketingForPeriod(period);
+  const funnelTotal = data.funnel[0]?.value ?? 0; // visits
 
   return (
     <>
@@ -18,21 +22,25 @@ export default function MarketingReportPage() {
         <Typography variant="h4" fontWeight={700}>
           รายงานการตลาด
         </Typography>
-        <Typography color="text.secondary">ภาพรวมประสิทธิภาพช่องทางและแคมเปญการตลาด</Typography>
+        <Typography color="text.secondary">ช่วงเวลา: {formatPeriodLabel(period)}</Typography>
       </Stack>
+
+      <Box mt={1}>
+        <ReportPeriodFilter />
+      </Box>
 
       <Box display="grid" gridTemplateColumns={{ xs: "1fr", md: "repeat(4, 1fr)" }} gap={2} mt={1}>
         <Box>
-          <KpiCard label={marketingMock.kpis.leads.label} value={marketingMock.kpis.leads.value} delta={marketingMock.kpis.leads.delta} />
+          <KpiCard label={data.kpis.leads.label} value={data.kpis.leads.value} delta={data.kpis.leads.delta} />
         </Box>
         <Box>
-          <KpiCard label={marketingMock.kpis.spend.label} value={`${currency(marketingMock.kpis.spend.value)} บาท`} delta={marketingMock.kpis.spend.delta} />
+          <KpiCard label={data.kpis.spend.label} value={`${currency(data.kpis.spend.value)} บาท`} delta={data.kpis.spend.delta} />
         </Box>
         <Box>
-          <KpiCard label={marketingMock.kpis.cpl.label} value={`${marketingMock.kpis.cpl.value.toFixed(1)} บาท`} delta={marketingMock.kpis.cpl.delta} />
+          <KpiCard label={data.kpis.cpl.label} value={`${Number(data.kpis.cpl.value).toFixed(1)} บาท`} delta={data.kpis.cpl.delta} />
         </Box>
         <Box>
-          <KpiCard label={marketingMock.kpis.ctr.label} value={`${marketingMock.kpis.ctr.value.toFixed(1)}%`} delta={marketingMock.kpis.ctr.delta} />
+          <KpiCard label={data.kpis.ctr.label} value={`${Number(data.kpis.ctr.value).toFixed(1)}%`} delta={data.kpis.ctr.delta} />
         </Box>
       </Box>
 
@@ -52,7 +60,7 @@ export default function MarketingReportPage() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {marketingMock.channels.map((ch) => (
+                  {data.channels.map((ch) => (
                     <TableRow key={ch.label} hover>
                       <TableCell>{ch.label}</TableCell>
                       <TableCell align="right">{ch.impressions.toLocaleString("th-TH")}</TableCell>
@@ -69,10 +77,7 @@ export default function MarketingReportPage() {
         <Box>
           <Paper variant="outlined" sx={{ p: 2.5, height: "100%" }}>
             <Typography fontWeight={700} mb={1}>Funnel การตลาด</Typography>
-            <BarList
-              items={marketingMock.funnel.map((f, i) => ({ label: `${f.label} (${f.value})`, value: f.value, color: ["#90caf9","#64b5f6","#42a5f5","#1e88e5","#1565c0","#0d47a1"][i % 6] }))}
-              total={funnelTotal}
-            />
+            <BarList items={data.funnel.map((f, i) => ({ label: `${f.label} (${f.value})`, value: f.value, color: ["#90caf9","#64b5f6","#42a5f5","#1e88e5","#1565c0","#0d47a1"][i % 6] }))} total={funnelTotal} />
           </Paper>
         </Box>
       </Box>
@@ -93,7 +98,7 @@ export default function MarketingReportPage() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {marketingMock.campaigns.map((c) => (
+                  {data.campaigns.map((c) => (
                     <TableRow key={c.name} hover>
                       <TableCell>{c.name}</TableCell>
                       <TableCell>{c.channel}</TableCell>

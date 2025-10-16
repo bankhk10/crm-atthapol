@@ -2,9 +2,13 @@ import { Box, Chip, Paper, Stack, Table, TableBody, TableCell, TableContainer, T
 import { ActionButtons } from "../../_components/action-buttons";
 import { KpiCard } from "../_components/KpiCard";
 import { Sparkline } from "../_components/Sparkline";
-import { activityMock } from "../_mock";
+import { getActivityForPeriod } from "../_mock/derive";
+import { ReportPeriodFilter } from "../_components/ReportPeriodFilter";
+import { formatPeriodLabel, parseSearchParams } from "@/lib/report-period";
 
-export default function ActivityReportPage() {
+export default function ActivityReportPage({ searchParams }: any) {
+  const period = parseSearchParams(searchParams);
+  const data = getActivityForPeriod(period);
   return (
     <>
       <ActionButtons resource="reports" />
@@ -12,21 +16,25 @@ export default function ActivityReportPage() {
         <Typography variant="h4" fontWeight={700}>
           รายงานกิจกรรม
         </Typography>
-        <Typography color="text.secondary">ติดตามกิจกรรม ทีม และแนวโน้มการทำงาน</Typography>
+        <Typography color="text.secondary">ช่วงเวลา: {formatPeriodLabel(period)}</Typography>
       </Stack>
+
+      <Box mt={1}>
+        <ReportPeriodFilter />
+      </Box>
 
       <Box display="grid" gridTemplateColumns={{ xs: "1fr", md: "repeat(4, 1fr)" }} gap={2} mt={1}>
         <Box>
-          <KpiCard label={activityMock.kpis.total.label} value={activityMock.kpis.total.value} delta={activityMock.kpis.total.delta} />
+          <KpiCard label={data.kpis.total.label} value={data.kpis.total.value} delta={data.kpis.total.delta} />
         </Box>
         <Box>
-          <KpiCard label={activityMock.kpis.meetings.label} value={activityMock.kpis.meetings.value} delta={activityMock.kpis.meetings.delta} />
+          <KpiCard label={data.kpis.meetings.label} value={data.kpis.meetings.value} delta={data.kpis.meetings.delta} />
         </Box>
         <Box>
-          <KpiCard label={activityMock.kpis.calls.label} value={activityMock.kpis.calls.value} delta={activityMock.kpis.calls.delta} />
+          <KpiCard label={data.kpis.calls.label} value={data.kpis.calls.value} delta={data.kpis.calls.delta} />
         </Box>
         <Box>
-          <KpiCard label={activityMock.kpis.tasks.label} value={activityMock.kpis.tasks.value} delta={activityMock.kpis.tasks.delta} />
+          <KpiCard label={data.kpis.tasks.label} value={data.kpis.tasks.value} delta={data.kpis.tasks.delta} />
         </Box>
       </Box>
 
@@ -34,14 +42,14 @@ export default function ActivityReportPage() {
         <Box>
           <Paper variant="outlined" sx={{ p: 2.5 }}>
             <Typography fontWeight={700} mb={1}>กิจกรรมรายสัปดาห์ (12 สัปดาห์)</Typography>
-            <Sparkline data={activityMock.byWeek} stroke="#2e7d32" fill="rgba(46, 125, 50, 0.12)" />
+            <Sparkline data={data.byWeek} stroke="#2e7d32" fill="rgba(46, 125, 50, 0.12)" />
           </Paper>
         </Box>
         <Box>
           <Paper variant="outlined" sx={{ p: 2.5 }}>
             <Typography fontWeight={700} mb={1}>กิจกรรมล่าสุด</Typography>
             <Stack spacing={1.25}>
-              {activityMock.recent.map((a, i) => (
+              {data.recent.map((a, i) => (
                 <Stack key={`${a.title}-${i}`} direction="row" spacing={1.25} alignItems="center">
                   <Chip size="small" variant="outlined" label={a.type} />
                   <Box flex={1}>
@@ -68,7 +76,7 @@ export default function ActivityReportPage() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {activityMock.team.map((m) => (
+                  {data.team.map((m) => (
                     <TableRow key={m.name} hover>
                       <TableCell>{m.name}</TableCell>
                       <TableCell align="right">{m.done}%</TableCell>

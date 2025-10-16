@@ -4,15 +4,19 @@ import { ActionButtons } from "../../_components/action-buttons";
 import { KpiCard } from "../_components/KpiCard";
 import { Sparkline } from "../_components/Sparkline";
 import { BarList } from "../_components/BarList";
-import { overviewMock } from "../_mock";
+import { getOverviewForPeriod } from "../_mock/derive";
+import { ReportPeriodFilter } from "../_components/ReportPeriodFilter";
+import { formatPeriodLabel, parseSearchParams } from "@/lib/report-period";
 
 function currency(n: number) {
   return n.toLocaleString("th-TH", { maximumFractionDigits: 0 });
 }
 
-export default function OverviewReportPage() {
-  const totalRevenue = overviewMock.kpis.revenue.value;
-  const productTotal = overviewMock.topProducts.reduce((s, p) => s + p.revenue, 0);
+export default function OverviewReportPage({ searchParams }: any) {
+  const period = parseSearchParams(searchParams);
+  const data = getOverviewForPeriod(period);
+  const totalRevenue = data.kpis.revenue.value;
+  const productTotal = data.topProducts.reduce((s, p) => s + p.revenue, 0);
 
   return (
     <>
@@ -21,43 +25,25 @@ export default function OverviewReportPage() {
         <Typography variant="h4" fontWeight={700}>
           รายงานภาพรวม
         </Typography>
-        <Typography color="text.secondary">
-          ภาพรวมของธุรกิจในช่วงล่าสุด: ยอดขาย ลูกค้า และกิจกรรมสำคัญ พร้อมแนวโน้มแบบย่อ
-        </Typography>
+        <Typography color="text.secondary">ช่วงเวลา: {formatPeriodLabel(period)}</Typography>
       </Stack>
+
+      <Box mt={1}>
+        <ReportPeriodFilter />
+      </Box>
 
       <Box display="grid" gridTemplateColumns={{ xs: "1fr", md: "repeat(4, 1fr)" }} gap={2} mt={1}>
         <Box>
-          <KpiCard
-            label={overviewMock.kpis.revenue.label}
-            value={`${currency(totalRevenue)} บาท`}
-            helpText={overviewMock.kpis.revenue.help}
-            delta={overviewMock.kpis.revenue.delta}
-          />
+          <KpiCard label={data.kpis.revenue.label} value={`${currency(totalRevenue)} บาท`} helpText={data.kpis.revenue.help} delta={data.kpis.revenue.delta} />
         </Box>
         <Box>
-          <KpiCard
-            label={overviewMock.kpis.orders.label}
-            value={overviewMock.kpis.orders.value}
-            helpText={overviewMock.kpis.orders.help}
-            delta={overviewMock.kpis.orders.delta}
-          />
+          <KpiCard label={data.kpis.orders.label} value={data.kpis.orders.value} helpText={data.kpis.orders.help} delta={data.kpis.orders.delta} />
         </Box>
         <Box>
-          <KpiCard
-            label={overviewMock.kpis.aov.label}
-            value={`${currency(overviewMock.kpis.aov.value)} บาท`}
-            helpText={overviewMock.kpis.aov.help}
-            delta={overviewMock.kpis.aov.delta}
-          />
+          <KpiCard label={data.kpis.aov.label} value={`${currency(data.kpis.aov.value)} บาท`} helpText={data.kpis.aov.help} delta={data.kpis.aov.delta} />
         </Box>
         <Box>
-          <KpiCard
-            label={overviewMock.kpis.newCustomers.label}
-            value={overviewMock.kpis.newCustomers.value}
-            helpText={overviewMock.kpis.newCustomers.help}
-            delta={overviewMock.kpis.newCustomers.delta}
-          />
+          <KpiCard label={data.kpis.newCustomers.label} value={data.kpis.newCustomers.value} helpText={data.kpis.newCustomers.help} delta={data.kpis.newCustomers.delta} />
         </Box>
       </Box>
 
@@ -66,10 +52,10 @@ export default function OverviewReportPage() {
           <Paper variant="outlined" sx={{ p: 2.5, height: "100%" }}>
             <Stack spacing={1.5}>
               <Typography fontWeight={700}>แนวโน้มยอดขาย 12 เดือน</Typography>
-              <Sparkline data={overviewMock.trend} />
+              <Sparkline data={data.trend} />
               <Stack direction="row" spacing={2}>
                 <Typography variant="body2" color="text.secondary">
-                  ยอดขายเฉลี่ย/เดือน: {currency(Math.round(overviewMock.trend.reduce((a, b) => a + b, 0) / overviewMock.trend.length))} บาท
+                  ยอดขายเฉลี่ย/เดือน: {currency(Math.round(data.trend.reduce((a, b) => a + b, 0) / data.trend.length))} บาท
                 </Typography>
               </Stack>
             </Stack>
@@ -79,14 +65,7 @@ export default function OverviewReportPage() {
           <Paper variant="outlined" sx={{ p: 2.5, height: "100%" }}>
             <Stack spacing={1.25}>
               <Typography fontWeight={700}>สัดส่วนรายได้ตามสินค้า</Typography>
-              <BarList
-                items={overviewMock.topProducts.map((p, idx) => ({
-                  label: p.name,
-                  value: p.revenue,
-                  color: ["#1976d2", "#2e7d32", "#ed6c02", "#6d4c41", "#9c27b0"][idx % 5],
-                }))}
-                total={productTotal}
-              />
+              <BarList items={data.topProducts.map((p, idx) => ({ label: p.name, value: p.revenue, color: ["#1976d2", "#2e7d32", "#ed6c02", "#6d4c41", "#9c27b0"][idx % 5] }))} total={productTotal} />
               <Typography variant="caption" color="text.secondary">
                 รวมสินค้าชั้นนำ {currency(productTotal)} บาท
               </Typography>
@@ -111,7 +90,7 @@ export default function OverviewReportPage() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {overviewMock.topProducts.map((p) => {
+                  {data.topProducts.map((p) => {
                     const share = productTotal ? (p.revenue / productTotal) * 100 : 0;
                     return (
                       <TableRow key={p.name} hover>
@@ -132,7 +111,7 @@ export default function OverviewReportPage() {
           <Paper variant="outlined" sx={{ p: 2.5 }}>
             <Typography fontWeight={700} mb={1}>กิจกรรมล่าสุด</Typography>
             <Stack spacing={1.25}>
-              {overviewMock.recentActivities.map((a, i) => (
+              {data.recentActivities.map((a, i) => (
                 <Stack key={`${a.title}-${i}`} direction="row" spacing={1.5} alignItems="center">
                   <Chip
                     size="small"
