@@ -19,10 +19,8 @@ async function safeDeleteFiles(urls: string[]) {
     if (!normalized.startsWith(uploadRoot)) continue;
     try {
       // ensure no other references exist
-      const imgRows = await prisma.$queryRaw<any>`SELECT COUNT(*) as c FROM ProductImage WHERE url = ${url}`;
-      const prodRows = await prisma.$queryRaw<any>`SELECT COUNT(*) as c FROM Product WHERE imageUrl = ${url}`;
-      const c1 = Number(imgRows?.[0]?.c ?? 0);
-      const c2 = Number(prodRows?.[0]?.c ?? 0);
+      const c1 = await prisma.productImage.count({ where: { url } });
+      const c2 = await prisma.product.count({ where: { imageUrl: url } });
       if (c1 + c2 > 0) continue;
       await fs.unlink(normalized).catch(() => {});
     } catch {
@@ -64,11 +62,9 @@ export async function createProduct(raw: ProductFormValues) {
 
   // Persist additional images if provided
   if (Array.isArray(v.imageUrls) && v.imageUrls.length > 0) {
-    for (let i = 0; i < v.imageUrls.length; i++) {
-      const url = v.imageUrls[i];
-      // Use raw insert to avoid relying on regenerated Prisma client
-      await prisma.$executeRaw`INSERT INTO ProductImage (id, productId, url, sort) VALUES (${crypto.randomUUID()}, ${product.id}, ${url}, ${i})`;
-    }
+    await prisma.productImage.createMany({
+      data: v.imageUrls.map((url, i) => ({ id: crypto.randomUUID(), productId: product.id, url, sort: i })),
+    });
   }
 
   // Persist plant associations
@@ -103,7 +99,7 @@ export async function updateProduct(productId: string, raw: ProductFormValues) {
   const id = String(productId);
   // Capture previous references for cleanup
   const prevProduct = await prisma.product.findUnique({ where: { id }, select: { imageUrl: true } });
-  const prevImages = await prisma.$queryRaw<{ url: string }[]>`SELECT url FROM ProductImage WHERE productId = ${id}`;
+  const prevImages = await prisma.productImage.findMany({ where: { productId: id }, select: { url: true } });
 
   try {
     await prisma.product.update({
@@ -137,8 +133,8 @@ export async function updateProduct(productId: string, raw: ProductFormValues) {
   if (Array.isArray(v.imageUrls)) {
     const urls = v.imageUrls.filter((u) => !!u).slice(0, 10);
     await prisma.$transaction([
-      prisma.$executeRaw`DELETE FROM ProductImage WHERE productId = ${id}`,
-      ...urls.map((url, i) => prisma.$executeRaw`INSERT INTO ProductImage (id, productId, url, sort) VALUES (${crypto.randomUUID()}, ${id}, ${url}, ${i})`),
+      prisma.productImage.deleteMany({ where: { productId: id } }),
+      prisma.productImage.createMany({ data: urls.map((url, i) => ({ id: crypto.randomUUID(), productId: id, url, sort: i })) }),
     ]);
     // after replacement, delete files that are no longer referenced
     const oldUrls = (prevImages || []).map((r) => r.url);
@@ -203,10 +199,10 @@ export async function updateProduct(productId: string, raw: ProductFormValues) {
 export async function replaceProductImages(productId: string, urlsRaw: string[]) {
   const id = String(productId);
   const urls = (urlsRaw ?? []).filter((u) => typeof u === "string" && u.trim().length > 0).slice(0, 10);
-  const prevImages = await prisma.$queryRaw<{ url: string }[]>`SELECT url FROM ProductImage WHERE productId = ${id}`;
+  const prevImages = await prisma.productImage.findMany({ where: { productId: id }, select: { url: true } });
   await prisma.$transaction([
-    prisma.$executeRaw`DELETE FROM ProductImage WHERE productId = ${id}`,
-    ...urls.map((url, i) => prisma.$executeRaw`INSERT INTO ProductImage (id, productId, url, sort) VALUES (${crypto.randomUUID()}, ${id}, ${url}, ${i})`),
+    prisma.productImage.deleteMany({ where: { productId: id } }),
+    prisma.productImage.createMany({ data: urls.map((url, i) => ({ id: crypto.randomUUID(), productId: id, url, sort: i })) }),
   ]);
   const oldUrls = (prevImages || []).map((r) => r.url);
   const toDelete = oldUrls.filter((u) => !urls.includes(u));

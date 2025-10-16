@@ -85,7 +85,7 @@ Dev
 npx prisma generate
 pnpm prisma:migrate
 
-b
+npx prisma db push
  
 ### Reports (Mock Data)
 
