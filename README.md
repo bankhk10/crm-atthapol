@@ -86,3 +86,18 @@ npx prisma generate
 pnpm prisma:migrate
 
 b
+ 
+### Reports (Mock Data)
+
+- Pages:
+  - `/dashboard/reports/overview` รายงานภาพรวม
+  - `/dashboard/reports/sales` รายงานการขาย
+  - `/dashboard/reports/marketing` รายงานการตลาด
+  - `/dashboard/reports/activity` รายงานกิจกรรม
+- Implementation uses MUI components only (no extra chart libs) with lightweight SVG sparkline and bar list.
+- Mock sources: `app/dashboard/reports/_mock/index.ts`
+- Reusable UI: `app/dashboard/reports/_components/{KpiCard,Sparkline,BarList}.tsx`
+
+Notes:
+- All numbers and series are mock values and can be replaced with real data later.
+- Layout uses responsive CSS grid via `Box` for compatibility.
