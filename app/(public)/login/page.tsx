@@ -152,7 +152,7 @@ export default function LoginPage() {
           elevation={12}
           sx={{
             p: { xs: 4, md: 6 },
-            borderRadius: { xs: 4, md: 6 },
+            borderRadius: { xs: 2, md: 2 },
             backdropFilter: "blur(6px)",
             boxShadow: "0 30px 60px rgba(0,0,0,0.18)",
           }}
