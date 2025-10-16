@@ -12,7 +12,7 @@ const prompt = Prompt({
   display: "swap",
 });
 
-export const metadata: Metadata = { title: "Next15 + MUI + Auth + Prisma" };
+export const metadata: Metadata = { title: "CRM" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
