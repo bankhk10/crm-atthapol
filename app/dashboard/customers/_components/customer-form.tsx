@@ -109,13 +109,12 @@ export function CustomerForm({
       (err) => {
         let message = "ไม่สามารถดึงพิกัดได้";
         if (err.code === 1) message = "กรุณาอนุญาตการเข้าถึงตำแหน่งที่ตั้ง";
-        else if (err.code === 2)
-          message = "ไม่สามารถระบุตำแหน่งได้ โปรดลองใหม่";
+        else if (err.code === 2) message = "ไม่สามารถระบุตำแหน่งได้ โปรดลองใหม่";
         else if (err.code === 3) message = "หมดเวลาการร้องขอพิกัด โปรดลองใหม่";
         setError(message);
         setIsLocating(false);
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
     );
   };
 
@@ -133,12 +132,7 @@ export function CustomerForm({
         )}
 
         <Stack spacing={1} alignItems="center">
-          <Typography
-            variant="h4"
-            fontWeight={700}
-            component="h1"
-            align="center"
-          >
+          <Typography variant="h4" fontWeight={700} component="h1" align="center">
             {title + " " + values.type}
           </Typography>
           <Typography color="text.secondary" align="center">
@@ -148,9 +142,7 @@ export function CustomerForm({
 
         <Divider />
 
-        <Box
-          sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}
-        >
+        <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
           <Typography variant="h6" fontWeight={960}>
             ข้อมูลบริษัท
           </Typography>
@@ -179,6 +171,10 @@ export function CustomerForm({
             fullWidth
             placeholder="0xx-xxx-xxxx"
           />
+        </Stack>
+
+        {/* แถว 2: ประเภท (ซ่อนในหน้าเพิ่ม), latitude, longitude */}
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           <TextField
             label="E-mail (บริษัท)"
             type="email"
@@ -187,35 +183,12 @@ export function CustomerForm({
             fullWidth
             placeholder="name@example.com"
           />
-        </Stack>
-
-        {/* แถว 2: ประเภท (ซ่อนในหน้าเพิ่ม), latitude, longitude */}
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-          {!hideTypeSelect && (
-            <TextField
-              select
-              label="ประเภท"
-              value={values.type}
-              onChange={(e) => {
-                const nextType = (e.target.value || "DEALER") as CustomerType;
-                setValues((prev) => ({ ...prev, type: nextType }));
-              }}
-              required
-              sx={{ minWidth: { xs: "100%", sm: 200 } }}
-            >
-              <MenuItem value="DEALER">Dealer</MenuItem>
-              <MenuItem value="SUBDEALER">SubDealer</MenuItem>
-              <MenuItem value="FARMER">Farmer</MenuItem>
-            </TextField>
-          )}
           <TextField
             label="latitude (ละติจูด)"
             type="number"
             inputProps={{ step: "any" }}
             value={values.latitude ?? ""}
-            onChange={(e) =>
-              setValues((prev) => ({ ...prev, latitude: e.target.value }))
-            }
+            onChange={(e) => setValues((prev) => ({ ...prev, latitude: e.target.value }))}
             fullWidth
           />
           <TextField
@@ -223,16 +196,12 @@ export function CustomerForm({
             type="number"
             inputProps={{ step: "any" }}
             value={values.longitude ?? ""}
-            onChange={(e) =>
-              setValues((prev) => ({ ...prev, longitude: e.target.value }))
-            }
+            onChange={(e) => setValues((prev) => ({ ...prev, longitude: e.target.value }))}
             fullWidth
           />
         </Stack>
 
-        <Box
-          sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}
-        >
+        <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
           <Typography variant="h6" fontWeight={960}>
             ที่อยู่
           </Typography>
@@ -272,9 +241,7 @@ export function CustomerForm({
           </Button>
         </Stack> */}
 
-        <Box
-          sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}
-        >
+        <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
           <Typography variant="h6" fontWeight={960}>
             ข้อมูลบุคคล
           </Typography>
@@ -337,9 +304,7 @@ export function CustomerForm({
               onChange={(newValue) => {
                 setValues((prev) => ({
                   ...prev,
-                  birthDate: newValue
-                    ? newValue.toISOString().slice(0, 10)
-                    : "",
+                  birthDate: newValue ? newValue.toISOString().slice(0, 10) : "",
                 }));
               }}
               slotProps={{ textField: { fullWidth: true } }}
@@ -352,8 +317,8 @@ export function CustomerForm({
                 ? String(
                     Math.floor(
                       (Date.now() - new Date(values.birthDate).getTime()) /
-                        (1000 * 60 * 60 * 24 * 365.25)
-                    )
+                        (1000 * 60 * 60 * 24 * 365.25),
+                    ),
                   )
                 : ""
             }
@@ -362,9 +327,7 @@ export function CustomerForm({
           />
         </Stack>
 
-        <Box
-          sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}
-        >
+        <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
           <Typography variant="h6" fontWeight={960}>
             ข้อมูลเพิ่มเติม
           </Typography>
@@ -385,10 +348,7 @@ export function CustomerForm({
               <Autocomplete
                 options={dealerOptions}
                 getOptionLabel={(o) => o.label}
-                value={
-                  dealerOptions.find((d) => d.id === (values.dealerId ?? "")) ??
-                  null
-                }
+                value={dealerOptions.find((d) => d.id === (values.dealerId ?? "")) ?? null}
                 onChange={(_e, opt) =>
                   setValues((prev) => ({
                     ...prev,
@@ -412,9 +372,7 @@ export function CustomerForm({
             options={employeeOptions}
             getOptionLabel={(option) => option.label}
             value={
-              employeeOptions.find(
-                (opt) => opt.id === (values.responsibleEmployeeId ?? "")
-              ) ?? null
+              employeeOptions.find((opt) => opt.id === (values.responsibleEmployeeId ?? "")) ?? null
             }
             onChange={(_e, option) =>
               setValues((prev) => ({
@@ -547,7 +505,7 @@ export function CustomerForm({
                     relationshipScore: Number(e.target.value),
                   }))
                 }
-               fullWidth
+                fullWidth
               >
                 {[1, 2, 3, 4, 5].map((n) => (
                   <MenuItem key={n} value={n}>
@@ -569,17 +527,8 @@ export function CustomerForm({
 
         {/* ลบฟิลด์เฉพาะประเภทเพื่อให้ตรงกับเลย์เอาต์ตัวอย่าง */}
 
-        <Stack
-          direction={{ xs: "column", sm: "row" }}
-          spacing={2}
-          justifyContent="flex-end"
-        >
-          <Button
-            component={Link}
-            href="/dashboard/customers"
-            variant="outlined"
-            color="inherit"
-          >
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="flex-end">
+          <Button component={Link} href="/dashboard/customers" variant="outlined" color="inherit">
             ยกเลิก
           </Button>
           <Button type="submit" variant="contained" disabled={isSubmitting}>
