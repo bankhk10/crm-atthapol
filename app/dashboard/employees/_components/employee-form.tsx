@@ -54,6 +54,15 @@ const departmentOptions = [
   "บริการลูกค้า",
 ];
 
+const regionOptions = [
+  "ภาคเหนือ",
+  "ภาคตะวันตก",
+  "ภาคกลาง",
+  "ภาคตะวันออกเฉียงเหนือ",
+  "ภาคตะวันออก",
+  "ภาคใต้",
+];
+
 export function EmployeeForm({
   title,
   description,
@@ -337,11 +346,20 @@ export function EmployeeForm({
             fullWidth
           />
           <TextField
+            select
             label="เขตที่รับผิดชอบ"
             value={values.responsibilityArea ?? ""}
-            onChange={handleChange("responsibilityArea")}
+            onChange={handleChange("responsibilityArea") as any}
             fullWidth
-          />
+            placeholder="เลือกภูมิภาค"
+          >
+            <MenuItem value="">ไม่ระบุ</MenuItem>
+            {regionOptions.map((opt) => (
+              <MenuItem key={opt} value={opt}>
+                {opt}
+              </MenuItem>
+            ))}
+          </TextField>
         </Stack>
 
         <TextField

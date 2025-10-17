@@ -13,6 +13,15 @@ import { authOptions } from "@/lib/auth";
 
 import type { EmployeeFormValues } from "./types";
 
+const REGION_VALUES = [
+  "ภาคเหนือ",
+  "ภาคตะวันตก",
+  "ภาคกลาง",
+  "ภาคตะวันออกเฉียงเหนือ",
+  "ภาคตะวันออก",
+  "ภาคใต้",
+] as const;
+
 const employeeFormSchema = z.object({
   prefix: z.string().optional(),
   firstName: z.string().optional(),
@@ -25,7 +34,10 @@ const employeeFormSchema = z.object({
   position: z.string().min(1, "กรุณากรอกตำแหน่ง"),
   department: z.string().min(1, "กรุณาเลือกแผนก"),
   company: z.string().optional(),
-  responsibilityArea: z.string().optional(),
+  responsibilityArea: z
+    .preprocess((v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+      z.enum(REGION_VALUES).optional(),
+    ),
   address: z.string().optional(),
   province: z.string().optional(),
   district: z.string().optional(),

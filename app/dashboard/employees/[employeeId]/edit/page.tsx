@@ -10,6 +10,15 @@ import {
 } from "../../data";
 import type { EmployeeFormValues } from "../../types";
 
+const REGION_VALUES = [
+  "ภาคเหนือ",
+  "ภาคตะวันตก",
+  "ภาคกลาง",
+  "ภาคตะวันออกเฉียงเหนือ",
+  "ภาคตะวันออก",
+  "ภาคใต้",
+] as const;
+
 export default async function EmployeeEditPage({
   params,
 }: {
@@ -37,7 +46,9 @@ export default async function EmployeeEditPage({
     position: employee.position,
     department: employee.department,
     company: employee.company ?? undefined,
-    responsibilityArea: employee.responsibilityArea ?? undefined,
+    responsibilityArea: (employee.responsibilityArea &&
+      REGION_VALUES.includes(employee.responsibilityArea as any)
+      ? (employee.responsibilityArea as EmployeeFormValues["responsibilityArea"]) : undefined),
     address: employee.address ?? undefined,
     province: employee.province ?? undefined,
     district: employee.district ?? undefined,

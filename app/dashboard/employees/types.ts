@@ -19,7 +19,7 @@ export type EmployeeFormValues = {
   position: string;
   department: string;
   company?: string;
-  responsibilityArea?: string;
+  responsibilityArea?: "ภาคเหนือ" | "ภาคตะวันตก" | "ภาคกลาง" | "ภาคตะวันออกเฉียงเหนือ" | "ภาคตะวันออก" | "ภาคใต้";
   address?: string;
   province?: string;
   district?: string;
