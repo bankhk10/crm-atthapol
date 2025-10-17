@@ -43,6 +43,10 @@ async function fetchRolesFromDb() {
     where: { deletedAt: null },
     include: {
       permissions: {
+        where: {
+          deletedAt: null,
+          permission: { deletedAt: null },
+        },
         include: {
           permission: true,
         },

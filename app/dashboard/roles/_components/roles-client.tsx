@@ -1,13 +1,19 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState } from "react";
 import AddIcon from "@mui/icons-material/Add";
 import ShieldOutlinedIcon from "@mui/icons-material/ShieldOutlined";
 import TaskAltOutlinedIcon from "@mui/icons-material/TaskAltOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import {
   Box,
   Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   Chip,
   Divider,
   Paper,
@@ -24,6 +30,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 
 import { createRole, updateRole } from "../actions";
+import { deleteRole } from "../delete";
 import type { PermissionLibraryGroup, RoleFormValues, RoleListItem } from "../types";
 import { RoleFormDialog } from "./role-form-dialog";
 import { hasPermission } from "@/lib/permissions";
@@ -57,11 +64,13 @@ const emptyForm: RoleFormValues = {
 export function RolesClient({ roles, permissionLibrary }: RolesClientProps) {
   const router = useRouter();
   const [dialogState, setDialogState] = useState<DialogState>(initialDialogState);
-  const [isPending, startTransition] = useTransition();
+  const [isSaving, setIsSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<RoleListItem | null>(null);
   const { data: session } = useSession();
   const permissions = session?.user?.permissions ?? [];
   const canCreateRole = hasPermission(permissions, "roles", "create");
   const canEditRole = hasPermission(permissions, "roles", "edit");
+  const canDeleteRole = hasPermission(permissions, "roles", "delete");
 
   const totalUniquePermissions = useMemo(() => {
     const unique = new Set<string>();
@@ -86,33 +95,33 @@ export function RolesClient({ roles, permissionLibrary }: RolesClientProps) {
   };
 
   const handleCloseDialog = () => {
-    if (isPending) return;
+    if (isSaving) return;
     setDialogState((prev) => ({ ...prev, open: false }));
   };
 
-  const handleSubmit = (values: RoleFormValues) => {
-    startTransition(() => {
-      (async () => {
-        try {
-          if (dialogState.mode === "create") {
-            await createRole(values);
-          } else if (dialogState.role) {
-            await updateRole(dialogState.role.id, values);
-          }
+  const handleSubmit = async (values: RoleFormValues) => {
+    if (isSaving) return;
+    setIsSaving(true);
+    try {
+      if (dialogState.mode === "create") {
+        await createRole(values);
+      } else if (dialogState.role) {
+        await updateRole(dialogState.role.id, values);
+      }
 
-          setDialogState((prev) => ({ ...prev, open: false, error: null }));
-          router.refresh();
-        } catch (error) {
-          setDialogState((prev) => ({
-            ...prev,
-            error:
-              error instanceof Error
-                ? error.message
-                : "เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง",
-          }));
-        }
-      })();
-    });
+      setDialogState((prev) => ({ ...prev, open: false, error: null }));
+      router.refresh();
+    } catch (error) {
+      setDialogState((prev) => ({
+        ...prev,
+        error:
+          error instanceof Error
+            ? error.message
+            : "เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง",
+      }));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const dialogInitialValues = useMemo(() => {
@@ -259,15 +268,28 @@ export function RolesClient({ roles, permissionLibrary }: RolesClientProps) {
                   </Typography>
                 </TableCell>
                 <TableCell align="right">
-                  {canEditRole && (
-                    <Button
-                      startIcon={<EditOutlinedIcon />}
-                      variant="text"
-                      onClick={() => handleOpenEdit(role)}
-                    >
-                      แก้ไขบทบาท
-                    </Button>
-                  )}
+                  <Stack direction="row" spacing={1} justifyContent="flex-end">
+                    {canEditRole && (
+                      <Button
+                        startIcon={<EditOutlinedIcon />}
+                        variant="text"
+                        onClick={() => handleOpenEdit(role)}
+                      >
+                        แก้ไขบทบาท
+                      </Button>
+                    )}
+                    {canDeleteRole && (
+                      <Button
+                        startIcon={<DeleteOutlineIcon />}
+                        color="error"
+                        variant="text"
+                        onClick={() => setDeleteTarget(role)}
+                        disabled={role.assignedUsers > 0}
+                      >
+                        ลบบทบาท
+                      </Button>
+                    )}
+                  </Stack>
                 </TableCell>
               </TableRow>
             ))}
@@ -289,11 +311,48 @@ export function RolesClient({ roles, permissionLibrary }: RolesClientProps) {
         mode={dialogState.mode}
         initialValues={dialogInitialValues}
         permissionLibrary={permissionLibrary}
-        submitting={isPending}
+        submitting={isSaving}
         error={dialogState.error}
         onClose={handleCloseDialog}
         onSubmit={handleSubmit}
       />
+
+      <Dialog open={Boolean(deleteTarget)} onClose={() => setDeleteTarget(null)}>
+        <DialogTitle>ลบบทบาท</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            ยืนยันการลบ {deleteTarget?.name ?? "บทบาท"}? การกระทำนี้ไม่สามารถย้อนกลับได้
+          </DialogContentText>
+          {deleteTarget?.assignedUsers && deleteTarget.assignedUsers > 0 && (
+            <DialogContentText color="error">
+              ไม่สามารถลบได้ เนื่องจากมีผู้ใช้ {deleteTarget.assignedUsers} คนกำลังใช้งานบทบาทนี้
+            </DialogContentText>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteTarget(null)} color="inherit">
+            ยกเลิก
+          </Button>
+          <Button
+            onClick={async () => {
+              if (!deleteTarget) return;
+              try {
+                await deleteRole(deleteTarget.id);
+                setDeleteTarget(null);
+                router.refresh();
+              } catch (e) {
+                setDeleteTarget(null);
+              }
+            }}
+            color="error"
+            variant="contained"
+            startIcon={<DeleteOutlineIcon />}
+            disabled={Boolean(deleteTarget?.assignedUsers && deleteTarget.assignedUsers > 0)}
+          >
+            ลบ
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Stack>
   );
 }

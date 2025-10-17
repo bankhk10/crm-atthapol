@@ -94,6 +94,20 @@ export async function updateRole(roleId: string, rawValues: RoleFormValues) {
       const toAdd = permissionIds.filter((id) => !existingSet.has(id));
 
       if (toAdd.length > 0) {
+        // Reactivate soft-deleted assignments if they exist
+        await tx.rolePermission.updateMany({
+          where: {
+            roleId: role.id,
+            permissionId: { in: toAdd },
+            deletedAt: { not: null },
+          },
+          data: {
+            deletedAt: null,
+            assignedAt: new Date(),
+          },
+        });
+
+        // Create remaining new assignments (skip if they already exist)
         await tx.rolePermission.createMany({
           data: toAdd.map((permissionId) => ({
             roleId: role.id,
