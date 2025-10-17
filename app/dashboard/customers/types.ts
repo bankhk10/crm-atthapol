@@ -43,4 +43,16 @@ export type CustomerFormValues = {
   farmName?: string;
   farmSize?: number | string;
   cropType?: string;
+  // สำหรับเกษตรกร: รายการแปลงเกษตรแบบไดนามิก
+  farmPlots?: Array<{
+    id?: string;
+    latitude?: number | string;
+    longitude?: number | string;
+    planting_area?: number | string; // ไร่
+    crop_type?: string;
+    crop_variety?: string;
+    soil_type?: string;
+    water_source?: string;
+    machinery_used?: string[]; // ตัวเลือก: รถไถ, โดรน
+  }>;
 };

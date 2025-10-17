@@ -62,6 +62,7 @@ export default async function CustomerEditPage({ params }: { params: Promise<{ c
     farmName: (customer as any).farmName ?? "",
     farmSize: (customer as any).farmSize ?? "",
     cropType: (customer as any).cropType ?? "",
+    farmPlots: (customer as any).farmPlots ?? [],
   };
 
   return (

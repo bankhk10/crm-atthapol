@@ -27,7 +27,7 @@ type ReadDelegate = {
   findMany?: (args: Record<string, unknown>) => Promise<unknown>;
 };
 
-const SOFT_DELETE_MODELS = new Set<Prisma.ModelName>([
+const SOFT_DELETE_MODELS = new Set<string>([
   "User",
   "Employee",
   "Account",
@@ -38,10 +38,13 @@ const SOFT_DELETE_MODELS = new Set<Prisma.ModelName>([
   "RolePermission",
   "AuditLog",
   // Domain models with soft-delete columns
-  "Dealer",
-  "SubDealer",
-  "Farmer",
-  "BusinessInfo",
+  "Customer",
+  "CustomerGroup",
+  "DealerDetail",
+  "SubDealerDetail",
+  "FarmerDetail",
+  "BrokerDetail",
+  "FarmPlot",
   "Sale",
   "Interaction",
   "Product",
@@ -146,7 +149,7 @@ const createPrismaClient = (): PrismaClient => {
     query: {
       $allModels: {
         async $allOperations({ model, operation, args, query }) {
-          if (!model || !SOFT_DELETE_MODELS.has(model as Prisma.ModelName)) {
+          if (!model || !SOFT_DELETE_MODELS.has(model as string)) {
             return query(args);
           }
 

@@ -51,6 +51,7 @@ const defaultInitialValues: CustomerFormValues = {
   farmName: "",
   farmSize: "",
   cropType: "",
+  farmPlots: [],
 };
 
 export function CustomerCreateClient({ employeeOptions, dealerOptions, defaultType = "DEALER" }: CustomerCreateClientProps) {
