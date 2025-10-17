@@ -14,20 +14,27 @@ export type CustomerListItem = {
   createdAt: string;
 };
 
+const displayName = (c: {
+  companyName: string | null;
+  prefix: string | null;
+  firstName: string | null;
+  lastName: string | null;
+}) =>
+  (c.companyName && c.companyName.trim().length > 0)
+    ? c.companyName
+    : [c.prefix, c.firstName, c.lastName].filter(Boolean).join(" ");
+
 export async function getCustomers(): Promise<CustomerListItem[]> {
-  // Collect dealers
-  const dealers = await prisma.dealer.findMany({
+  const customers = await prisma.customer.findMany({
     where: { deletedAt: null },
     orderBy: { createdAt: "desc" },
-    select: ({
+    select: {
       id: true,
+      customerType: true,
+      companyName: true,
       prefix: true,
       firstName: true,
       lastName: true,
-      contactPerson: true,
-      contactPhone: true,
-      contactEmail: true,
-      name: true,
       phone: true,
       email: true,
       address: true,
@@ -36,60 +43,25 @@ export async function getCustomers(): Promise<CustomerListItem[]> {
       subdistrict: true,
       postalCode: true,
       createdAt: true,
-    } as any),
+    },
   });
 
-  const subDealers = await prisma.subDealer.findMany({
-    where: { deletedAt: null },
-    orderBy: { createdAt: "desc" },
-    select: ({
-      id: true,
-      prefix: true,
-      firstName: true,
-      lastName: true,
-      contactPerson: true,
-      contactPhone: true,
-      contactEmail: true,
-      name: true,
-      phone: true,
-      email: true,
-      address: true,
-      province: true,
-      district: true,
-      subdistrict: true,
-      postalCode: true,
-      createdAt: true,
-    } as any),
-  });
-
-  const farmers = await prisma.farmer.findMany({
-    where: { deletedAt: null },
-    orderBy: { createdAt: "desc" },
-    select: ({
-      id: true,
-      prefix: true,
-      firstName: true,
-      lastName: true,
-      contactPerson: true,
-      contactPhone: true,
-      contactEmail: true,
-      name: true,
-      phone: true,
-      email: true,
-      address: true,
-      province: true,
-      district: true,
-      subdistrict: true,
-      postalCode: true,
-      createdAt: true,
-    } as any),
-  });
-
-  const mapped: CustomerListItem[] = ([
-    ...dealers.map((c) => ({
+  const mapped: CustomerListItem[] = customers
+    .filter((c) => c.customerType !== "BROKER")
+    .map((c) => ({
       id: c.id,
-      type: "DEALER" as const,
-      name: c.name,
+      type:
+        c.customerType === "DEALER"
+          ? ("DEALER" as const)
+          : c.customerType === "SUB_DEALER"
+          ? ("SUBDEALER" as const)
+          : ("FARMER" as const),
+      name: displayName({
+        companyName: c.companyName ?? null,
+        prefix: c.prefix ?? null,
+        firstName: c.firstName ?? null,
+        lastName: c.lastName ?? null,
+      }),
       phone: c.phone ?? "",
       email: c.email ?? null,
       address: c.address ?? null,
@@ -101,183 +73,124 @@ export async function getCustomers(): Promise<CustomerListItem[]> {
         (c as any)?.createdAt && typeof (c as any).createdAt?.toISOString === "function"
           ? (c as any).createdAt.toISOString()
           : String((c as any)?.createdAt ?? ""),
-    })),
-    ...subDealers.map((c) => ({
-      id: c.id,
-      type: "SUBDEALER" as const,
-      name: c.name,
-      phone: c.phone ?? "",
-      email: c.email ?? null,
-      address: c.address ?? null,
-      province: c.province ?? null,
-      district: c.district ?? null,
-      subdistrict: c.subdistrict ?? null,
-      postalCode: c.postalCode ?? null,
-      createdAt:
-        (c as any)?.createdAt && typeof (c as any).createdAt?.toISOString === "function"
-          ? (c as any).createdAt.toISOString()
-          : String((c as any)?.createdAt ?? ""),
-    })),
-    ...farmers.map((c) => ({
-      id: c.id,
-      type: "FARMER" as const,
-      name: c.name,
-      phone: c.phone ?? "",
-      email: c.email ?? null,
-      address: c.address ?? null,
-      province: c.province ?? null,
-      district: c.district ?? null,
-      subdistrict: c.subdistrict ?? null,
-      postalCode: c.postalCode ?? null,
-      createdAt:
-        (c as any)?.createdAt && typeof (c as any).createdAt?.toISOString === "function"
-          ? (c as any).createdAt.toISOString()
-          : String((c as any)?.createdAt ?? ""),
-    })),
-  ]) as any;
+    }));
 
-  // Sort by createdAt desc across union
-  return mapped.sort((a, b) => (a.createdAt > b.createdAt ? -1 : a.createdAt < b.createdAt ? 1 : 0));
+  return mapped;
 }
 
 export async function getCustomer(customerId: string) {
-  // Try Dealer
-  const dealer = await prisma.dealer.findUnique({
+  const c = await prisma.customer.findUnique({
     where: { id: customerId },
-    include: { businessInfo: true },
+    include: {
+      dealerDetail: true,
+      subDealerDetail: { include: { dealer: { include: { customer: true } } } },
+      farmerDetail: { include: { dealer: { include: { customer: true } } } },
+      brokerDetail: true,
+    },
   });
-  if (dealer && !dealer.deletedAt) {
+  if (!c || c.deletedAt) return null;
+
+  const type =
+    c.customerType === "DEALER"
+      ? ("DEALER" as const)
+      : c.customerType === "SUB_DEALER"
+      ? ("SUBDEALER" as const)
+      : ("FARMER" as const);
+
+  const base = {
+    id: c.id,
+    type,
+    name: displayName({
+      companyName: c.companyName ?? null,
+      prefix: c.prefix ?? null,
+      firstName: c.firstName ?? null,
+      lastName: c.lastName ?? null,
+    }),
+    prefix: c.prefix ?? null,
+    firstName: c.firstName ?? null,
+    lastName: c.lastName ?? null,
+    birthDate: c.birthDate ?? null,
+    gender: c.gender ?? null,
+    age: c.age ?? null,
+    phone: c.phone ?? "",
+    email: c.email ?? null,
+    taxId: c.taxId ?? null,
+    address: c.address ?? null,
+    province: c.province ?? null,
+    district: c.district ?? null,
+    subdistrict: c.subdistrict ?? null,
+    postalCode: c.postalCode ?? null,
+    latitude: (c.customerType === "FARMER" ? c.farmerDetail?.latitude ?? null : null) as any,
+    longitude: (c.customerType === "FARMER" ? c.farmerDetail?.longitude ?? null : null) as any,
+    code: null as any,
+    responsibleEmployeeId: c.responsibleEmployeeId ?? null,
+    createdAt: c.createdAt,
+  } as any;
+
+  if (type === "DEALER") {
     return {
-      id: dealer.id,
-      type: "DEALER" as const,
-      name: dealer.name,
-      prefix: (dealer as any).prefix ?? null,
-      firstName: (dealer as any).firstName ?? null,
-      lastName: (dealer as any).lastName ?? null,
-      birthDate: (dealer as any).birthDate ?? null,
-      gender: (dealer as any).gender ?? null,
-      age: (dealer as any).age ?? null,
-      contactPerson: (dealer as any).contactPerson ?? null,
-      contactPhone: (dealer as any).contactPhone ?? null,
-      contactEmail: (dealer as any).contactEmail ?? null,
-      phone: dealer.phone ?? "",
-      email: dealer.email ?? null,
-      taxId: dealer.taxId ?? null,
-      address: dealer.address ?? null,
-      province: dealer.province ?? null,
-      district: dealer.district ?? null,
-      subdistrict: dealer.subdistrict ?? null,
-      postalCode: dealer.postalCode ?? null,
-      latitude: dealer.latitude ?? null,
-      longitude: dealer.longitude ?? null,
-      // legacy placeholders removed; now persisted at top level
-      code: (dealer as any).code ?? null,
-      responsibleEmployeeId: dealer.responsibleEmployeeId ?? null,
-      createdAt: dealer.createdAt,
-      // extras expected in UI (use name as companyName, BusinessInfo.creditLimit)
-      companyName: dealer.name,
-      creditLimit: dealer.businessInfo?.creditLimit ?? null,
-      averageMonthlyPurchase: (dealer as any).averageMonthlyPurchase ?? null,
-      mainProducts: (dealer as any).mainProducts ?? null,
-      brandsSold: (dealer as any).brandsSold ?? null,
-      relationshipScore: (dealer as any).relationshipScore ?? null,
-      businessNotes: (dealer as any).businessNotes ?? null,
+      ...base,
+      companyName: c.companyName ?? base.name,
+      contactPerson: c.dealerDetail?.contactName ?? base.name,
+      contactPhone: c.dealerDetail?.contactPhone ?? null,
+      contactEmail: null,
+      creditLimit: c.dealerDetail?.creditLimit ?? null,
+      averageMonthlyPurchase: null,
+      mainProducts: null,
+      brandsSold: null,
+      relationshipScore: null,
+      businessNotes: null,
     } as any;
   }
 
-  // Try SubDealer
-  const sub = await prisma.subDealer.findUnique({
-    where: { id: customerId },
-    include: { businessInfo: true, dealer: true },
-  });
-  if (sub && !sub.deletedAt) {
+  if (type === "SUBDEALER") {
+    const parentDealerName = c.subDealerDetail?.dealer?.customer
+      ? displayName({
+          companyName: c.subDealerDetail.dealer.customer.companyName ?? null,
+          prefix: c.subDealerDetail.dealer.customer.prefix ?? null,
+          firstName: c.subDealerDetail.dealer.customer.firstName ?? null,
+          lastName: c.subDealerDetail.dealer.customer.lastName ?? null,
+        })
+      : null;
     return {
-      id: sub.id,
-      type: "SUBDEALER" as const,
-      name: sub.name,
-      prefix: (sub as any).prefix ?? null,
-      firstName: (sub as any).firstName ?? null,
-      lastName: (sub as any).lastName ?? null,
-      birthDate: (sub as any).birthDate ?? null,
-      gender: (sub as any).gender ?? null,
-      age: (sub as any).age ?? null,
-      contactPerson: (sub as any).contactPerson ?? null,
-      contactPhone: (sub as any).contactPhone ?? null,
-      contactEmail: (sub as any).contactEmail ?? null,
-      phone: sub.phone ?? "",
-      email: sub.email ?? null,
-      taxId: sub.taxId ?? null,
-      address: sub.address ?? null,
-      province: sub.province ?? null,
-      district: sub.district ?? null,
-      subdistrict: sub.subdistrict ?? null,
-      postalCode: sub.postalCode ?? null,
-      latitude: sub.latitude ?? null,
-      longitude: sub.longitude ?? null,
-      code: (sub as any).code ?? null,
-      responsibleEmployeeId: sub.responsibleEmployeeId ?? null,
-      createdAt: sub.createdAt,
-      // extras expected in UI
-      companyName: sub.name,
-      parentDealer: sub.dealer?.name ?? null,
-      subDealerCode: (sub as any).code ?? null,
-      dealerId: sub.dealerId ?? undefined,
-      competitor: (sub as any).competitor ?? null,
-      cropsInArea: (sub as any).cropsInArea ?? null,
-      averageMonthlyPurchase: (sub as any).averageMonthlyPurchase ?? null,
-      mainProducts: (sub as any).mainProducts ?? null,
-      brandsSold: (sub as any).brandsSold ?? null,
-      areaType: (sub as any).areaType ?? null,
-      relationshipScore: (sub as any).relationshipScore ?? null,
-      businessNotes: (sub as any).businessNotes ?? null,
+      ...base,
+      companyName: c.companyName ?? base.name,
+      parentDealer: parentDealerName,
+      subDealerCode: "",
+      dealerId: c.subDealerDetail?.dealerId ?? undefined,
+      competitor: null,
+      cropsInArea: null,
+      averageMonthlyPurchase: null,
+      mainProducts: null,
+      brandsSold: null,
+      areaType: null,
+      relationshipScore: null,
+      businessNotes: null,
     } as any;
   }
 
-  // Try Farmer
-  const farmer = await prisma.farmer.findUnique({
-    where: { id: customerId },
-  });
-  if (farmer && !farmer.deletedAt) {
-    return {
-      id: farmer.id,
-      type: "FARMER" as const,
-      name: farmer.name,
-      prefix: (farmer as any).prefix ?? null,
-      firstName: (farmer as any).firstName ?? null,
-      lastName: (farmer as any).lastName ?? null,
-      contactPerson: (farmer as any).contactPerson ?? null,
-      contactPhone: (farmer as any).contactPhone ?? null,
-      contactEmail: (farmer as any).contactEmail ?? null,
-      phone: farmer.phone ?? "",
-      email: farmer.email ?? null,
-      address: farmer.address ?? null,
-      province: farmer.province ?? null,
-      district: farmer.district ?? null,
-      subdistrict: farmer.subdistrict ?? null,
-      postalCode: farmer.postalCode ?? null,
-      latitude: farmer.latitude ?? null,
-      longitude: farmer.longitude ?? null,
-      birthDate: farmer.birthDate ?? null,
-      gender: farmer.gender ?? null,
-      age: (farmer as any).age ?? null,
-      code: (farmer as any).code ?? null,
-      responsibleEmployeeId: farmer.responsibleEmployeeId ?? null,
-      createdAt: farmer.createdAt,
-      // extras
-      farmName: farmer.farmName ?? null,
-      farmSize: farmer.farmSize ?? null,
-      cropType: farmer.cropType ?? null,
-    } as any;
-  }
-
-  return null;
+  // FARMER
+  return {
+    ...base,
+    farmName: null,
+    farmSize: c.farmerDetail?.areaSize ?? null,
+    cropType: c.farmerDetail?.cropType ?? null,
+  } as any;
 }
 
 export async function getDealerOptions() {
-  const dealers = await prisma.dealer.findMany({
-    where: { deletedAt: null },
-    orderBy: { name: "asc" },
-    select: { id: true, name: true, code: true },
+  const rows = await prisma.dealerDetail.findMany({
+    where: { deletedAt: null, customer: { deletedAt: null } },
+    orderBy: { createdAt: "asc" },
+    include: { customer: true },
   });
-  return dealers.map((d) => ({ id: d.id, label: d.code ? `${d.code} - ${d.name}` : d.name }));
+  return rows.map((d) => ({
+    id: d.id,
+    label: displayName({
+      companyName: d.customer.companyName ?? null,
+      prefix: d.customer.prefix ?? null,
+      firstName: d.customer.firstName ?? null,
+      lastName: d.customer.lastName ?? null,
+    }),
+  }));
 }

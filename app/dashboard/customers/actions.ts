@@ -97,153 +97,83 @@ function computeAgeFromBirthDate(birthDate?: string | null) {
   return age >= 0 ? age : undefined;
 }
 
-async function generateCode(tx: Prisma.TransactionClient, model: "dealer" | "subDealer" | "farmer") {
-  const prefix = model === "dealer" ? "DLR-" : model === "subDealer" ? "SBD-" : "FRM-";
-  const last = await (tx as any)[model].findFirst({
-    where: { deletedAt: null },
-    orderBy: { createdAt: "desc" },
-    select: { code: true },
-  });
-  const lastNumber = last ? Number.parseInt(String(last.code).replace(/\D/g, ""), 10) : 0;
-  const nextNumber = Number.isFinite(lastNumber) ? lastNumber + 1 : 1;
-  return `${prefix}${nextNumber.toString().padStart(4, "0")}`;
-}
+// No auto-generated codes in new unified Customer model
 
 export async function createCustomer(rawValues: CustomerFormValues) {
   const values = customerFormSchema.parse(rawValues);
   const session = await getServerSession(authOptions);
 
   await runWithRequestContext({ userId: session?.user?.id }, async () => {
-    const displayName =
-      (values.companyName && String(values.companyName).trim()) ||
-      [values.prefix, values.firstName, values.lastName].filter(Boolean).join(" ");
-
     await prisma.$transaction(async (tx) => {
-      if (values.type === "DEALER") {
-        const code = await generateCode(tx, "dealer");
-        const created = await tx.dealer.create({
-          data: {
-            code,
-            name: displayName,
-            prefix: values.prefix,
-            firstName: values.firstName,
-            lastName: values.lastName,
-            birthDate: values.birthDate ? new Date(values.birthDate) : null,
-            gender: values.gender as any,
-            age: computeAgeFromBirthDate(values.birthDate) ?? (values.age as number | undefined),
-            contactPerson:
-              values.contactPerson && values.contactPerson.trim().length
-                ? values.contactPerson
-                : [values.prefix, values.firstName, values.lastName].filter(Boolean).join(" "),
-            contactPhone: values.contactPhone,
-            contactEmail: values.contactEmail,
-            phone: values.phone,
-            email: values.email,
-            taxId: values.taxId,
-            address: values.address,
-            province: values.province,
-            district: values.district,
-            subdistrict: values.subdistrict,
-            postalCode: values.postalCode,
-            latitude: values.latitude,
-            longitude: values.longitude,
-            responsibleEmployeeId: values.responsibleEmployeeId ?? undefined,
-            averageMonthlyPurchase: values.averageMonthlyPurchase,
-            mainProducts: values.mainProducts,
-            brandsSold: values.brandsSold,
-            relationshipScore: values.relationshipScore,
-            businessNotes: values.businessNotes,
-            createdById: session?.user?.id,
-            businessInfo: values.creditLimit
-              ? { create: { creditLimit: Number(values.creditLimit) } }
-              : undefined,
-          } as any,
-        });
-        return created.id;
-      }
-
-      if (values.type === "SUBDEALER") {
-        const code = values.subDealerCode && String(values.subDealerCode).trim().length
-          ? String(values.subDealerCode).trim()
-          : await generateCode(tx, "subDealer");
-        const created = await tx.subDealer.create({
-          data: {
-            code,
-            name: displayName,
-            prefix: values.prefix,
-            firstName: values.firstName,
-            lastName: values.lastName,
-            birthDate: values.birthDate ? new Date(values.birthDate) : null,
-            gender: values.gender as any,
-            age: computeAgeFromBirthDate(values.birthDate) ?? (values.age as number | undefined),
-            contactPerson:
-              values.contactPerson && values.contactPerson.trim().length
-                ? values.contactPerson
-                : [values.prefix, values.firstName, values.lastName].filter(Boolean).join(" "),
-            contactPhone: values.contactPhone,
-            contactEmail: values.contactEmail,
-            phone: values.phone,
-            email: values.email,
-            taxId: values.taxId,
-            address: values.address,
-            province: values.province,
-            district: values.district,
-            subdistrict: values.subdistrict,
-            postalCode: values.postalCode,
-            latitude: values.latitude,
-            longitude: values.longitude,
-            responsibleEmployeeId: values.responsibleEmployeeId ?? undefined,
-            dealerId: values.dealerId ?? undefined,
-            competitor: values.competitor,
-            cropsInArea: values.cropsInArea,
-            averageMonthlyPurchase: values.averageMonthlyPurchase,
-            mainProducts: values.mainProducts,
-            brandsSold: values.brandsSold,
-            areaType: values.areaType,
-            relationshipScore: values.relationshipScore,
-            businessNotes: values.businessNotes,
-            createdById: session?.user?.id,
-          } as any,
-        });
-        return created.id;
-      }
-
-      // FARMER
-      const code = await generateCode(tx, "farmer");
-      const created = await tx.farmer.create({
+      const created = await tx.customer.create({
         data: {
-          code,
-          name: displayName,
+          responsibleEmployeeId: values.responsibleEmployeeId ?? undefined,
+          customerType:
+            values.type === "DEALER"
+              ? ("DEALER" as any)
+              : values.type === "SUBDEALER"
+              ? ("SUB_DEALER" as any)
+              : ("FARMER" as any),
           prefix: values.prefix,
           firstName: values.firstName,
           lastName: values.lastName,
           phone: values.phone,
           email: values.email,
+          birthDate: values.birthDate ? new Date(values.birthDate) : null,
+          gender: values.gender as any,
+          age: computeAgeFromBirthDate(values.birthDate) ?? (values.age as number | undefined),
+          companyName: values.companyName,
+          taxId: values.taxId,
           address: values.address,
           province: values.province,
           district: values.district,
           subdistrict: values.subdistrict,
           postalCode: values.postalCode,
-          latitude: values.latitude,
-          longitude: values.longitude,
-          birthDate: values.birthDate ? new Date(values.birthDate) : null,
-          gender: values.gender as any,
-          age: computeAgeFromBirthDate(values.birthDate) ?? (values.age as number | undefined),
-          contactPerson:
-            values.contactPerson && values.contactPerson.trim().length
-              ? values.contactPerson
-              : [values.prefix, values.firstName, values.lastName].filter(Boolean).join(" "),
-          contactPhone: values.contactPhone,
-          contactEmail: values.contactEmail,
-          responsibleEmployeeId: values.responsibleEmployeeId ?? undefined,
-          farmName: values.farmName ? String(values.farmName) : undefined,
-          farmSize: values.farmSize !== undefined && values.farmSize !== null && String(values.farmSize) !== ""
-            ? Number(values.farmSize)
-            : undefined,
-          cropType: values.cropType ? String(values.cropType) : undefined,
-          createdById: session?.user?.id,
-        } as any,
+        },
       });
+
+      if (values.type === "DEALER") {
+        await tx.dealerDetail.create({
+          data: {
+            customerId: created.id,
+            contactName:
+              values.contactPerson && values.contactPerson.trim().length
+                ? values.contactPerson
+                : [values.prefix, values.firstName, values.lastName].filter(Boolean).join(" "),
+            contactPhone: values.contactPhone,
+            creditLimit:
+              values.creditLimit !== undefined && values.creditLimit !== null && String(values.creditLimit) !== ""
+                ? Number(values.creditLimit)
+                : undefined,
+          },
+        });
+      } else if (values.type === "SUBDEALER") {
+        await tx.subDealerDetail.create({
+          data: {
+            customerId: created.id,
+            dealerId: values.dealerId ?? undefined,
+          },
+        });
+      } else if (values.type === "FARMER") {
+        await tx.farmerDetail.create({
+          data: {
+            customerId: created.id,
+            dealerId: values.dealerId ?? undefined,
+            areaSize:
+              values.farmSize !== undefined && values.farmSize !== null && String(values.farmSize) !== ""
+                ? Number(values.farmSize)
+                : undefined,
+            cropType: values.cropType ? String(values.cropType) : undefined,
+            latitude: values.latitude !== undefined && values.latitude !== null && String(values.latitude) !== ""
+              ? Number(values.latitude)
+              : undefined,
+            longitude: values.longitude !== undefined && values.longitude !== null && String(values.longitude) !== ""
+              ? Number(values.longitude)
+              : undefined,
+          },
+        });
+      }
+
       return created.id;
     });
   });
@@ -256,144 +186,102 @@ export async function updateCustomer(customerId: string, rawValues: CustomerForm
   const session = await getServerSession(authOptions);
 
   await runWithRequestContext({ userId: session?.user?.id }, async () => {
-    const displayName =
-      (values.companyName && String(values.companyName).trim()) ||
-      [values.prefix, values.firstName, values.lastName].filter(Boolean).join(" ");
-
-    // Try update Dealer
-    const dealer = await prisma.dealer.findUnique({ where: { id: customerId } });
-    if (dealer) {
-      await prisma.dealer.update({
+    await prisma.$transaction(async (tx) => {
+      await tx.customer.update({
         where: { id: customerId },
-        data: ({
-          name: displayName,
+        data: {
+          customerType:
+            values.type === "DEALER"
+              ? ("DEALER" as any)
+              : values.type === "SUBDEALER"
+              ? ("SUB_DEALER" as any)
+              : ("FARMER" as any),
           prefix: values.prefix,
           firstName: values.firstName,
           lastName: values.lastName,
+          phone: values.phone,
+          email: values.email,
           birthDate: values.birthDate ? new Date(values.birthDate) : null,
           gender: values.gender as any,
           age: computeAgeFromBirthDate(values.birthDate) ?? (values.age as number | undefined),
-          contactPerson:
-            values.contactPerson && values.contactPerson.trim().length
-              ? values.contactPerson
-              : [values.prefix, values.firstName, values.lastName].filter(Boolean).join(" "),
-          contactPhone: values.contactPhone,
-          contactEmail: values.contactEmail,
-          phone: values.phone,
-          email: values.email,
+          companyName: values.companyName,
           taxId: values.taxId,
           address: values.address,
           province: values.province,
           district: values.district,
           subdistrict: values.subdistrict,
           postalCode: values.postalCode,
-          latitude: values.latitude,
-          longitude: values.longitude,
           responsibleEmployeeId: values.responsibleEmployeeId ?? undefined,
-          averageMonthlyPurchase: values.averageMonthlyPurchase,
-          mainProducts: values.mainProducts,
-          brandsSold: values.brandsSold,
-          relationshipScore: values.relationshipScore,
-          businessNotes: values.businessNotes,
-          updatedById: session?.user?.id,
-        } as any),
+        },
       });
-      if (values.creditLimit !== undefined && values.creditLimit !== null && String(values.creditLimit) !== "") {
-        await prisma.businessInfo.upsert({
-          where: { dealerId: customerId },
-          update: { creditLimit: Number(values.creditLimit) },
-          create: { dealerId: customerId, creditLimit: Number(values.creditLimit) },
+
+      if (values.type === "DEALER") {
+        await tx.dealerDetail.upsert({
+          where: { customerId: customerId },
+          update: {
+            contactName:
+              values.contactPerson && values.contactPerson.trim().length
+                ? values.contactPerson
+                : [values.prefix, values.firstName, values.lastName].filter(Boolean).join(" "),
+            contactPhone: values.contactPhone,
+            creditLimit:
+              values.creditLimit !== undefined && values.creditLimit !== null && String(values.creditLimit) !== ""
+                ? Number(values.creditLimit)
+                : undefined,
+          },
+          create: {
+            customerId,
+            contactName:
+              values.contactPerson && values.contactPerson.trim().length
+                ? values.contactPerson
+                : [values.prefix, values.firstName, values.lastName].filter(Boolean).join(" "),
+            contactPhone: values.contactPhone,
+            creditLimit:
+              values.creditLimit !== undefined && values.creditLimit !== null && String(values.creditLimit) !== ""
+                ? Number(values.creditLimit)
+                : undefined,
+          },
+        });
+      } else if (values.type === "SUBDEALER") {
+        await tx.subDealerDetail.upsert({
+          where: { customerId: customerId },
+          update: { dealerId: values.dealerId ?? undefined },
+          create: { customerId, dealerId: values.dealerId ?? undefined },
+        });
+      } else if (values.type === "FARMER") {
+        await tx.farmerDetail.upsert({
+          where: { customerId: customerId },
+          update: {
+            dealerId: values.dealerId ?? undefined,
+            areaSize:
+              values.farmSize !== undefined && values.farmSize !== null && String(values.farmSize) !== ""
+                ? Number(values.farmSize)
+                : undefined,
+            cropType: values.cropType ? String(values.cropType) : undefined,
+            latitude: values.latitude !== undefined && values.latitude !== null && String(values.latitude) !== ""
+              ? Number(values.latitude)
+              : undefined,
+            longitude: values.longitude !== undefined && values.longitude !== null && String(values.longitude) !== ""
+              ? Number(values.longitude)
+              : undefined,
+          },
+          create: {
+            customerId,
+            dealerId: values.dealerId ?? undefined,
+            areaSize:
+              values.farmSize !== undefined && values.farmSize !== null && String(values.farmSize) !== ""
+                ? Number(values.farmSize)
+                : undefined,
+            cropType: values.cropType ? String(values.cropType) : undefined,
+            latitude: values.latitude !== undefined && values.latitude !== null && String(values.latitude) !== ""
+              ? Number(values.latitude)
+              : undefined,
+            longitude: values.longitude !== undefined && values.longitude !== null && String(values.longitude) !== ""
+              ? Number(values.longitude)
+              : undefined,
+          },
         });
       }
-      return;
-    }
-
-    // Try update SubDealer
-    const sub = await prisma.subDealer.findUnique({ where: { id: customerId } });
-    if (sub) {
-      await prisma.subDealer.update({
-        where: { id: customerId },
-        data: ({
-          name: displayName,
-          prefix: values.prefix,
-          firstName: values.firstName,
-          lastName: values.lastName,
-          birthDate: values.birthDate ? new Date(values.birthDate) : null,
-          gender: values.gender as any,
-          age: computeAgeFromBirthDate(values.birthDate) ?? (values.age as number | undefined),
-          contactPerson:
-            values.contactPerson && values.contactPerson.trim().length
-              ? values.contactPerson
-              : [values.prefix, values.firstName, values.lastName].filter(Boolean).join(" "),
-          contactPhone: values.contactPhone,
-          contactEmail: values.contactEmail,
-          phone: values.phone,
-          email: values.email,
-          taxId: values.taxId,
-          address: values.address,
-          province: values.province,
-          district: values.district,
-          subdistrict: values.subdistrict,
-          postalCode: values.postalCode,
-          latitude: values.latitude,
-          longitude: values.longitude,
-          responsibleEmployeeId: values.responsibleEmployeeId ?? undefined,
-          dealerId: values.dealerId ?? undefined,
-          competitor: values.competitor,
-          cropsInArea: values.cropsInArea,
-          averageMonthlyPurchase: values.averageMonthlyPurchase,
-          mainProducts: values.mainProducts,
-          brandsSold: values.brandsSold,
-          areaType: values.areaType,
-          relationshipScore: values.relationshipScore,
-          businessNotes: values.businessNotes,
-          updatedById: session?.user?.id,
-        } as any),
-      });
-      if (values.creditLimit !== undefined && values.creditLimit !== null && String(values.creditLimit) !== "") {
-        await prisma.businessInfo.upsert({
-          where: { subDealerId: customerId },
-          update: { creditLimit: Number(values.creditLimit) },
-          create: { subDealerId: customerId, creditLimit: Number(values.creditLimit) },
-        });
-      }
-      return;
-    }
-
-    // Otherwise update Farmer
-    await prisma.farmer.update({
-      where: { id: customerId },
-      data: ({
-        name: displayName,
-        prefix: values.prefix,
-        firstName: values.firstName,
-        lastName: values.lastName,
-        phone: values.phone,
-        email: values.email,
-        address: values.address,
-        province: values.province,
-        district: values.district,
-        subdistrict: values.subdistrict,
-        postalCode: values.postalCode,
-        latitude: values.latitude,
-        longitude: values.longitude,
-        birthDate: values.birthDate ? new Date(values.birthDate) : null,
-        gender: values.gender as any,
-        age: computeAgeFromBirthDate(values.birthDate) ?? (values.age as number | undefined),
-        contactPerson:
-          values.contactPerson && values.contactPerson.trim().length
-            ? values.contactPerson
-            : [values.prefix, values.firstName, values.lastName].filter(Boolean).join(" "),
-        contactPhone: values.contactPhone,
-        contactEmail: values.contactEmail,
-        responsibleEmployeeId: values.responsibleEmployeeId ?? undefined,
-        farmName: values.farmName ? String(values.farmName) : undefined,
-        farmSize: values.farmSize !== undefined && values.farmSize !== null && String(values.farmSize) !== ""
-          ? Number(values.farmSize)
-          : undefined,
-        cropType: values.cropType ? String(values.cropType) : undefined,
-        updatedById: session?.user?.id,
-      } as any),
     });
   });
 
