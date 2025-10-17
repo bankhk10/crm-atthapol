@@ -61,7 +61,9 @@ export async function getEmployeeActivities(employeeId: string): Promise<Employe
   const interactions = await prisma.interaction.findMany({
     where: { deletedAt: null, createdById: employee.userId },
     include: {
-      customer: { select: { id: true, customerType: true, companyName: true, prefix: true, firstName: true, lastName: true } },
+      dealer: { select: { id: true, code: true, name: true } },
+      subDealer: { select: { id: true, code: true, name: true } },
+      farmer: { select: { id: true, code: true, name: true } },
     },
     orderBy: { date: "desc" },
     take: 300,
@@ -78,18 +80,28 @@ export async function getEmployeeActivities(employeeId: string): Promise<Employe
     let title = "กิจกรรม";
     let code = "-";
     const where: any = {};
-    if (it.customer) {
-      if (it.customer.customerType === "DEALER") title = "เข้าพบร้านค้า";
-      else if (it.customer.customerType === "SUB_DEALER") title = "เข้าพบซับดีลเลอร์";
-      else title = "เข้าพบเกษตรกร";
-      code = "-";
-      where.customerId = it.customer.id;
+    if (it.dealer) {
+      title = `เข้าพบร้านค้า`;
+      code = it.dealer.code ?? "-";
+      where.dealerId = it.dealer.id;
+    } else if (it.subDealer) {
+      title = `เข้าพบซับดีลเลอร์`;
+      code = it.subDealer.code ?? "-";
+      where.subDealerId = it.subDealer.id;
+    } else if (it.farmer) {
+      title = `เข้าพบเกษตรกร`;
+      code = it.farmer.code ?? "-";
+      where.farmerId = it.farmer.id;
     }
 
     // Sum sales amount for the same partner in the month of the interaction
     const saleAgg = await prisma.sale.aggregate({
       _sum: { amount: true },
-      where: { ...where, deletedAt: null, orderDate: { gte: monthStart, lte: monthEnd } },
+      where: {
+        ...where,
+        deletedAt: null,
+        orderDate: { gte: monthStart, lte: monthEnd },
+      },
     });
 
     const income = Number(saleAgg._sum.amount ?? 0);

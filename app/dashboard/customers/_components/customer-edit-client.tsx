@@ -26,7 +26,6 @@ export function CustomerEditClient({ customerId, initialValues, employeeOptions,
         submitLabel="บันทึกการแก้ไข"
         employeeOptions={employeeOptions}
         dealerOptions={dealerOptions}
-        hideTypeSelect
         onSubmit={async (values) => {
           await updateCustomer(customerId, values);
           router.push("/dashboard/customers");

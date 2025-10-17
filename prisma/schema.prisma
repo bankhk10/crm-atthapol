@@ -54,14 +54,6 @@ enum InteractionChannel {
   OTHER
 }
 
-// New customer type enum
-enum CustomerType {
-  DEALER
-  SUB_DEALER
-  FARMER
-  BROKER
-}
-
 // ====================
 // PRODUCT & STOCK
 // ====================
@@ -168,6 +160,14 @@ model User {
   performedAuditLogs AuditLog[]      @relation("AuditPerformedByUser")
   createdInteractions Interaction[]  @relation("UserCreatedInteractions")
 
+  // Back-relations for createdBy/updatedBy
+  createdDealers    Dealer[]    @relation("DealerCreatedBy")
+  updatedDealers    Dealer[]    @relation("DealerUpdatedBy")
+  createdSubDealers SubDealer[] @relation("SubDealerCreatedBy")
+  updatedSubDealers SubDealer[] @relation("SubDealerUpdatedBy")
+  createdFarmers    Farmer[]    @relation("FarmerCreatedBy")
+  updatedFarmers    Farmer[]    @relation("FarmerUpdatedBy")
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   deletedAt   DateTime?
@@ -239,8 +239,9 @@ model Employee {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // New back-relation: customers handled by this employee
-  responsibleCustomers Customer[]
+  responsibleDealers   Dealer[]
+  responsibleSubDealers SubDealer[]
+  responsibleFarmers    Farmer[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -306,56 +307,51 @@ model AuditLog {
 }
 
 // ====================
-// CUSTOMERS
+// DEALER / SUBDEALER / FARMER
 // ====================
-// Customer Group
-model CustomerGroup {
-  id          String   @id @default(cuid())
+model Dealer {
+  id          String        @id @default(cuid())
+  code        String        @unique
   name        String
-  description String?
-  discount    Float?
-
-  customers Customer[]
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
-}
-
-// Core Customer
-model Customer {
-  id                 String        @id @default(cuid())
-  responsibleEmployeeId String?
-  customerGroupId    String?
-  customerType       CustomerType
-
-  // Personal and business info
+  // Personal info (contact person)
   prefix      String?
   firstName   String?
   lastName    String?
-  age         Int?
   gender      Gender?
+  birthDate   DateTime?
+  age         Int?
+  contactPerson String?
+  contactPhone  String?
+  contactEmail  String?
+  taxId       String?
   phone       String?
   email       String?
-  birthDate   DateTime?
-  companyName String?
-  taxId       String?
   address     String?
-  subdistrict String?
-  district    String?
   province    String?
+  district    String?
+  subdistrict String?
   postalCode  String?
+  latitude    Float?
+  longitude   Float?
   status      PartnerStatus @default(ACTIVE)
 
-  // Relations
-  responsibleEmployee Employee?     @relation(fields: [responsibleEmployeeId], references: [id])
-  customerGroup       CustomerGroup? @relation(fields: [customerGroupId], references: [id])
+  responsibleEmployeeId String?
+  responsibleEmployee   Employee? @relation(fields: [responsibleEmployeeId], references: [id])
 
-  dealerDetail    DealerDetail?
-  subDealerDetail SubDealerDetail?
-  farmerDetail    FarmerDetail?
-  brokerDetail    BrokerDetail?
+  // Additional business fields for Dealer
+  averageMonthlyPurchase Float?
+  mainProducts           String?
+  brandsSold             String?
+  relationshipScore      Int?
+  businessNotes          String?
 
+  createdById String?
+  updatedById String?
+  createdBy   User? @relation("DealerCreatedBy", fields: [createdById], references: [id])
+  updatedBy   User? @relation("DealerUpdatedBy", fields: [updatedById], references: [id])
+
+  subDealers   SubDealer[]
+  businessInfo BusinessInfo?
   sales        Sale[]
   interactions Interaction[]
 
@@ -364,88 +360,127 @@ model Customer {
   deletedAt DateTime?
 }
 
-// Dealer Detail
-model DealerDetail {
-  id          String         @id @default(cuid())
-  customerId  String         @unique
-  region      String?
-  status      PartnerStatus  @default(ACTIVE)
-  contactName String?
-  contactPhone String?
+model SubDealer {
+  id          String        @id @default(cuid())
+  code        String        @unique
+  name        String
+  // Personal info (contact person)
+  prefix        String?
+  firstName     String?
+  lastName      String?
+  gender        Gender?
+  birthDate     DateTime?
+  age           Int?
+  contactPerson String?
+  contactPhone  String?
+  contactEmail  String?
+  taxId       String?
+  phone       String?
+  email       String?
+  address     String?
+  province    String?
+  district    String?
+  subdistrict String?
+  postalCode  String?
+  latitude    Float?
+  longitude   Float?
+  status      PartnerStatus @default(ACTIVE)
+
+  responsibleEmployeeId String?
+  responsibleEmployee   Employee? @relation(fields: [responsibleEmployeeId], references: [id])
+
+  dealerId     String?
+  dealer       Dealer?      @relation(fields: [dealerId], references: [id], onDelete: Cascade)
+
+  // Additional business fields for SubDealer
+  competitor             String?
+  cropsInArea            String?
+  averageMonthlyPurchase Float?
+  mainProducts           String?
+  brandsSold             String?
+  areaType               String?
+  relationshipScore      Int?
+  businessNotes          String?
+
+  createdById String?
+  updatedById String?
+  createdBy   User? @relation("SubDealerCreatedBy", fields: [createdById], references: [id])
+  updatedBy   User? @relation("SubDealerUpdatedBy", fields: [updatedById], references: [id])
+  farmers      Farmer[]
+  businessInfo BusinessInfo?
+  sales        Sale[]
+  interactions Interaction[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+}
+
+model Farmer {
+  id          String        @id @default(cuid())
+  code        String        @unique
+  name        String
+  // Personal info (private individual)
+  prefix      String?
+  firstName   String?
+  lastName    String?
+  phone       String?
+  email       String?
+  address     String?
+  province    String?
+  district    String?
+  subdistrict String?
+  postalCode  String?
+  latitude    Float?
+  longitude   Float?
+  gender      Gender?
+  birthDate   DateTime?
+  age         Int?
+  contactPerson String?
+  contactPhone  String?
+  contactEmail  String?
+  farmName    String?
+  farmSize    Float?
+  cropType    String?
+  status      PartnerStatus @default(ACTIVE)
+
+  responsibleEmployeeId String?
+  responsibleEmployee   Employee? @relation(fields: [responsibleEmployeeId], references: [id])
+
+  subDealerId String?
+  subDealer   SubDealer?    @relation(fields: [subDealerId], references: [id], onDelete: Cascade)
+  businessInfo BusinessInfo?
+  sales        Sale[]
+  interactions Interaction[]
+
+  createdById String?
+  updatedById String?
+  createdBy   User? @relation("FarmerCreatedBy", fields: [createdById], references: [id])
+  updatedBy   User? @relation("FarmerUpdatedBy", fields: [updatedById], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+}
+
+// ====================
+// BUSINESS INFO
+// ====================
+model BusinessInfo {
+  id          String   @id @default(cuid())
+  dealerId    String?  @unique
+  subDealerId String?  @unique
+  farmerId    String?  @unique
+  creditTerm  Int?
   creditLimit Float?
+  salesTarget Float?
+  areaSize    Float?
+  cropType    String?
+  season      String?
 
-  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-
-  // Sub-dealers buying from this dealer
-  subDealers SubDealerDetail[]
-  // Farmers that buy from this dealer
-  farmers    FarmerDetail[]
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
-}
-
-// Sub Dealer Detail
-model SubDealerDetail {
-  id          String         @id @default(cuid())
-  customerId  String         @unique
-  dealerId    String?
-  status      PartnerStatus  @default(ACTIVE)
-
-  customer Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  dealer   DealerDetail? @relation(fields: [dealerId], references: [id])
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
-}
-
-// Farmer Detail
-model FarmerDetail {
-  id               String         @id @default(cuid())
-  customerId       String         @unique
-  dealerId         String?
-  areaSize         Float?
-  latitude         Float?
-  longitude        Float?
-  cropType         String?
-  cultivar         String?
-  averageYield     Float?
-  fundingSource    String?
-  landPreparation  String?
-  cultivationMethod String?
-  averagePlantingCost Float?
-  harvestingMethod String?
-  productionChannel String?
-  harvestingCost   Float?
-
-  customer Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  dealer   DealerDetail? @relation(fields: [dealerId], references: [id])
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
-}
-
-// Broker Detail
-model BrokerDetail {
-  id                   String   @id @default(cuid())
-  customerId           String   @unique
-  cropTypes            String?
-  currentCropVolume    String?
-  farmerNetworkCount   Int?
-  plotCount            Int?
-  areaSize             Float?
-  plantingCyclesPerYear Int?
-  creditTermForFarmers Int?
-  agriChemValuePerCycle Float?
-  agriChemQtyPerCycle   Float?
-  regularStore         String?
-  serviceTypes         String?
-  brandsUsed           String?
-
-  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  dealer     Dealer?    @relation(fields: [dealerId], references: [id], onDelete: Cascade)
+  subDealer  SubDealer? @relation(fields: [subDealerId], references: [id], onDelete: Cascade)
+  farmer     Farmer?    @relation(fields: [farmerId], references: [id], onDelete: Cascade)
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -457,7 +492,9 @@ model BrokerDetail {
 // ====================
 model Sale {
   id            String    @id @default(cuid())
-  customerId    String?
+  dealerId      String?
+  subDealerId   String?
+  farmerId      String?
   orderDate     DateTime
   productName   String
   quantity      Float
@@ -465,7 +502,9 @@ model Sale {
   paymentStatus String
   dueDate       DateTime?
 
-  customer   Customer?  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  dealer     Dealer?    @relation(fields: [dealerId], references: [id], onDelete: Cascade)
+  subDealer  SubDealer? @relation(fields: [subDealerId], references: [id], onDelete: Cascade)
+  farmer     Farmer?    @relation(fields: [farmerId], references: [id], onDelete: Cascade)
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -481,8 +520,13 @@ model Interaction {
   channel   InteractionChannel
   notes     String?
 
-  customerId String?
-  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  dealerId    String?
+  subDealerId String?
+  farmerId    String?
+
+  dealer     Dealer?    @relation(fields: [dealerId], references: [id], onDelete: Cascade)
+  subDealer  SubDealer? @relation(fields: [subDealerId], references: [id], onDelete: Cascade)
+  farmer     Farmer?    @relation(fields: [farmerId], references: [id], onDelete: Cascade)
 
   createdById String?
   createdBy   User? @relation("UserCreatedInteractions", fields: [createdById], references: [id])

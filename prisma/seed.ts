@@ -279,84 +279,84 @@ async function main() {
   console.log(`🌱 Seeded ${plantNames.length} plants`);
 
   // ---------------------------
-  // 5️⃣ สร้าง Customer + Detail ตัวอย่าง (Dealer / SubDealer / Farmer)
+  // 5️⃣ สร้าง Dealer / SubDealer / Farmer ตัวอย่าง (idempotent)
   // ---------------------------
-  const dealerCustomer = await prisma.customer.upsert({
-    where: { id: "seed-dealer-1" },
+  const dealer = await prisma.dealer.upsert({
+    where: { code: "DLR-0001" },
     update: {
-      companyName: "บริษัท สมบูรณ์เกษตรภัณฑ์ จำกัด",
+      name: "บริษัท สมบูรณ์เกษตรภัณฑ์ จำกัด",
       taxId: "0105556789012",
       phone: "029999999",
       province: "นนทบุรี",
-      customerType: "DEALER",
       responsibleEmployeeId: employees["sales.manager@csone.local"],
     },
     create: {
-      id: "seed-dealer-1",
-      companyName: "บริษัท สมบูรณ์เกษตรภัณฑ์ จำกัด",
+      code: "DLR-0001",
+      name: "บริษัท สมบูรณ์เกษตรภัณฑ์ จำกัด",
       taxId: "0105556789012",
       phone: "029999999",
       province: "นนทบุรี",
-      customerType: "DEALER",
       responsibleEmployeeId: employees["sales.manager@csone.local"],
     },
   });
-  const dealerDetail = await prisma.dealerDetail.upsert({
-    where: { customerId: dealerCustomer.id },
-    update: { creditLimit: 500000 },
-    create: { customerId: dealerCustomer.id, creditLimit: 500000 },
+  await prisma.businessInfo.upsert({
+    where: { dealerId: dealer.id },
+    update: { creditTerm: 60, creditLimit: 500000, salesTarget: 1000000 },
+    create: { dealerId: dealer.id, creditTerm: 60, creditLimit: 500000, salesTarget: 1000000 },
   });
 
-  const subDealerCustomer = await prisma.customer.upsert({
-    where: { id: "seed-subdealer-1" },
+  const subDealer = await prisma.subDealer.upsert({
+    where: { code: "SBD-0001" },
     update: {
-      companyName: "ร้านรุ่งเรืองเกษตรภัณฑ์",
+      name: "ร้านรุ่งเรืองเกษตรภัณฑ์",
       phone: "0811112222",
       province: "ราชบุรี",
-      customerType: "SUB_DEALER",
+      dealerId: dealer.id,
       responsibleEmployeeId: employees["sales.staff@csone.local"],
     },
     create: {
-      id: "seed-subdealer-1",
-      companyName: "ร้านรุ่งเรืองเกษตรภัณฑ์",
+      code: "SBD-0001",
+      name: "ร้านรุ่งเรืองเกษตรภัณฑ์",
       phone: "0811112222",
       province: "ราชบุรี",
-      customerType: "SUB_DEALER",
+      dealerId: dealer.id,
       responsibleEmployeeId: employees["sales.staff@csone.local"],
     },
   });
-  await prisma.subDealerDetail.upsert({
-    where: { customerId: subDealerCustomer.id },
-    update: { dealerId: dealerDetail.id },
-    create: { customerId: subDealerCustomer.id, dealerId: dealerDetail.id },
+  await prisma.businessInfo.upsert({
+    where: { subDealerId: subDealer.id },
+    update: { creditTerm: 30, creditLimit: 150000, salesTarget: 300000 },
+    create: { subDealerId: subDealer.id, creditTerm: 30, creditLimit: 150000, salesTarget: 300000 },
   });
 
-  const farmerCustomer = await prisma.customer.upsert({
-    where: { id: "seed-farmer-1" },
+  const farmer = await prisma.farmer.upsert({
+    where: { code: "FRM-0001" },
     update: {
-      prefix: "นาย",
-      firstName: "สมชาย",
-      lastName: "เกษตรกรดีเด่น",
+      name: "นายสมชาย เกษตรกรดีเด่น",
       phone: "0892223333",
       province: "กาญจนบุรี",
-      customerType: "FARMER",
+      cropType: "ข้าวโพด",
+      farmName: "ไร่สมชาย",
+      farmSize: 45,
+      subDealerId: subDealer.id,
       responsibleEmployeeId: employees["sales.staff@csone.local"],
     },
     create: {
-      id: "seed-farmer-1",
-      prefix: "นาย",
-      firstName: "สมชาย",
-      lastName: "เกษตรกรดีเด่น",
+      code: "FRM-0001",
+      name: "นายสมชาย เกษตรกรดีเด่น",
       phone: "0892223333",
       province: "กาญจนบุรี",
-      customerType: "FARMER",
+      cropType: "ข้าวโพด",
+      farmName: "ไร่สมชาย",
+      farmSize: 45,
+      subDealerId: subDealer.id,
       responsibleEmployeeId: employees["sales.staff@csone.local"],
     },
   });
-  await prisma.farmerDetail.upsert({
-    where: { customerId: farmerCustomer.id },
-    update: { areaSize: 45, cropType: "ข้าวโพด", dealerId: dealerDetail.id },
-    create: { customerId: farmerCustomer.id, areaSize: 45, cropType: "ข้าวโพด", dealerId: dealerDetail.id },
+  await prisma.businessInfo.upsert({
+    where: { farmerId: farmer.id },
+    update: { areaSize: 45, cropType: "ข้าวโพด", season: "ฤดูฝน 2567" },
+    create: { farmerId: farmer.id, areaSize: 45, cropType: "ข้าวโพด", season: "ฤดูฝน 2567" },
   });
 
   // ---------------------------
@@ -379,7 +379,7 @@ async function main() {
 
     // Dealer — ผู้จัดการฝ่ายขายดูแล
     salesData.push({
-      customerId: dealerCustomer.id,
+      dealerId: dealer.id,
       orderDate: new Date(year, m, midDay),
       productName: `SEED-Dealer Product M${m + 1}`,
       quantity: 100 + m * 5,
@@ -387,7 +387,7 @@ async function main() {
       paymentStatus: m % 3 === 0 ? "PAID" : "PENDING",
     });
     interactionsData.push({
-      customerId: dealerCustomer.id,
+      dealerId: dealer.id,
       date: new Date(year, m, earlyDay),
       channel: channels[m % channels.length],
       notes: `SEED ${year}-${String(m + 1).padStart(2, "0")} Dealer`,
@@ -396,7 +396,7 @@ async function main() {
 
     // SubDealer — พนักงานฝ่ายขายดูแล
     salesData.push({
-      customerId: subDealerCustomer.id,
+      subDealerId: subDealer.id,
       orderDate: new Date(year, m, Math.min(midDay + 2, lastDay)),
       productName: `SEED-SubDealer Product M${m + 1}`,
       quantity: 50 + m * 3,
@@ -404,7 +404,7 @@ async function main() {
       paymentStatus: m % 2 === 0 ? "PAID" : "PENDING",
     });
     interactionsData.push({
-      customerId: subDealerCustomer.id,
+      subDealerId: subDealer.id,
       date: new Date(year, m, Math.min(earlyDay + 2, lastDay)),
       channel: channels[(m + 1) % channels.length],
       notes: `SEED ${year}-${String(m + 1).padStart(2, "0")} SubDealer`,
@@ -413,7 +413,7 @@ async function main() {
 
     // Farmer — พนักงานฝ่ายขายดูแล
     salesData.push({
-      customerId: farmerCustomer.id,
+      farmerId: farmer.id,
       orderDate: new Date(year, m, Math.min(midDay + 4, lastDay)),
       productName: `SEED-Farmer Product M${m + 1}`,
       quantity: 10 + m,
@@ -421,7 +421,7 @@ async function main() {
       paymentStatus: "PAID",
     });
     interactionsData.push({
-      customerId: farmerCustomer.id,
+      farmerId: farmer.id,
       date: new Date(year, m, Math.min(earlyDay + 4, lastDay)),
       channel: channels[(m + 2) % channels.length],
       notes: `SEED ${year}-${String(m + 1).padStart(2, "0")} Farmer`,
