@@ -1,6 +1,8 @@
 import type { Prisma } from "@prisma/client";
 import { PrismaClient } from "@prisma/client";
+import { withAccelerate } from "@prisma/extension-accelerate";
 import { getRequestContext } from "@/lib/request-context";
+import { logger } from "@/lib/logger";
 
 // Use string literals for audit actions at runtime to avoid issues
 // when the generated enum is not available during bundling.
@@ -50,7 +52,8 @@ const STATUS_KEYS = ["status", "approvalStatus", "state"];
 
 const ensureHelperClient = () => {
   if (!globalForPrisma.prismaHelper) {
-    globalForPrisma.prismaHelper = new PrismaClient();
+    globalForPrisma.prismaHelper = new PrismaClient()
+      .$extends(withAccelerate()) as unknown as PrismaClient;
   }
   return globalForPrisma.prismaHelper;
 };
@@ -127,7 +130,7 @@ const buildRecordIdentifier = (
     try {
       return JSON.stringify((args as Record<string, unknown>).where ?? {});
     } catch (error) {
-      console.warn(`[prisma] Unable to serialize record identifier for ${model}`, error);
+      logger.warn({ err: error, model }, "[prisma] Unable to serialize record identifier");
     }
   }
 
@@ -136,7 +139,8 @@ const buildRecordIdentifier = (
 
 const createPrismaClient = (): PrismaClient => {
   const helperClient = ensureHelperClient();
-  const baseClient = new PrismaClient();
+  const baseClient = new PrismaClient()
+    .$extends(withAccelerate()) as unknown as PrismaClient;
 
   const extendedClient = baseClient.$extends({
     query: {
@@ -216,7 +220,7 @@ const createPrismaClient = (): PrismaClient => {
                 | { update: (payload: Record<string, unknown>) => Promise<unknown> }
                 | undefined;
               if (!modelDelegate?.update) {
-                console.warn(`[prisma] Missing update delegate for ${modelName}`);
+                logger.warn(`[prisma] Missing update delegate for ${modelName}`);
                 return null;
               }
 
@@ -249,7 +253,7 @@ const createPrismaClient = (): PrismaClient => {
                 | { updateMany: (payload: Record<string, unknown>) => Promise<unknown> }
                 | undefined;
               if (!modelDelegate?.updateMany) {
-                console.warn(`[prisma] Missing updateMany delegate for ${modelName}`);
+                logger.warn(`[prisma] Missing updateMany delegate for ${modelName}`);
                 return null;
               }
 
@@ -403,8 +407,7 @@ const maybeWriteAuditLog = async ({
       },
     });
   } catch (error) {
-    console.error(`[prisma] Failed to record audit log for ${modelName}`);
-    console.error(error);
+    logger.error({ err: error, modelName }, "[prisma] Failed to record audit log");
   }
 };
 
