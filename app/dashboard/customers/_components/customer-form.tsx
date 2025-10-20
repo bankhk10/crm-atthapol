@@ -53,9 +53,11 @@ export function CustomerForm({
   const [isSubmitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLocating, setIsLocating] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     setValues(initialValues);
+    setFieldErrors({});
   }, [initialValues]);
 
   // Sync company phone/email with personal for Farmer/Broker (hidden company section)
@@ -75,6 +77,12 @@ export function CustomerForm({
     (event: ChangeEvent<HTMLInputElement>) => {
       setError(null);
       setValues((prev) => ({ ...prev, [field]: event.target.value }));
+      setFieldErrors((prev) => {
+        if (!prev[field as string]) return prev;
+        const copy = { ...prev } as Record<string, string>;
+        delete copy[field as string];
+        return copy;
+      });
     };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -97,7 +105,18 @@ export function CustomerForm({
         error instanceof Error
           ? error.message
           : "เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง";
-      setError(message);
+      // Try to parse validation error payload from server action
+      try {
+        const data = JSON.parse(message);
+        if (data && data.code === "VALIDATION_ERROR") {
+          setFieldErrors(data.fieldErrors || {});
+          setError("กรุณากรอกข้อมูลให้ครบถ้วน");
+          return;
+        }
+      } catch (_) {
+        // not a JSON validation error; fall through
+      }
+      setError(message || "เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง");
     }
   };
 
@@ -138,9 +157,24 @@ export function CustomerForm({
       sx={{ p: { xs: 2, sm: 3 }, maxWidth: 960 }}
     >
       <Stack spacing={3}>
-        {error && (
-          <Alert severity="error" onClose={() => setError(null)}>
-            {error}
+        {(error || Object.keys(fieldErrors).length > 0) && (
+          <Alert
+            severity="error"
+            onClose={() => {
+              setError(null);
+              setFieldErrors({});
+            }}
+         >
+            <Stack spacing={0.5}>
+              <span>{error || "กรุณากรอกข้อมูลให้ครบถ้วน"}</span>
+              {Object.keys(fieldErrors).length > 0 && (
+                <ul style={{ margin: 0, paddingLeft: 18 }}>
+                  {Object.entries(fieldErrors).map(([key, msg]) => (
+                    <li key={key}>{msg}</li>
+                  ))}
+                </ul>
+              )}
+            </Stack>
           </Alert>
         )}
 
@@ -172,13 +206,15 @@ export function CustomerForm({
                 onChange={handleChange("prefix") as any}
                 required
                 sx={{ minWidth: { xs: "100%", sm: 150 } }}
+                error={Boolean(fieldErrors.prefix)}
+                helperText={fieldErrors.prefix}
               >
                 <MenuItem value="นาย">นาย</MenuItem>
                 <MenuItem value="นาง">นาง</MenuItem>
                 <MenuItem value="นางสาว">นางสาว</MenuItem>
               </TextField>
-              <TextField label="ชื่อ" value={values.firstName} onChange={handleChange("firstName")} required fullWidth />
-              <TextField label="นามสกุล" value={values.lastName} onChange={handleChange("lastName")} required fullWidth />
+              <TextField label="ชื่อ" value={values.firstName} onChange={handleChange("firstName")} required fullWidth error={Boolean(fieldErrors.firstName)} helperText={fieldErrors.firstName} />
+              <TextField label="นามสกุล" value={values.lastName} onChange={handleChange("lastName")} required fullWidth error={Boolean(fieldErrors.lastName)} helperText={fieldErrors.lastName} />
             </Stack>
 
             {/* แถว 2: เบอร์/อีเมลส่วนบุคคล + วันเกิด + อายุ */}
@@ -189,6 +225,8 @@ export function CustomerForm({
                 onChange={handleChange("contactPhone") as any}
                 required
                 fullWidth
+                error={Boolean(fieldErrors.contactPhone)}
+                helperText={fieldErrors.contactPhone}
               />
               <TextField
                 label="E-mail (บุคคล)"
@@ -196,6 +234,8 @@ export function CustomerForm({
                 value={values.contactEmail ?? ""}
                 onChange={handleChange("contactEmail") as any}
                 fullWidth
+                error={Boolean(fieldErrors.contactEmail)}
+                helperText={fieldErrors.contactEmail}
               />
 
               <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={th}>
@@ -208,7 +248,7 @@ export function CustomerForm({
                       birthDate: newValue ? newValue.toISOString().slice(0, 10) : "",
                     }));
                   }}
-                  slotProps={{ textField: { fullWidth: true } }}
+                  slotProps={{ textField: { fullWidth: true, error: Boolean(fieldErrors.birthDate), helperText: fieldErrors.birthDate } }}
                 />
               </LocalizationProvider>
               <TextField
@@ -237,12 +277,12 @@ export function CustomerForm({
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <TextField label="ชื่อร้านค้า" value={values.companyName ?? ""} onChange={handleChange("companyName") as any} required fullWidth />
               <TextField label="เลขประจำตัวผู้เสียภาษี" value={values.taxId ?? ""} onChange={handleChange("taxId")} fullWidth />
-              <TextField label="เบอร์โทรศัพท์ (บริษัท)" value={values.phone} onChange={handleChange("phone")} required fullWidth placeholder="0xx-xxx-xxxx" />
+              <TextField label="เบอร์โทรศัพท์ (บริษัท)" value={values.phone} onChange={handleChange("phone")} required fullWidth placeholder="0xx-xxx-xxxx" error={Boolean(fieldErrors.phone)} helperText={fieldErrors.phone} />
             </Stack>
 
             {/* แถว 2: ประเภท (ซ่อนในหน้าเพิ่ม), latitude, longitude */}
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-              <TextField label="E-mail (บริษัท)" type="email" value={values.email} onChange={handleChange("email")} fullWidth placeholder="name@example.com" />
+              <TextField label="E-mail (บริษัท)" type="email" value={values.email} onChange={handleChange("email")} fullWidth placeholder="name@example.com" error={Boolean(fieldErrors.email)} helperText={fieldErrors.email} />
               <TextField label="latitude (ละติจูด)" type="number" inputProps={{ step: "any" }} value={values.latitude ?? ""} onChange={(e) => setValues((prev) => ({ ...prev, latitude: e.target.value }))} fullWidth />
               <TextField label="longitude (ลองจิจูด)" type="number" inputProps={{ step: "any" }} value={values.longitude ?? ""} onChange={(e) => setValues((prev) => ({ ...prev, longitude: e.target.value }))} fullWidth />
             </Stack>

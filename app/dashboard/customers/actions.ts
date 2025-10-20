@@ -176,7 +176,16 @@ async function generateCode(tx: Prisma.TransactionClient, model: "dealer" | "sub
 }
 
 export async function createCustomer(rawValues: CustomerFormValues) {
-  const values = customerFormSchema.parse(rawValues);
+  const parsed = customerFormSchema.safeParse(rawValues);
+  if (!parsed.success) {
+    const fieldErrors = Object.create(null) as Record<string, string>;
+    for (const iss of parsed.error.issues) {
+      const key = Array.isArray(iss.path) && iss.path.length ? String(iss.path[0]) : "_";
+      if (!fieldErrors[key]) fieldErrors[key] = iss.message || "ข้อมูลไม่ถูกต้อง";
+    }
+    throw new Error(JSON.stringify({ code: "VALIDATION_ERROR", fieldErrors }));
+  }
+  const values = parsed.data;
   const session = await getServerSession(authOptions);
 
   await runWithRequestContext({ userId: session?.user?.id }, async () => {
@@ -305,7 +314,16 @@ export async function createCustomer(rawValues: CustomerFormValues) {
 }
 
 export async function updateCustomer(customerId: string, rawValues: CustomerFormValues) {
-  const values = customerFormSchema.parse(rawValues);
+  const parsed = customerFormSchema.safeParse(rawValues);
+  if (!parsed.success) {
+    const fieldErrors = Object.create(null) as Record<string, string>;
+    for (const iss of parsed.error.issues) {
+      const key = Array.isArray(iss.path) && iss.path.length ? String(iss.path[0]) : "_";
+      if (!fieldErrors[key]) fieldErrors[key] = iss.message || "ข้อมูลไม่ถูกต้อง";
+    }
+    throw new Error(JSON.stringify({ code: "VALIDATION_ERROR", fieldErrors }));
+  }
+  const values = parsed.data;
   const session = await getServerSession(authOptions);
 
   await runWithRequestContext({ userId: session?.user?.id }, async () => {
