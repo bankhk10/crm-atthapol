@@ -68,6 +68,23 @@ enum CustomerType {
   BROKER
 }
 
+// Sales enums
+enum SaleOrderStatus {
+  DRAFT
+  CONFIRMED
+  APPROVED
+  SHIPPED
+  INVOICED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PARTIAL
+  PAID
+  OVERDUE
+}
+
 // ====================
 // PRODUCT & STOCK
 // ====================
@@ -92,6 +109,7 @@ model Product {
   stocks   Stock[]
   images   ProductImage[]
   plants   ProductPlant[]
+  saleOrderItems SaleOrderItem[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -240,6 +258,8 @@ model Employee {
 
   // Customers handled by this employee
   responsibleCustomers Customer[]
+  // Sale orders created/owned by this employee
+  saleOrders          SaleOrder[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -325,7 +345,7 @@ model Customer {
   responsibleEmployeeId String?
   customerGroupId       String?
   customerType          CustomerType
-
+  saleOrders SaleOrder[]
   prefix      String?
   firstName   String?
   lastName    String?
@@ -499,5 +519,76 @@ model Interaction {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   deletedAt DateTime?
+}
+
+// ====================
+// SALES ORDERS
+// ====================
+model SaleOrder {
+  id              String           @id @default(cuid())
+  soNumber        String           @unique
+  customerId      String
+  salespersonId   String?
+  orderDate       DateTime         @default(now())
+  dueDate         DateTime?
+  creditTermDays  Int?
+
+  currency        String           @default("THB")
+  vatIncluded     Boolean          @default(true)
+  vatRate         Float            @default(7)
+
+  billTo          String?
+  shipTo          String?
+  status          SaleOrderStatus  @default(DRAFT)
+  paymentStatus   PaymentStatus    @default(UNPAID)
+
+  subTotal        Float            @default(0)
+  discountTotal   Float            @default(0)
+  taxAmount       Float            @default(0)
+  shippingFee     Float            @default(0)
+  otherCharges    Float            @default(0)
+  grandTotal      Float            @default(0)
+
+  poNumber        String?
+  note            String?
+
+  customer     Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  salesperson  Employee? @relation(fields: [salespersonId], references: [id])
+  items        SaleOrderItem[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([orderDate])
+  @@index([customerId])
+  @@index([salespersonId])
+}
+
+model SaleOrderItem {
+  id                  String     @id @default(cuid())
+  saleOrderId         String
+  productId           String?
+
+  productCodeSnapshot String?
+  nameSnapshot        String?
+  unit                String?
+  qty                 Float
+  unitPrice           Float
+  discountPercent     Float?     @default(0)
+  discountAmount      Float?     @default(0)
+  lineVatRate         Float?
+  amount              Float      @default(0)
+
+  lotNumber           String?
+  mfgDate             DateTime?
+  expDate             DateTime?
+  note                String?
+
+  saleOrder SaleOrder @relation(fields: [saleOrderId], references: [id], onDelete: Cascade)
+  product   Product?  @relation(fields: [productId], references: [id])
+
+  @@index([saleOrderId])
+  @@index([productId])
 }
 
