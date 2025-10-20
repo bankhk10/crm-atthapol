@@ -45,8 +45,14 @@ export default async function CustomerEditPage({ params }: { params: Promise<{ c
     responsibleEmployeeId: customer.responsibleEmployeeId ?? null,
     companyName: (customer as any).companyName ?? "",
     contactPerson: (customer as any).contactPerson ?? "",
-    contactPhone: (customer as any).contactPhone ?? "",
-    contactEmail: (customer as any).contactEmail ?? "",
+    contactPhone:
+      (customer.type === "FARMER" || customer.type === "BROKER")
+        ? (customer.phone ?? "")
+        : ((customer as any).contactPhone ?? ""),
+    contactEmail:
+      (customer.type === "FARMER" || customer.type === "BROKER")
+        ? (customer.email ?? "")
+        : ((customer as any).contactEmail ?? ""),
     creditLimit: (customer as any).creditLimit ?? "",
     parentDealer: (customer as any).parentDealer ?? "",
     subDealerCode: (customer as any).subDealerCode ?? "",

@@ -42,7 +42,7 @@ const customerFormSchema = z.object({
     z.number().int().positive().optional(),
   ),
   // บริษัท (เก็บที่ top-level)
-  phone: z.string().min(1, "กรุณากรอกเบอร์โทร"),
+  phone: z.string().optional().or(z.literal("")).transform((v) => (v == null ? "" : String(v))),
   code: z.string().optional(),
   email: z
     .string()
@@ -135,6 +135,21 @@ const customerFormSchema = z.object({
   regularStore: z.string().optional(),
   serviceTypes: z.string().optional(),
   brandsUsed: z.string().optional(),
+}).superRefine((val, ctx) => {
+  const phone = (val.phone ?? "").trim();
+  const cphone = (val.contactPhone ?? "").trim();
+  // DEALER/SUBDEALER: ต้องมี phone (บริษัท)
+  if (val.type === "DEALER" || val.type === "SUBDEALER") {
+    if (!phone) {
+      ctx.addIssue({ code: "custom", path: ["phone"], message: "กรุณากรอกเบอร์โทร" });
+    }
+  }
+  // FARMER/BROKER: ต้องมีอย่างน้อย 1 ค่า ระหว่าง phone หรือ contactPhone
+  if (val.type === "FARMER" || val.type === "BROKER") {
+    if (!phone && !cphone) {
+      ctx.addIssue({ code: "custom", path: ["contactPhone"], message: "กรุณากรอกเบอร์โทร (บุคคล)" });
+    }
+  }
 });
 
 function computeAgeFromBirthDate(birthDate?: string | null) {
