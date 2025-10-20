@@ -54,6 +54,7 @@ export default async function CustomerEditPage({ params }: { params: Promise<{ c
         ? (customer.email ?? "")
         : ((customer as any).contactEmail ?? ""),
     creditLimit: (customer as any).creditLimit ?? "",
+    promotionBudget: (customer as any).promotionBudget ?? "",
     parentDealer: (customer as any).parentDealer ?? "",
     subDealerCode: (customer as any).subDealerCode ?? "",
     dealerId: (customer as any).dealerId ?? undefined,

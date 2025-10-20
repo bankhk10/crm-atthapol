@@ -399,6 +399,7 @@ model DealerDetail {
   contactName String?
   contactPhone String?
   creditLimit Float?
+  promotionBudget Float?
 
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 

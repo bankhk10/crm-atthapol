@@ -138,6 +138,7 @@ export async function getCustomer(customerId: string) {
       contactPhone: c.dealerDetail?.contactPhone ?? null,
       contactEmail: null,
       creditLimit: c.dealerDetail?.creditLimit ?? null,
+      promotionBudget: (c as any)?.dealerDetail?.promotionBudget ?? null,
       averageMonthlyPurchase: null,
       mainProducts: null,
       brandsSold: null,

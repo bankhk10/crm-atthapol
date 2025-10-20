@@ -28,6 +28,7 @@ export type CustomerFormValues = {
   contactPhone?: string;
   contactEmail?: string;
   creditLimit?: number | string;
+  promotionBudget?: number | string;
   parentDealer?: string;
   subDealerCode?: string;
   // สำหรับ SubDealer

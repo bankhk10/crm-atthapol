@@ -388,13 +388,22 @@ export function CustomerForm({
 
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           {values.type === "DEALER" && (
-            <TextField
-              label="วงเงินเครดิต (บาท)"
-              type="number"
-              value={values.creditLimit ?? ""}
-              onChange={handleChange("creditLimit") as any}
-              fullWidth
-            />
+            <>
+              <TextField
+                label="วงเงินเครดิต (บาท)"
+                type="number"
+                value={values.creditLimit ?? ""}
+                onChange={handleChange("creditLimit") as any}
+                fullWidth
+              />
+              <TextField
+                label="วงเงินส่งเสริมการขาย (บาท)"
+                type="number"
+                value={values.promotionBudget ?? ""}
+                onChange={handleChange("promotionBudget") as any}
+                fullWidth
+              />
+            </>
           )}
           {values.type === "SUBDEALER" && (
             <>

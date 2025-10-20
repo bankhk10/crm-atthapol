@@ -303,8 +303,8 @@ async function main() {
   });
   const dealerDetail = await prisma.dealerDetail.upsert({
     where: { customerId: dealerCustomer.id },
-    update: { creditLimit: 500000, contactName: "ผู้จัดการร้าน" },
-    create: { customerId: dealerCustomer.id, creditLimit: 500000, contactName: "ผู้จัดการร้าน" },
+    update: { creditLimit: 500000, promotionBudget: 100000, contactName: "ผู้จัดการร้าน" },
+    create: { customerId: dealerCustomer.id, creditLimit: 500000, promotionBudget: 100000, contactName: "ผู้จัดการร้าน" },
   });
 
   const subDealerCustomer = await prisma.customer.upsert({

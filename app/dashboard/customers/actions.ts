@@ -75,6 +75,10 @@ const customerFormSchema = z.object({
     (v) => (v === "" || v === null || v === undefined ? undefined : typeof v === "string" ? parseFloat(v) : v),
     z.number().optional(),
   ),
+  promotionBudget: z.preprocess(
+    (v) => (v === "" || v === null || v === undefined ? undefined : typeof v === "string" ? parseFloat(v) : v),
+    z.number().optional(),
+  ),
 
   // SubDealer extras
   dealerId: z.string().optional(),
@@ -245,6 +249,10 @@ export async function createCustomer(rawValues: CustomerFormValues) {
               values.creditLimit !== undefined && values.creditLimit !== null && String(values.creditLimit) !== ""
                 ? Number(values.creditLimit)
                 : undefined,
+            promotionBudget:
+              values.promotionBudget !== undefined && values.promotionBudget !== null && String(values.promotionBudget) !== ""
+                ? Number(values.promotionBudget)
+                : undefined,
           },
         });
       } else if (values.type === "SUBDEALER") {
@@ -380,6 +388,10 @@ export async function updateCustomer(customerId: string, rawValues: CustomerForm
               values.creditLimit !== undefined && values.creditLimit !== null && String(values.creditLimit) !== ""
                 ? Number(values.creditLimit)
                 : undefined,
+            promotionBudget:
+              values.promotionBudget !== undefined && values.promotionBudget !== null && String(values.promotionBudget) !== ""
+                ? Number(values.promotionBudget)
+                : undefined,
           },
           create: {
             customerId,
@@ -391,6 +403,10 @@ export async function updateCustomer(customerId: string, rawValues: CustomerForm
             creditLimit:
               values.creditLimit !== undefined && values.creditLimit !== null && String(values.creditLimit) !== ""
                 ? Number(values.creditLimit)
+                : undefined,
+            promotionBudget:
+              values.promotionBudget !== undefined && values.promotionBudget !== null && String(values.promotionBudget) !== ""
+                ? Number(values.promotionBudget)
                 : undefined,
           },
         });

@@ -37,6 +37,7 @@ const defaultInitialValues: CustomerFormValues = {
   contactPhone: "",
   contactEmail: "",
   creditLimit: "",
+  promotionBudget: "",
   parentDealer: "",
   subDealerCode: "",
   averageMonthlyPurchase: "",
