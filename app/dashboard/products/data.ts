@@ -58,7 +58,10 @@ export async function getProduct(productId: string) {
   if (!p) return null;
   // Fetch images via raw query to avoid relying on regenerated client types
   const images = await prisma.$queryRaw<{ id: string; url: string; sort: number; createdAt: Date }[]>`
-    SELECT id, url, sort, createdAt FROM ProductImage WHERE productId = ${productId} ORDER BY sort ASC, createdAt ASC
+    SELECT "id", "url", "sort", "createdAt"
+    FROM "ProductImage"
+    WHERE "productId" = ${productId}
+    ORDER BY "sort" ASC, "createdAt" ASC
   `;
   return { ...(p as any), images } as any;
 }

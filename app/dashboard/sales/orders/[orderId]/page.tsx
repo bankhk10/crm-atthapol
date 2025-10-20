@@ -14,8 +14,8 @@ function displayCustomerName(c: any) {
   return parts.length ? parts.join(" ") : c.id;
 }
 
-export default async function SalesOrderDetailPage({ params }: { params: { orderId: string } }) {
-  const id = params.orderId;
+export default async function SalesOrderDetailPage({ params }: { params: Promise<{ orderId: string }> }) {
+  const { orderId: id } = await params;
   const so = await (prisma as any).saleOrder.findUnique({
     where: { id },
     include: {
@@ -161,4 +161,3 @@ export default async function SalesOrderDetailPage({ params }: { params: { order
     </Stack>
   );
 }
-

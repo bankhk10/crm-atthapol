@@ -51,7 +51,7 @@ export default async function ProductEditPage({ params }: { params: Promise<{ pr
 
   // Fetch existing images (raw) for manager initial state
   const images = await prisma.$queryRaw<{ id: string; url: string }[]>`
-    SELECT id, url FROM ProductImage WHERE productId = ${productId} ORDER BY sort ASC, createdAt ASC
+    SELECT "id", "url" FROM "ProductImage" WHERE "productId" = ${productId} ORDER BY "sort" ASC, "createdAt" ASC
   `;
 
   return (
