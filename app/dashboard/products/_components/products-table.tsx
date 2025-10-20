@@ -116,13 +116,13 @@ function EnhancedTableHead({
   return (
     <TableHead
       sx={{
-        bgcolor: "#b92626",
+        bgcolor: "#ccccceff",
         "& .MuiTableCell-root": {
-          bgcolor: "#b92626",
-          color: "#fff",
+          bgcolor: "#ccccceff",
+          color: "#1a1919ff",
           fontFamily: "Prompt, sans-serif",
           fontSize: "1rem",
-          fontWeight: 600,
+          fontWeight: 800,
           borderBottom: "none",
           whiteSpace: "nowrap",
         },

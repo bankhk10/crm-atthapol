@@ -48,7 +48,7 @@ export default function CustomersListClient({ customers }: { customers: Customer
           <Button component={Link} href="/dashboard/customers/new/farmer" variant="contained" color="success">
             เพิ่ม Farmer
           </Button>
-          <Button component={Link} href="/dashboard/customers/new/broker" variant="contained" color="info">
+          <Button component={Link} href="/dashboard/customers/new/broker" variant="contained" color="warning">
             เพิ่ม Broker
           </Button>
         </Stack>

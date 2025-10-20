@@ -55,10 +55,10 @@ export default function ProductsListClient({
             href="/dashboard/products/new"
             variant="contained"
             sx={{
-              backgroundColor: "#b92626",
+              backgroundColor: "#18aa38ff",
               fontFamily: "Prompt, sans-serif",
               fontWeight: 500,
-              "&:hover": { backgroundColor: "#a01f1f" },
+              "&:hover": { backgroundColor: "#0d8527ff" },
             }}
           >
             เพิ่มสินค้า
