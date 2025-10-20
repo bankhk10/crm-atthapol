@@ -11,6 +11,7 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import thLocale from "dayjs/locale/th";
 import { CreateOrderDialog, type Option, type ProductOption } from "./create-order-dialog";
+import { EditOrderDialog } from "./edit-order-dialog";
 import { useSession } from "next-auth/react";
 import { hasPermission } from "@/lib/permissions";
 
@@ -61,11 +62,13 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<null | { type: "cancel" | "delete"; order: OrderItem }>(null);
+  const [editId, setEditId] = useState<string | null>(null);
 
   const canCreate = hasPermission(session?.user?.permissions, "sales", "create");
   const canView = hasPermission(session?.user?.permissions, "sales", "view");
   const canCancel = hasPermission(session?.user?.permissions, "sales", "reject");
   const canDelete = hasPermission(session?.user?.permissions, "sales", "delete");
+  const canEdit = hasPermission(session?.user?.permissions, "sales", "edit");
 
   const chips = useMemo(
     () => [
@@ -187,11 +190,21 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
                           ดู
                         </Button>
                       )}
+                      {canEdit && (
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          color="secondary"
+                          onClick={() => setEditId(o.id)}
+                        >
+                          แก้ไข
+                        </Button>
+                      )}
                       {canCancel && (
                         <Button
-                         size="small"
-                         variant="outlined"
-                         color="warning"
+                          size="small"
+                          variant="outlined"
+                          color="warning"
                          startIcon={<CancelOutlinedIcon fontSize="small" />}
                          disabled={o.status === "CANCELLED" || busyId === o.id}
                          onClick={() => setConfirm({ type: "cancel", order: o })}
@@ -227,6 +240,16 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
         employeeOptions={employeeOptions}
         productOptions={productOptions}
         onCreated={() => load()}
+      />
+
+      <EditOrderDialog
+        open={editId !== null}
+        orderId={editId || ""}
+        onClose={() => setEditId(null)}
+        customerOptions={customerOptions}
+        employeeOptions={employeeOptions}
+        productOptions={productOptions}
+        onUpdated={() => load()}
       />
 
       <Dialog open={Boolean(confirm)} onClose={() => setConfirm(null)}>

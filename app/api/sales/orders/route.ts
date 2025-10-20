@@ -73,15 +73,21 @@ function computeTotals(payload: CreateOrderInput) {
   return { subTotal, discountTotal, taxAmount, grandTotal };
 }
 
-async function generateSoNumber() {
+async function generateSoNumberTx(tx: any) {
   const now = new Date();
   const y = now.getFullYear();
   const m = String(now.getMonth() + 1).padStart(2, "0");
   const prefix = `SO-${y}${m}-`;
-  const count = await prisma.saleOrder.count({
-    where: { soNumber: { startsWith: prefix } },
+
+  // Atomic upsert-based sequence increment per prefix
+  const delegate = (tx as any)["docSequence"] as { upsert: (args: any) => Promise<{ current: number }> };
+  const row = await delegate.upsert({
+    where: { prefix },
+    create: { prefix, current: 1 },
+    update: { current: { increment: 1 } },
+    select: { current: true },
   });
-  const seq = String(count + 1).padStart(4, "0");
+  const seq = String(row.current).padStart(4, "0");
   return `${prefix}${seq}`;
 }
 
@@ -127,16 +133,16 @@ export async function POST(req: NextRequest) {
 
     const data = parsed.data;
 
-    const soNumber = await generateSoNumber();
     const totals = computeTotals(data);
 
     const result = await prisma.$transaction(async (tx) => {
+      const soNumber = await generateSoNumberTx(tx);
       const order = await tx.saleOrder.create({
-        data: {
-          soNumber,
-          customerId: data.customerId,
-          salespersonId: data.salespersonId,
-          orderDate: data.orderDate ? new Date(data.orderDate) : new Date(),
+          data: {
+            soNumber,
+            customerId: data.customerId,
+            salespersonId: data.salespersonId,
+            orderDate: data.orderDate ? new Date(data.orderDate) : new Date(),
           dueDate: data.dueDate ? new Date(data.dueDate) : null,
           creditTermDays: data.creditTermDays,
           currency: data.currency ?? "THB",

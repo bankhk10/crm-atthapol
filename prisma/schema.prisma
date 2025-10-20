@@ -68,6 +68,17 @@ enum CustomerType {
   BROKER
 }
 
+// ====================
+// DOCUMENT SEQUENCES
+// ====================
+model DocSequence {
+  // Prefix is typically like "SO-YYYYMM-"
+  prefix    String   @id
+  current   Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 // Sales enums
 enum SaleOrderStatus {
   DRAFT
@@ -592,6 +603,10 @@ model SaleOrderItem {
 
   @@index([saleOrderId])
   @@index([productId])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 }
 
 // Track per-stock reservations linked to a sale order
