@@ -139,10 +139,10 @@ export async function getCustomer(customerId: string) {
       contactEmail: null,
       creditLimit: c.dealerDetail?.creditLimit ?? null,
       promotionBudget: (c as any)?.dealerDetail?.promotionBudget ?? null,
+      relationshipScore: (c as any)?.relationshipScore ?? null,
       averageMonthlyPurchase: null,
       mainProducts: null,
       brandsSold: null,
-      relationshipScore: null,
       businessNotes: null,
     } as any;
   }
@@ -162,13 +162,13 @@ export async function getCustomer(customerId: string) {
       parentDealer: parentDealerName,
       subDealerCode: "",
       dealerId: c.subDealerDetail?.dealerId ?? undefined,
+      relationshipScore: (c as any)?.relationshipScore ?? null,
       competitor: null,
       cropsInArea: null,
       averageMonthlyPurchase: null,
       mainProducts: null,
       brandsSold: null,
       areaType: null,
-      relationshipScore: null,
       businessNotes: null,
     } as any;
   }

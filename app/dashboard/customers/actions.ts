@@ -233,6 +233,7 @@ export async function createCustomer(rawValues: CustomerFormValues) {
           district: values.district,
           subdistrict: values.subdistrict,
           postalCode: values.postalCode,
+          relationshipScore: values.relationshipScore ?? undefined,
         },
       });
 
@@ -372,6 +373,7 @@ export async function updateCustomer(customerId: string, rawValues: CustomerForm
           subdistrict: values.subdistrict,
           postalCode: values.postalCode,
           responsibleEmployeeId: values.responsibleEmployeeId ?? undefined,
+          relationshipScore: values.relationshipScore ?? undefined,
         },
       });
 

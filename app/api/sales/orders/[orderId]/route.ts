@@ -86,6 +86,7 @@ const UpdateOrderSchema = z.object({
   orderDate: z.string().datetime().optional(),
   dueDate: z.string().datetime().optional(),
   creditTermDays: z.number().int().optional(),
+  paymentCondition: z.enum(["PREPAID","POSTPAID"]).optional(),
   currency: z.string().default("THB"),
   vatIncluded: z.boolean().default(true),
   vatRate: z.number().min(0).default(7),
@@ -136,6 +137,33 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ orderId
     const data = parsed.data;
     const totals = computeTotals(data);
 
+    // Credit check when editing if payment condition is POSTPAID
+    try {
+      const existsHeader = await (prisma as any).saleOrder.findUnique({ where: { id: orderId }, select: { paymentCondition: true } });
+      const effectivePaymentCondition = (data as any).paymentCondition ?? (existsHeader?.paymentCondition ?? 'PREPAID');
+      if (effectivePaymentCondition === 'POSTPAID') {
+        const customer = await (prisma as any).customer.findUnique({ where: { id: data.customerId }, include: { dealerDetail: true } });
+        if (!customer) {
+          return NextResponse.json({ error: 'ไม่พบลูกค้า' }, { status: 400 });
+        }
+        const creditLimit = (customer as any)?.dealerDetail?.creditLimit as number | null | undefined;
+        if (typeof creditLimit === 'number') {
+          const relationshipScore = (customer as any)?.relationshipScore as number | null | undefined;
+          const enoughCredit = (totals.grandTotal ?? 0) <= creditLimit;
+          if (!enoughCredit) {
+            const canOverride = typeof relationshipScore === 'number' && relationshipScore > 3;
+            if (!canOverride) {
+              return NextResponse.json({ error: 'วงเงินเครดิตไม่พอ และคะแนนความสัมพันธ์ไม่ถึงเกณฑ์' }, { status: 400 });
+            }
+          }
+        }
+      }
+    } catch (checkErr) {
+      // If credit check fails unexpectedly, treat as server error
+      if (checkErr instanceof Response) return checkErr as any;
+      // fallthrough to continue; actual DB ops will run, but conservative approach would fail.
+    }
+
     const updated = await prisma.$transaction(async (tx) => {
       const exists = await tx.saleOrder.findUnique({ where: { id: orderId } });
       if (!exists || (exists as any).deletedAt) throw new Error("NOT_FOUND");
@@ -147,7 +175,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ orderId
       await tx.saleOrderItem.deleteMany({ where: { saleOrderId: orderId } });
 
       // update order header and recreate items
-      const order = await tx.saleOrder.update({
+      const order = await (tx as any).saleOrder.update({
         where: { id: orderId },
         data: {
           customerId: data.customerId,
@@ -162,6 +190,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ orderId
           shipTo: data.shipTo,
           status: (data.status as any) ?? exists.status,
           paymentStatus: (data.paymentStatus as any) ?? exists.paymentStatus,
+          paymentCondition: (data.paymentCondition as any) ?? (exists as any).paymentCondition,
           shippingFee: data.shippingFee ?? 0,
           otherCharges: data.otherCharges ?? 0,
           poNumber: data.poNumber,

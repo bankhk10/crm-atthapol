@@ -24,6 +24,7 @@ type OrderItem = {
   orderDate: string;
   grandTotal: number;
   status: string;
+  paymentCondition?: string;
   paymentStatus: string;
   customer?: { id: string; name?: string; companyName?: string; prefix?: string; firstName?: string; lastName?: string } | null;
   salesperson?: { id: string; firstName?: string | null; lastName?: string | null; prefix?: string | null; user?: { name?: string | null; email?: string | null } | null } | null;
@@ -153,6 +154,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
               <TableCell>พนักงานขาย</TableCell>
               <TableCell align="right">ยอดรวม</TableCell>
               <TableCell>สถานะ</TableCell>
+              <TableCell>เงื่อนไขชำระ</TableCell>
               <TableCell>ชำระเงิน</TableCell>
               <TableCell align="right">การทำงาน</TableCell>
             </TableRow>
@@ -160,7 +162,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
           <TableBody>
             {items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7}>
+                <TableCell colSpan={9}>
                   <Box py={4} textAlign="center">
                     <Typography color="text.secondary">{loading ? "กำลังโหลด..." : "ยังไม่มีรายการ"}</Typography>
                   </Box>
@@ -175,6 +177,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
                   <TableCell>{o.salesperson ? displayEmployeeName(o.salesperson as any) : "-"}</TableCell>
                   <TableCell align="right">{o.grandTotal?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                   <TableCell>{o.status}</TableCell>
+                  <TableCell>{o.paymentCondition === 'POSTPAID' ? 'ส่งก่อน-โอนทีหลัง' : 'โอนก่อน-ส่งทีหลัง'}</TableCell>
                   <TableCell>{o.paymentStatus}</TableCell>
                   <TableCell align="right">
                     <Stack direction="row" spacing={1} justifyContent="flex-end">

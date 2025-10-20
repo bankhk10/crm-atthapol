@@ -59,6 +59,7 @@ export function EditOrderDialog({ open, orderId, onClose, customerOptions, emplo
   const [orderDate, setOrderDate] = useState<string | null>(null);
   const [dueDate, setDueDate] = useState<string | null>(null);
   const [creditTermDays, setCreditTermDays] = useState<number | "">("");
+  const [paymentCondition, setPaymentCondition] = useState<"PREPAID" | "POSTPAID">("PREPAID");
   const [currency, setCurrency] = useState("THB");
   const [vatIncluded, setVatIncluded] = useState(true);
   const [vatRate, setVatRate] = useState<number>(7);
@@ -87,6 +88,7 @@ export function EditOrderDialog({ open, orderId, onClose, customerOptions, emplo
         setOrderDate(so.orderDate ? new Date(so.orderDate).toISOString().slice(0,10) : null);
         setDueDate(so.dueDate ? new Date(so.dueDate).toISOString().slice(0,10) : null);
         setCreditTermDays(typeof so.creditTermDays === 'number' ? so.creditTermDays : "");
+        setPaymentCondition((so.paymentCondition as any) === 'POSTPAID' ? 'POSTPAID' : 'PREPAID');
         setCurrency(so.currency || "THB");
         setVatIncluded(Boolean(so.vatIncluded));
         setVatRate(Number(so.vatRate || 0));
@@ -126,6 +128,7 @@ export function EditOrderDialog({ open, orderId, onClose, customerOptions, emplo
         orderDate: orderDate ? new Date(orderDate).toISOString() : undefined,
         dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
         creditTermDays: creditTermDays === "" ? undefined : Number(creditTermDays),
+        paymentCondition,
         currency,
         vatIncluded,
         vatRate: Number(vatRate || 0),
@@ -172,6 +175,23 @@ export function EditOrderDialog({ open, orderId, onClose, customerOptions, emplo
             </TextField>
           </Stack>
 
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <TextField
+              select
+              label="เงื่อนไขการชำระเงิน"
+              value={paymentCondition}
+              onChange={(e) => {
+                const val = e.target.value as "PREPAID" | "POSTPAID";
+                setPaymentCondition(val);
+                if (val === "PREPAID") { setCreditTermDays(""); setDueDate(null); }
+              }}
+              fullWidth
+            >
+              <MenuItem value="PREPAID">โอนเงินก่อนแล้วค่อยส่งของ</MenuItem>
+              <MenuItem value="POSTPAID">ส่งของก่อนแล้วค่อยโอนเงิน</MenuItem>
+            </TextField>
+          </Stack>
+
           <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={th}>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <DatePicker label="วันที่สั่งซื้อ" value={orderDate ? new Date(orderDate) : null} onChange={(v) => setOrderDate(v ? v.toISOString().slice(0, 10) : null)} slotProps={{ textField: { fullWidth: true } }} />
@@ -180,7 +200,7 @@ export function EditOrderDialog({ open, orderId, onClose, customerOptions, emplo
           </LocalizationProvider>
 
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-            <TextField label="เครดิต (วัน)" type="number" value={creditTermDays} onChange={(e) => setCreditTermDays(e.target.value === "" ? "" : Number(e.target.value))} fullWidth />
+            <TextField label="เครดิต (วัน)" type="number" value={creditTermDays} onChange={(e) => setCreditTermDays(e.target.value === "" ? "" : Number(e.target.value))} fullWidth disabled={paymentCondition !== "POSTPAID"} />
             <TextField label="สกุลเงิน" value={currency} onChange={(e) => setCurrency(e.target.value)} fullWidth />
           </Stack>
 
@@ -268,4 +288,3 @@ export function EditOrderDialog({ open, orderId, onClose, customerOptions, emplo
     </Dialog>
   );
 }
-

@@ -96,6 +96,12 @@ enum PaymentStatus {
   OVERDUE
 }
 
+// Payment condition for Sale Orders
+enum PaymentCondition {
+  PREPAID   // โอนเงินก่อนแล้วค่อยส่งของ
+  POSTPAID  // ส่งของก่อนแล้วค่อยโอนเงิน
+}
+
 // ====================
 // PRODUCT & STOCK
 // ====================
@@ -357,6 +363,7 @@ model Customer {
   responsibleEmployeeId String?
   customerGroupId       String?
   customerType          CustomerType
+  relationshipScore     Int?
   saleOrders SaleOrder[]
   prefix      String?
   firstName   String?
@@ -545,6 +552,7 @@ model SaleOrder {
   orderDate       DateTime         @default(now())
   dueDate         DateTime?
   creditTermDays  Int?
+  paymentCondition PaymentCondition @default(PREPAID)
 
   currency        String           @default("THB")
   vatIncluded     Boolean          @default(true)
