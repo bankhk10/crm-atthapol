@@ -96,17 +96,21 @@ export function CustomersTable({ customers, query }: CustomersTableProps) {
       ? (a: CustomerListItem, b: CustomerListItem) => descendingComparator(a, b, key)
       : (a: CustomerListItem, b: CustomerListItem) => -descendingComparator(a, b, key);
 
-  const headCells: {
+  interface HeadCell {
     id: SortableKeys;
     label: string;
-    width?: number;
+    width: number;
     align?: "left" | "right" | "center";
-  }[] = [
+    numeric?: boolean;
+    disablePadding?: boolean;
+  }
+  
+  const headCells: readonly HeadCell[] = [
     { id: "name", label: "ชื่อลูกค้า", width: 240, align: "left" },
     { id: "phone", label: "เบอร์โทร", width: 140, align: "left" },
     { id: "email", label: "อีเมล", width: 200, align: "left" },
     { id: "address", label: "ที่อยู่", width: 360, align: "left" },
-    { id: "type", label: "ประเภท", width: 100, align: "left" },
+    { id: "type", label: "ประเภท", width: 100, align: "center" },
   ];
 
   const filtered = useMemo(() => {
@@ -135,16 +139,15 @@ export function CustomersTable({ customers, query }: CustomersTableProps) {
   );
 
   return (
-    // <Paper
-    //   variant="outlined"
-    //   sx={{
-    //     p: { xs: 2, sm: 3 },
-    //     borderRadius: 2,
-    //     overflow: "hidden",
-    //     borderColor: "#ddd",
-    //   }}
-    // >
-    <Stack spacing={2}>
+        <Paper
+      variant="outlined"
+      sx={{
+        borderRadius: 2,
+        overflow: "hidden",
+        borderColor: "#ddd",
+        fontFamily: "Prompt, sans-serif",
+      }}
+    >
       {/* search is moved to parent Toolbar; table only renders data */}
       {isMobile ? (
         <Stack spacing={1.25} sx={{ p: 1.5 }}>
@@ -160,22 +163,30 @@ export function CustomersTable({ customers, query }: CustomersTableProps) {
                     <Chip
                       size="small"
                       label={typeLabel(c.type)}
-                      color={
-                        c.type === "FARMER"
-                          ? "success"
-                          : c.type === "SUBDEALER"
-                            ? "secondary"
-                            : c.type === "BROKER"
-                              ? "info"
-                              : "primary"
-                      }
-                      variant="outlined"
+                      sx={{
+                        fontWeight: 600,
+                        px: 1.2,
+                        borderRadius: "9999px",
+                        color: "#fff",
+                        bgcolor: 
+                          c.type === "FARMER"
+                            ? "#22C55E"
+                            : c.type === "SUBDEALER"
+                              ? "#7C3AED"
+                              : c.type === "BROKER"
+                                ? "#F59E0B"
+                                : "#3B82F6",
+                      }}
                     />
                   </Stack>
                   <Typography variant="body2" color="text.secondary">
                     โทร: {c.phone} {c.email ? `• อีเมล: ${c.email}` : ""}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" color="text.secondary" sx={{ 
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis"
+                  }}>
                     {address || "-"}
                   </Typography>
                   {showActions && (
@@ -223,11 +234,20 @@ export function CustomersTable({ customers, query }: CustomersTableProps) {
         </Stack>
       ) : (
         <TableContainer
-          component={Paper}
-          variant="outlined"
-          sx={{ maxWidth: "100%", overflowX: "auto", borderRadius: 2 }}
+          sx={{
+            borderTopLeftRadius: 12,
+            borderTopRightRadius: 12,
+            "&::-webkit-scrollbar": { width: 8 },
+            "&::-webkit-scrollbar-thumb": {
+              backgroundColor: "#ccc",
+              borderRadius: 6,
+            },
+          }}
         >
-          <Table stickyHeader sx={{ minWidth: 960 }}>
+          <Table
+            aria-labelledby="tableTitle"
+            sx={{ minWidth: 900, tableLayout: "fixed" }}
+          >
             <TableHead
               sx={{
                 bgcolor: "#ccccceff",
@@ -276,32 +296,80 @@ export function CustomersTable({ customers, query }: CustomersTableProps) {
                   .filter(Boolean)
                   .join(" ");
                 return (
-                  <TableRow key={c.id} hover>
-                    <TableCell>
-                      <Link href={`/dashboard/customers/${c.id}`}>{c.name}</Link>
+                  <TableRow 
+                    hover
+                    key={c.id}
+                    sx={{
+                      "&:nth-of-type(even)": { bgcolor: "#fafafa" },
+                      "&:hover": { bgcolor: "#f0f0f0" },
+                    }}
+                  >
+                    <TableCell
+                      sx={{
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      <Tooltip title={c.name} arrow>
+                        <span>{c.name}</span>
+                      </Tooltip>
                     </TableCell>
-                    <TableCell sx={{ whiteSpace: "nowrap" }}>{c.phone}</TableCell>
-                    <TableCell sx={{ whiteSpace: "nowrap" }}>{c.email || "-"}</TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary" noWrap>
-                        {address || "-"}
-                      </Typography>
+                    <TableCell
+                      sx={{
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      <Tooltip title={c.phone} arrow>
+                        <span>{c.phone}</span>
+                      </Tooltip>
                     </TableCell>
-                    <TableCell sx={{ whiteSpace: "nowrap" }}>
-                      <Chip
-                        size="small"
-                        label={typeLabel(c.type)}
-                        color={
-                          c.type === "FARMER"
-                            ? "success"
-                            : c.type === "SUBDEALER"
-                              ? "secondary"
-                              : c.type === "BROKER" // <--- เพิ่มเช็คนี้
-                                ? "warning"
-                                : "primary"
-                        }
-                        // variant="outlined" // ลบออก
-                      />
+                    <TableCell
+                      sx={{
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      <Tooltip title={c.email || "-"} arrow>
+                        <span>{c.email || "-"}</span>
+                      </Tooltip>
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      <Tooltip title={address || "-"} arrow>
+                        <span>{address || "-"}</span>
+                      </Tooltip>
+                    </TableCell>
+                    <TableCell align="center">
+                      <Tooltip title={typeLabel(c.type)} arrow>
+                        <Chip
+                          size="small"
+                          label={typeLabel(c.type)}
+                          sx={{
+                            fontWeight: 600,
+                            px: 1.5,
+                            py: 2,
+                            borderRadius: "9999px",
+                            color: "#fff",
+                            bgcolor: 
+                              c.type === "FARMER"
+                                ? "#22C55E"
+                                : c.type === "SUBDEALER"
+                                  ? "#7C3AED"
+                                  : c.type === "BROKER"
+                                    ? "#F59E0B"
+                                    : "#3B82F6",
+                          }}
+                        />
+                      </Tooltip>
                     </TableCell>
                     {showActions && (
                       <TableCell align="center" sx={{ whiteSpace: "nowrap" }}>
@@ -401,7 +469,6 @@ export function CustomersTable({ customers, query }: CustomersTableProps) {
           </Button>
         </DialogActions>
       </Dialog>
-    </Stack>
-    // </Paper>
+    </Paper>
   );
 }
