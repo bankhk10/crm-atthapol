@@ -128,6 +128,7 @@ model Stock {
   expDate     DateTime?
 
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  reservations SaleOrderStockReservation[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -555,6 +556,7 @@ model SaleOrder {
   customer     Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
   salesperson  Employee? @relation(fields: [salespersonId], references: [id])
   items        SaleOrderItem[]
+  reservations SaleOrderStockReservation[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -590,5 +592,22 @@ model SaleOrderItem {
 
   @@index([saleOrderId])
   @@index([productId])
+}
+
+// Track per-stock reservations linked to a sale order
+model SaleOrderStockReservation {
+  id          String    @id @default(cuid())
+  saleOrderId String
+  stockId     String
+  qty         Float
+  createdAt   DateTime  @default(now())
+  releasedAt  DateTime?
+  deletedAt   DateTime?
+
+  saleOrder SaleOrder @relation(fields: [saleOrderId], references: [id], onDelete: Cascade)
+  stock     Stock     @relation(fields: [stockId], references: [id], onDelete: Cascade)
+
+  @@index([saleOrderId])
+  @@index([stockId])
 }
 

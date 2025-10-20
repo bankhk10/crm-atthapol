@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Box, Button, Chip, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from "@mui/material";
+import { Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from "@mui/material";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import AddIcon from "@mui/icons-material/Add";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import thLocale from "dayjs/locale/th";
-import { CreateOrderDialog, type Option } from "./create-order-dialog";
+import { CreateOrderDialog, type Option, type ProductOption } from "./create-order-dialog";
 
 dayjs.extend(relativeTime);
 dayjs.locale(thLocale);
@@ -43,14 +45,17 @@ function displayEmployeeName(e: NonNullable<OrderItem["salesperson"]>) {
 type Props = {
   customerOptions: Option[];
   employeeOptions: Option[];
+  productOptions: ProductOption[];
 };
 
-export function OrdersClient({ customerOptions, employeeOptions }: Props) {
+export function OrdersClient({ customerOptions, employeeOptions, productOptions }: Props) {
   const [items, setItems] = useState<OrderItem[]>([]);
   const [total, setTotal] = useState(0);
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<null | { type: "cancel" | "delete"; order: OrderItem }>(null);
 
   const chips = useMemo(
     () => [
@@ -88,6 +93,28 @@ export function OrdersClient({ customerOptions, employeeOptions }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter]);
 
+  const doCancel = async (order: OrderItem) => {
+    setBusyId(order.id);
+    try {
+      const res = await fetch(`/api/sales/orders/${order.id}/cancel`, { method: "POST" });
+      if (!res.ok) throw new Error("ยกเลิกไม่สำเร็จ");
+      await load();
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const doDelete = async (order: OrderItem) => {
+    setBusyId(order.id);
+    try {
+      const res = await fetch(`/api/sales/orders/${order.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("ลบไม่สำเร็จ");
+      await load();
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   return (
     <Stack spacing={2}>
       <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "stretch", sm: "center" }} spacing={1}>
@@ -112,6 +139,7 @@ export function OrdersClient({ customerOptions, employeeOptions }: Props) {
               <TableCell align="right">ยอดรวม</TableCell>
               <TableCell>สถานะ</TableCell>
               <TableCell>ชำระเงิน</TableCell>
+              <TableCell align="right">การทำงาน</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -133,6 +161,30 @@ export function OrdersClient({ customerOptions, employeeOptions }: Props) {
                   <TableCell align="right">{o.grandTotal?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                   <TableCell>{o.status}</TableCell>
                   <TableCell>{o.paymentStatus}</TableCell>
+                  <TableCell align="right">
+                    <Stack direction="row" spacing={1} justifyContent="flex-end">
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="warning"
+                        startIcon={<CancelOutlinedIcon fontSize="small" />}
+                        disabled={o.status === "CANCELLED" || busyId === o.id}
+                        onClick={() => setConfirm({ type: "cancel", order: o })}
+                      >
+                        ยกเลิก
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="error"
+                        startIcon={<DeleteOutlineIcon fontSize="small" />}
+                        disabled={busyId === o.id}
+                        onClick={() => setConfirm({ type: "delete", order: o })}
+                      >
+                        ลบ
+                      </Button>
+                    </Stack>
+                  </TableCell>
                 </TableRow>
               ))
             )}
@@ -145,9 +197,36 @@ export function OrdersClient({ customerOptions, employeeOptions }: Props) {
         onClose={() => setOpen(false)}
         customerOptions={customerOptions}
         employeeOptions={employeeOptions}
+        productOptions={productOptions}
         onCreated={() => load()}
       />
+
+      <Dialog open={Boolean(confirm)} onClose={() => setConfirm(null)}>
+        <DialogTitle>{confirm?.type === "delete" ? "ยืนยันการลบ" : "ยืนยันการยกเลิก"}</DialogTitle>
+        <DialogContent>
+          <Typography>
+            {confirm?.type === "delete"
+              ? `คุณต้องการลบใบสั่งขายเลขที่ ${confirm?.order.soNumber} ใช่หรือไม่?`
+              : `คุณต้องการยกเลิกใบสั่งขายเลขที่ ${confirm?.order.soNumber} ใช่หรือไม่?`}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirm(null)} color="inherit">ปิด</Button>
+          <Button
+            onClick={async () => {
+              if (!confirm) return;
+              const { type, order } = confirm;
+              setConfirm(null);
+              if (type === "delete") await doDelete(order);
+              else await doCancel(order);
+            }}
+            variant="contained"
+            color={confirm?.type === "delete" ? "error" : "warning"}
+          >
+            ยืนยัน
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Stack>
   );
 }
-

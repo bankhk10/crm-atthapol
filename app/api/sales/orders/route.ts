@@ -130,58 +130,104 @@ export async function POST(req: NextRequest) {
     const soNumber = await generateSoNumber();
     const totals = computeTotals(data);
 
-    const created = await prisma.saleOrder.create({
-      data: {
-        soNumber,
-        customerId: data.customerId,
-        salespersonId: data.salespersonId,
-        orderDate: data.orderDate ? new Date(data.orderDate) : new Date(),
-        dueDate: data.dueDate ? new Date(data.dueDate) : null,
-        creditTermDays: data.creditTermDays,
-        currency: data.currency ?? "THB",
-        vatIncluded: data.vatIncluded ?? true,
-        vatRate: data.vatRate ?? 7,
-        billTo: data.billTo,
-        shipTo: data.shipTo,
-        status: (data.status as any) ?? "DRAFT",
-        paymentStatus: (data.paymentStatus as any) ?? "UNPAID",
-        shippingFee: data.shippingFee ?? 0,
-        otherCharges: data.otherCharges ?? 0,
-        poNumber: data.poNumber,
-        note: data.note,
-        subTotal: totals.subTotal,
-        discountTotal: totals.discountTotal,
-        taxAmount: totals.taxAmount,
-        grandTotal: totals.grandTotal,
-        items: {
-          create: data.items.map((it) => {
-            const { discountTotal, taxable, vatRate } = computeLine(it, data.vatRate ?? 0);
-            return {
-              productId: it.productId,
-              nameSnapshot: it.nameSnapshot,
-              productCodeSnapshot: it.productCodeSnapshot,
-              unit: it.unit,
-              qty: it.qty,
-              unitPrice: it.unitPrice,
-              discountPercent: it.discountPercent ?? 0,
-              discountAmount: it.discountAmount ?? 0,
-              lineVatRate: it.lineVatRate ?? undefined,
-              amount: taxable, // amount before VAT per line
-              lotNumber: it.lotNumber,
-              mfgDate: it.mfgDate ? new Date(it.mfgDate) : null,
-              expDate: it.expDate ? new Date(it.expDate) : null,
-              note: it.note,
-            };
-          }),
+    const result = await prisma.$transaction(async (tx) => {
+      const order = await tx.saleOrder.create({
+        data: {
+          soNumber,
+          customerId: data.customerId,
+          salespersonId: data.salespersonId,
+          orderDate: data.orderDate ? new Date(data.orderDate) : new Date(),
+          dueDate: data.dueDate ? new Date(data.dueDate) : null,
+          creditTermDays: data.creditTermDays,
+          currency: data.currency ?? "THB",
+          vatIncluded: data.vatIncluded ?? true,
+          vatRate: data.vatRate ?? 7,
+          billTo: data.billTo,
+          shipTo: data.shipTo,
+          status: (data.status as any) ?? "DRAFT",
+          paymentStatus: (data.paymentStatus as any) ?? "UNPAID",
+          shippingFee: data.shippingFee ?? 0,
+          otherCharges: data.otherCharges ?? 0,
+          poNumber: data.poNumber,
+          note: data.note,
+          subTotal: totals.subTotal,
+          discountTotal: totals.discountTotal,
+          taxAmount: totals.taxAmount,
+          grandTotal: totals.grandTotal,
+          items: {
+            create: data.items.map((it) => {
+              const { taxable } = computeLine(it, data.vatRate ?? 0);
+              return {
+                productId: it.productId,
+                nameSnapshot: it.nameSnapshot,
+                productCodeSnapshot: it.productCodeSnapshot,
+                unit: it.unit,
+                qty: it.qty,
+                unitPrice: it.unitPrice,
+                discountPercent: it.discountPercent ?? 0,
+                discountAmount: it.discountAmount ?? 0,
+                lineVatRate: it.lineVatRate ?? undefined,
+                amount: taxable, // amount before VAT per line
+                lotNumber: it.lotNumber,
+                mfgDate: it.mfgDate ? new Date(it.mfgDate) : null,
+                expDate: it.expDate ? new Date(it.expDate) : null,
+                note: it.note,
+              };
+            }),
+          },
         },
-      },
-      include: { items: true },
+        include: { items: true },
+      });
+
+      // Reserve stock per item (allocate across lots by earliest exp/mfg/created)
+      for (const item of order.items as any[]) {
+        if (!item.productId || !item.qty) continue;
+        // qty in items is Float, but stocks use Int; reserve integer quantity
+        let remaining = Math.max(0, Math.floor(Number(item.qty)));
+        if (!Number.isFinite(remaining) || remaining <= 0) continue;
+
+        const stocks = await tx.stock.findMany({
+          where: { productId: item.productId, deletedAt: null },
+          orderBy: [
+            { expDate: "asc" },
+            { mfgDate: "asc" },
+            { createdAt: "asc" },
+          ],
+        });
+
+        for (const s of stocks as any[]) {
+          if (remaining <= 0) break;
+          const onHand = Number(s.qtyOnHand || 0);
+          const reserved = Number(s.qtyReserved || 0);
+          const available = Math.max(0, onHand - reserved);
+          if (available <= 0) continue;
+          const alloc = Math.min(available, remaining);
+          if (alloc <= 0) continue;
+
+          await tx.stock.update({
+            where: { id: s.id },
+            data: { qtyReserved: { increment: alloc } },
+          });
+
+          // record reservation row
+          await (tx as any).saleOrderStockReservation.create({
+            data: {
+              saleOrderId: order.id,
+              stockId: s.id,
+              qty: alloc,
+            },
+          });
+
+          remaining -= alloc;
+        }
+      }
+
+      return order;
     });
 
-    return NextResponse.json(created, { status: 201 });
+    return NextResponse.json(result, { status: 201 });
   } catch (err) {
     console.error("[POST /api/sales/orders] error", err);
     return NextResponse.json({ error: "บันทึกใบสั่งขายไม่สำเร็จ" }, { status: 500 });
   }
 }
-

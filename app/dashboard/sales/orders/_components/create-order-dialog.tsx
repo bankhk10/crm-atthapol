@@ -17,6 +17,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import Autocomplete from "@mui/material/Autocomplete";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -25,16 +26,27 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { th } from "date-fns/locale";
 
 export type Option = { id: string; label: string };
+export type ProductOption = {
+  id: string;
+  productCode: string;
+  nameTH: string;
+  unit?: string | null;
+  price?: number | null;
+  stockOnHand: number;
+};
 
 type Props = {
   open: boolean;
   onClose: () => void;
   customerOptions: Option[];
   employeeOptions: Option[];
+  productOptions: ProductOption[];
   onCreated?: (order: any) => void;
 };
 
 type Item = {
+  productId?: string;
+  productCodeSnapshot?: string;
   nameSnapshot: string;
   unit?: string;
   qty: number;
@@ -87,7 +99,7 @@ function computeTotals(items: Item[], vatRate: number, shippingFee: number, othe
   return { subTotal, discountTotal, taxAmount, grandTotal };
 }
 
-export function CreateOrderDialog({ open, onClose, customerOptions, employeeOptions, onCreated }: Props) {
+export function CreateOrderDialog({ open, onClose, customerOptions, employeeOptions, productOptions, onCreated }: Props) {
   const [customerId, setCustomerId] = useState("");
   const [salespersonId, setSalespersonId] = useState("");
   const [orderDate, setOrderDate] = useState<string | null>(new Date().toISOString().slice(0, 10));
@@ -134,7 +146,13 @@ export function CreateOrderDialog({ open, onClose, customerOptions, employeeOpti
     setError(null);
   };
 
-  const canSubmit = customerId && items.length > 0 && items.every((i) => i.nameSnapshot && i.qty > 0);
+  const canSubmit = customerId && items.length > 0 && items.every((i) => {
+    if (!i.productId || i.qty <= 0) return false;
+    const p = productOptions.find((x) => x.id === i.productId);
+    if (!p) return false;
+    // allow oversell? If not, enforce qty <= stockOnHand
+    return i.qty <= (p.stockOnHand ?? 0) || true; // keep always true for now; UI highlights if exceeded
+  });
 
   const handleSubmit = async () => {
     if (!canSubmit || isSubmitting) return;
@@ -159,6 +177,8 @@ export function CreateOrderDialog({ open, onClose, customerOptions, employeeOpti
         poNumber: poNumber || undefined,
         note: note || undefined,
         items: items.map((it) => ({
+          productId: it.productId,
+          productCodeSnapshot: it.productCodeSnapshot,
           nameSnapshot: it.nameSnapshot,
           unit: it.unit || undefined,
           qty: Number(it.qty || 0),
@@ -301,14 +321,31 @@ export function CreateOrderDialog({ open, onClose, customerOptions, employeeOpti
               {items.map((it, idx) => (
                 <Paper key={idx} variant="outlined" sx={{ p: 1.5 }}>
                   <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} alignItems="center">
-                    <TextField
-                      label="ชื่อสินค้า/รายละเอียด"
-                      value={it.nameSnapshot}
-                      onChange={(e) => {
-                        const v = e.target.value; const next = [...items]; next[idx] = { ...next[idx], nameSnapshot: v }; setItems(next);
+                    <Autocomplete
+                      options={productOptions}
+                      getOptionLabel={(o) => `${o.productCode} - ${o.nameTH}`}
+                      filterOptions={(opts, state) => opts.filter(o => `${o.productCode} ${o.nameTH}`.toLowerCase().includes((state.inputValue||"").toLowerCase()))}
+                      value={productOptions.find(p => p.id === it.productId) || null}
+                      onChange={(_, val) => {
+                        const next = [...items];
+                        if (val) {
+                          next[idx] = {
+                            ...next[idx],
+                            productId: val.id,
+                            productCodeSnapshot: val.productCode,
+                            nameSnapshot: val.nameTH,
+                            unit: val.unit || undefined,
+                            unitPrice: typeof val.price === 'number' ? val.price : 0,
+                          };
+                        } else {
+                          next[idx] = { ...next[idx], productId: undefined };
+                        }
+                        setItems(next);
                       }}
-                      fullWidth
-                      required
+                      renderInput={(params) => (
+                        <TextField {...params} label="สินค้า" required fullWidth />
+                      )}
+                      sx={{ minWidth: 300, flex: 1 }}
                     />
                     <TextField
                       label="หน่วย"
@@ -323,6 +360,8 @@ export function CreateOrderDialog({ open, onClose, customerOptions, employeeOpti
                       onChange={(e) => { const v = Number(e.target.value || 0); const next = [...items]; next[idx] = { ...next[idx], qty: v }; setItems(next); }}
                       sx={{ width: { xs: "100%", sm: 120 } }}
                       required
+                      error={Boolean(it.productId) && (it.qty > ((productOptions.find(p => p.id === it.productId)?.stockOnHand) ?? 0))}
+                      helperText={Boolean(it.productId) && (it.qty > ((productOptions.find(p => p.id === it.productId)?.stockOnHand) ?? 0)) ? 'จำนวนมากกว่าคงเหลือ' : undefined}
                     />
                     <TextField
                       label="ราคาต่อหน่วย"
@@ -346,6 +385,11 @@ export function CreateOrderDialog({ open, onClose, customerOptions, employeeOpti
                       onChange={(e) => { const v = Number(e.target.value || 0); const next = [...items]; next[idx] = { ...next[idx], discountAmount: v }; setItems(next); }}
                       sx={{ width: { xs: "100%", sm: 140 } }}
                     />
+                    {it.productId && (
+                      <Box sx={{ minWidth: 120, color: 'text.secondary', fontSize: 12 }}>
+                        คงเหลือ: {productOptions.find(p => p.id === it.productId)?.stockOnHand ?? 0}
+                      </Box>
+                    )}
                     <IconButton color="error" aria-label="remove" onClick={() => setItems((prev) => prev.filter((_, i) => i !== idx))}>
                       <DeleteOutlineIcon />
                     </IconButton>
@@ -386,4 +430,3 @@ export function CreateOrderDialog({ open, onClose, customerOptions, employeeOpti
     </Dialog>
   );
 }
-
