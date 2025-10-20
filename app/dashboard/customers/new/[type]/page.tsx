@@ -7,7 +7,8 @@ type PageProps = { params: Promise<{ type: string }> };
 
 const toCustomerType = (param: string) => {
   const key = String(param || "").toUpperCase();
-  if (key === "DEALER" || key === "SUBDEALER" || key === "FARMER") return key as "DEALER" | "SUBDEALER" | "FARMER";
+  if (key === "DEALER" || key === "SUBDEALER" || key === "FARMER" || key === "BROKER")
+    return key as "DEALER" | "SUBDEALER" | "FARMER" | "BROKER";
   return "DEALER" as const;
 };
 

@@ -12,9 +12,10 @@ import {
 import { ActionButtons } from "../../_components/action-buttons";
 import { getCustomer } from "../../customers/data";
 
-function typeLabel(type: "DEALER" | "SUBDEALER" | "FARMER") {
+function typeLabel(type: "DEALER" | "SUBDEALER" | "FARMER" | "BROKER") {
   if (type === "DEALER") return "Dealer";
   if (type === "SUBDEALER") return "SubDealer";
+  if (type === "BROKER") return "Broker";
   return "Farmer";
 }
 
@@ -73,6 +74,8 @@ export default async function CustomerDetailPage({
                       ? "success"
                       : customer.type === "SUBDEALER"
                       ? "secondary"
+                      : customer.type === "BROKER"
+                      ? "info"
                       : "primary"
                   }
                   variant="outlined"
@@ -141,6 +144,23 @@ export default async function CustomerDetailPage({
                     <Info label="ชื่อฟาร์ม" value={(customer as any).farmName ?? "-"} />
                     <Info label="ขนาดพื้นที่ (ไร่)" value={(customer as any).farmSize ?? "-"} />
                     <Info label="พืชหลัก" value={(customer as any).cropType ?? "-"} />
+                  </Section>
+                )}
+
+                {customer.type === "BROKER" && (
+                  <Section title="ข้อมูล Broker">
+                    <Info label="พืชหลัก (Crop Types)" value={(customer as any).cropType ?? "-"} />
+                    <Info label="ปริมาณผลผลิตปัจจุบัน" value={(customer as any).currentCropVolume ?? "-"} />
+                    <Info label="จำนวนเกษตรกรในเครือ" value={(customer as any).farmerNetworkCount ?? "-"} />
+                    <Info label="จำนวนแปลง" value={(customer as any).plotCount ?? "-"} />
+                    <Info label="ขนาดพื้นที่รวม (ไร่)" value={(customer as any).farmSize ?? "-"} />
+                    <Info label="รอบปลูกต่อปี" value={(customer as any).plantingCyclesPerYear ?? "-"} />
+                    <Info label="เครดิตให้เกษตรกร (วัน)" value={(customer as any).creditTermForFarmers ?? "-"} />
+                    <Info label="มูลค่าสารเคมี/รอบ (บาท)" value={(customer as any).agriChemValuePerCycle ?? "-"} />
+                    <Info label="ปริมาณสารเคมี/รอบ" value={(customer as any).agriChemQtyPerCycle ?? "-"} />
+                    <Info label="ร้านค้าประจำ" value={(customer as any).regularStore ?? "-"} />
+                    <Info label="ประเภทบริการที่ให้" value={(customer as any).serviceTypes ?? "-"} />
+                    <Info label="ยี่ห้อที่ใช้" value={(customer as any).brandsUsed ?? "-"} />
                   </Section>
                 )}
               </Stack>

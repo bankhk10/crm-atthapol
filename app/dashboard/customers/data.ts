@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 
 export type CustomerListItem = {
   id: string;
-  type: "DEALER" | "SUBDEALER" | "FARMER";
+  type: "DEALER" | "SUBDEALER" | "FARMER" | "BROKER";
   name: string;
   phone: string;
   email?: string | null;
@@ -47,7 +47,6 @@ export async function getCustomers(): Promise<CustomerListItem[]> {
   });
 
   const mapped: CustomerListItem[] = (customers as any[])
-    .filter((c: any) => c.customerType !== "BROKER")
     .map((c: any) => ({
       id: c.id,
       type:
@@ -55,6 +54,8 @@ export async function getCustomers(): Promise<CustomerListItem[]> {
           ? ("DEALER" as const)
           : c.customerType === "SUB_DEALER"
           ? ("SUBDEALER" as const)
+          : c.customerType === "BROKER"
+          ? ("BROKER" as const)
           : ("FARMER" as const),
       name: displayName({
         companyName: c.companyName ?? null,
@@ -95,6 +96,8 @@ export async function getCustomer(customerId: string) {
       ? ("DEALER" as const)
       : c.customerType === "SUB_DEALER"
       ? ("SUBDEALER" as const)
+      : c.customerType === "BROKER"
+      ? ("BROKER" as const)
       : ("FARMER" as const);
 
   const base = {
@@ -166,6 +169,28 @@ export async function getCustomer(customerId: string) {
       areaType: null,
       relationshipScore: null,
       businessNotes: null,
+    } as any;
+  }
+
+  if (type === "BROKER") {
+    return {
+      ...base,
+      // Broker fields
+      farmName: null,
+      farmSize: (c as any).brokerDetail?.areaSize ?? null,
+      cropType: (c as any).brokerDetail?.cropTypes ?? null,
+      currentCropVolume: (c as any).brokerDetail?.currentCropVolume ?? null,
+      farmerNetworkCount: (c as any).brokerDetail?.farmerNetworkCount ?? null,
+      plotCount: (c as any).brokerDetail?.plotCount ?? null,
+      plantingCyclesPerYear: (c as any).brokerDetail?.plantingCyclesPerYear ?? null,
+      creditTermForFarmers: (c as any).brokerDetail?.creditTermForFarmers ?? null,
+      agriChemValuePerCycle: (c as any).brokerDetail?.agriChemValuePerCycle ?? null,
+      agriChemQtyPerCycle: (c as any).brokerDetail?.agriChemQtyPerCycle ?? null,
+      regularStore: (c as any).brokerDetail?.regularStore ?? null,
+      serviceTypes: (c as any).brokerDetail?.serviceTypes ?? null,
+      brandsUsed: (c as any).brokerDetail?.brandsUsed ?? null,
+      // No farm plots for broker
+      farmPlots: [],
     } as any;
   }
 

@@ -58,9 +58,9 @@ export function CustomerForm({
     setValues(initialValues);
   }, [initialValues]);
 
-  // Sync company phone/email with personal for Farmer (hidden company section)
+  // Sync company phone/email with personal for Farmer/Broker (hidden company section)
   useEffect(() => {
-    if (values.type === "FARMER") {
+    if (values.type === "FARMER" || values.type === "BROKER") {
       setValues((prev) => ({
         ...prev,
         phone: prev.contactPhone ?? prev.phone,
@@ -155,7 +155,7 @@ export function CustomerForm({
 
         <Divider />
 
-        {values.type === "FARMER" && (
+        {(values.type === "FARMER" || values.type === "BROKER") && (
           <>
             <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
               <Typography variant="h6" fontWeight={960}>
@@ -225,7 +225,7 @@ export function CustomerForm({
           </>
         )}
 
-        {values.type !== "FARMER" && (
+        {(values.type === "DEALER" || values.type === "SUBDEALER") && (
           <>
             <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
               <Typography variant="h6" fontWeight={960}>
@@ -289,7 +289,7 @@ export function CustomerForm({
           </Button>
         </Stack> */}
 
-        {values.type !== "FARMER" && (
+        {values.type !== "FARMER" && values.type !== "BROKER" && (
           <>
             <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
               <Typography variant="h6" fontWeight={960}>
@@ -525,6 +525,109 @@ export function CustomerForm({
                   farmPlots: [...(prev.farmPlots ?? []), { latitude: "", longitude: "", planting_area: "", crop_type: "", crop_variety: "", soil_type: "", water_source: "", machinery_used: [] }],
                 }));
               }}>เพิ่มข้อมูลแปลงเกษตร</Button>
+            </Stack>
+          </>
+        )}
+
+        {values.type === "BROKER" && (
+          <>
+            <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
+              <Typography variant="h6" fontWeight={960}>
+                ข้อมูล Broker
+              </Typography>
+            </Box>
+            <Stack spacing={2}>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                <TextField
+                  label="พืชหลัก (Crop Types)"
+                  value={values.cropType ?? ""}
+                  onChange={handleChange("cropType") as any}
+                  fullWidth
+                />
+                <TextField
+                  label="ปริมาณผลผลิตปัจจุบัน"
+                  value={values.currentCropVolume ?? ""}
+                  onChange={handleChange("currentCropVolume") as any}
+                  fullWidth
+                />
+              </Stack>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                <TextField
+                  label="จำนวนเกษตรกรในเครือ"
+                  type="number"
+                  value={values.farmerNetworkCount ?? ""}
+                  onChange={handleChange("farmerNetworkCount") as any}
+                  fullWidth
+                />
+                <TextField
+                  label="จำนวนแปลง"
+                  type="number"
+                  value={values.plotCount ?? ""}
+                  onChange={handleChange("plotCount") as any}
+                  fullWidth
+                />
+              </Stack>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                <TextField
+                  label="ขนาดพื้นที่รวม (ไร่)"
+                  type="number"
+                  value={values.farmSize ?? ""}
+                  onChange={handleChange("farmSize") as any}
+                  fullWidth
+                />
+                <TextField
+                  label="รอบปลูกต่อปี"
+                  type="number"
+                  value={values.plantingCyclesPerYear ?? ""}
+                  onChange={handleChange("plantingCyclesPerYear") as any}
+                  fullWidth
+                />
+              </Stack>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                <TextField
+                  label="เครดิตให้เกษตรกร (วัน)"
+                  type="number"
+                  value={values.creditTermForFarmers ?? ""}
+                  onChange={handleChange("creditTermForFarmers") as any}
+                  fullWidth
+                />
+                <TextField
+                  label="มูลค่าสารเคมี/รอบ (บาท)"
+                  type="number"
+                  value={values.agriChemValuePerCycle ?? ""}
+                  onChange={handleChange("agriChemValuePerCycle") as any}
+                  fullWidth
+                />
+              </Stack>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                <TextField
+                  label="ปริมาณสารเคมี/รอบ"
+                  type="number"
+                  value={values.agriChemQtyPerCycle ?? ""}
+                  onChange={handleChange("agriChemQtyPerCycle") as any}
+                  fullWidth
+                />
+                <TextField
+                  label="ร้านค้าประจำ"
+                  value={values.regularStore ?? ""}
+                  onChange={handleChange("regularStore") as any}
+                  fullWidth
+                />
+              </Stack>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                <TextField
+                  label="ประเภทบริการที่ให้"
+                  value={values.serviceTypes ?? ""}
+                  onChange={handleChange("serviceTypes") as any}
+                  fullWidth
+                />
+                <TextField
+                  label="ยี่ห้อที่ใช้"
+                  value={values.brandsUsed ?? ""}
+                  onChange={handleChange("brandsUsed") as any}
+                  fullWidth
+                />
+              </Stack>
             </Stack>
           </>
         )}

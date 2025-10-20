@@ -31,7 +31,7 @@ const farmPlotSchema = z.object({
 });
 
 const customerFormSchema = z.object({
-  type: z.enum(["DEALER", "SUBDEALER", "FARMER"]),
+  type: z.enum(["DEALER", "SUBDEALER", "FARMER", "BROKER"]),
   prefix: z.string().min(1, "กรุณาเลือกคำนำหน้า"),
   firstName: z.string().min(1, "กรุณากรอกชื่อ"),
   lastName: z.string().min(1, "กรุณากรอกนามสกุล"),
@@ -105,6 +105,36 @@ const customerFormSchema = z.object({
 
   responsibleEmployeeId: z.string().optional().or(z.null()),
   farmPlots: z.array(farmPlotSchema).optional(),
+
+  // Broker-only
+  currentCropVolume: z.string().optional(),
+  farmerNetworkCount: z.preprocess(
+    (v) => (v === "" || v === null || v === undefined ? undefined : typeof v === "string" ? parseInt(v, 10) : v),
+    z.number().int().optional(),
+  ),
+  plotCount: z.preprocess(
+    (v) => (v === "" || v === null || v === undefined ? undefined : typeof v === "string" ? parseInt(v, 10) : v),
+    z.number().int().optional(),
+  ),
+  plantingCyclesPerYear: z.preprocess(
+    (v) => (v === "" || v === null || v === undefined ? undefined : typeof v === "string" ? parseInt(v, 10) : v),
+    z.number().int().optional(),
+  ),
+  creditTermForFarmers: z.preprocess(
+    (v) => (v === "" || v === null || v === undefined ? undefined : typeof v === "string" ? parseInt(v, 10) : v),
+    z.number().int().optional(),
+  ),
+  agriChemValuePerCycle: z.preprocess(
+    (v) => (v === "" || v === null || v === undefined ? undefined : typeof v === "string" ? parseFloat(v) : v),
+    z.number().optional(),
+  ),
+  agriChemQtyPerCycle: z.preprocess(
+    (v) => (v === "" || v === null || v === undefined ? undefined : typeof v === "string" ? parseFloat(v) : v),
+    z.number().optional(),
+  ),
+  regularStore: z.string().optional(),
+  serviceTypes: z.string().optional(),
+  brandsUsed: z.string().optional(),
 });
 
 function computeAgeFromBirthDate(birthDate?: string | null) {
@@ -140,13 +170,26 @@ export async function createCustomer(rawValues: CustomerFormValues) {
       const displayName =
         (values.companyName && String(values.companyName).trim()) ||
         [values.prefix, values.firstName, values.lastName].filter(Boolean).join(" ");
-      const normalizedPhone = values.type === "FARMER" ? (values.phone || values.contactPhone || "") : values.phone;
-      const normalizedEmail = values.type === "FARMER" ? (values.email || values.contactEmail) : values.email;
+      const normalizedPhone =
+        values.type === "FARMER" || values.type === "BROKER"
+          ? (values.phone || values.contactPhone || "")
+          : values.phone;
+      const normalizedEmail =
+        values.type === "FARMER" || values.type === "BROKER"
+          ? (values.email || values.contactEmail)
+          : values.email;
 
       const created = await (tx as any).customer.create({
         data: {
           responsibleEmployeeId: values.responsibleEmployeeId ?? undefined,
-          customerType: values.type === "DEALER" ? ("DEALER" as any) : values.type === "SUBDEALER" ? ("SUB_DEALER" as any) : ("FARMER" as any),
+          customerType:
+            values.type === "DEALER"
+              ? ("DEALER" as any)
+              : values.type === "SUBDEALER"
+              ? ("SUB_DEALER" as any)
+              : values.type === "FARMER"
+              ? ("FARMER" as any)
+              : ("BROKER" as any),
           prefix: values.prefix,
           firstName: values.firstName,
           lastName: values.lastName,
@@ -215,6 +258,28 @@ export async function createCustomer(rawValues: CustomerFormValues) {
             skipDuplicates: true,
           });
         }
+      } else if (values.type === "BROKER") {
+        // Create broker detail with full set of fields
+        await (tx as any).brokerDetail.create({
+          data: {
+            customerId: created.id,
+            cropTypes: values.cropType ? String(values.cropType) : undefined,
+            currentCropVolume: values.currentCropVolume ?? undefined,
+            farmerNetworkCount: values.farmerNetworkCount ?? undefined,
+            plotCount: values.plotCount ?? undefined,
+            areaSize:
+              values.farmSize !== undefined && values.farmSize !== null && String(values.farmSize) !== ""
+                ? Number(values.farmSize)
+                : undefined,
+            plantingCyclesPerYear: values.plantingCyclesPerYear ?? undefined,
+            creditTermForFarmers: values.creditTermForFarmers ?? undefined,
+            agriChemValuePerCycle: values.agriChemValuePerCycle ?? undefined,
+            agriChemQtyPerCycle: values.agriChemQtyPerCycle ?? undefined,
+            regularStore: values.regularStore ?? undefined,
+            serviceTypes: values.serviceTypes ?? undefined,
+            brandsUsed: values.brandsUsed ?? undefined,
+          },
+        });
       }
 
       return created.id;
@@ -230,13 +295,26 @@ export async function updateCustomer(customerId: string, rawValues: CustomerForm
 
   await runWithRequestContext({ userId: session?.user?.id }, async () => {
     await prisma.$transaction(async (tx) => {
-      const normalizedPhone = values.type === "FARMER" ? (values.phone || values.contactPhone || "") : values.phone;
-      const normalizedEmail = values.type === "FARMER" ? (values.email || values.contactEmail) : values.email;
+      const normalizedPhone =
+        values.type === "FARMER" || values.type === "BROKER"
+          ? (values.phone || values.contactPhone || "")
+          : values.phone;
+      const normalizedEmail =
+        values.type === "FARMER" || values.type === "BROKER"
+          ? (values.email || values.contactEmail)
+          : values.email;
 
       await (tx as any).customer.update({
         where: { id: customerId },
         data: {
-          customerType: values.type === "DEALER" ? ("DEALER" as any) : values.type === "SUBDEALER" ? ("SUB_DEALER" as any) : ("FARMER" as any),
+          customerType:
+            values.type === "DEALER"
+              ? ("DEALER" as any)
+              : values.type === "SUBDEALER"
+              ? ("SUB_DEALER" as any)
+              : values.type === "FARMER"
+              ? ("FARMER" as any)
+              : ("BROKER" as any),
           prefix: values.prefix,
           firstName: values.firstName,
           lastName: values.lastName,
@@ -339,6 +417,45 @@ export async function updateCustomer(customerId: string, rawValues: CustomerForm
             await (tx as any).farmPlot.create({ data });
           }
         }
+      } else if (values.type === "BROKER") {
+        await (tx as any).brokerDetail.upsert({
+          where: { customerId },
+          update: {
+            cropTypes: values.cropType ? String(values.cropType) : undefined,
+            currentCropVolume: values.currentCropVolume ?? undefined,
+            farmerNetworkCount: values.farmerNetworkCount ?? undefined,
+            plotCount: values.plotCount ?? undefined,
+            areaSize:
+              values.farmSize !== undefined && values.farmSize !== null && String(values.farmSize) !== ""
+                ? Number(values.farmSize)
+                : undefined,
+            plantingCyclesPerYear: values.plantingCyclesPerYear ?? undefined,
+            creditTermForFarmers: values.creditTermForFarmers ?? undefined,
+            agriChemValuePerCycle: values.agriChemValuePerCycle ?? undefined,
+            agriChemQtyPerCycle: values.agriChemQtyPerCycle ?? undefined,
+            regularStore: values.regularStore ?? undefined,
+            serviceTypes: values.serviceTypes ?? undefined,
+            brandsUsed: values.brandsUsed ?? undefined,
+          },
+          create: {
+            customerId,
+            cropTypes: values.cropType ? String(values.cropType) : undefined,
+            currentCropVolume: values.currentCropVolume ?? undefined,
+            farmerNetworkCount: values.farmerNetworkCount ?? undefined,
+            plotCount: values.plotCount ?? undefined,
+            areaSize:
+              values.farmSize !== undefined && values.farmSize !== null && String(values.farmSize) !== ""
+                ? Number(values.farmSize)
+                : undefined,
+            plantingCyclesPerYear: values.plantingCyclesPerYear ?? undefined,
+            creditTermForFarmers: values.creditTermForFarmers ?? undefined,
+            agriChemValuePerCycle: values.agriChemValuePerCycle ?? undefined,
+            agriChemQtyPerCycle: values.agriChemQtyPerCycle ?? undefined,
+            regularStore: values.regularStore ?? undefined,
+            serviceTypes: values.serviceTypes ?? undefined,
+            brandsUsed: values.brandsUsed ?? undefined,
+          },
+        });
       }
     });
   });

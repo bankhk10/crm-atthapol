@@ -1,4 +1,4 @@
-export type CustomerType = "DEALER" | "SUBDEALER" | "FARMER";
+export type CustomerType = "DEALER" | "SUBDEALER" | "FARMER" | "BROKER";
 
 export type CustomerFormValues = {
   type: CustomerType;
@@ -54,5 +54,16 @@ export type CustomerFormValues = {
     soil_type?: string;
     water_source?: string;
     machinery_used?: string[]; // ตัวเลือก: รถไถ, โดรน
-  }>;
+  }>; 
+  // สำหรับ Broker
+  currentCropVolume?: string;
+  farmerNetworkCount?: number | string;
+  plotCount?: number | string;
+  plantingCyclesPerYear?: number | string;
+  creditTermForFarmers?: number | string;
+  agriChemValuePerCycle?: number | string;
+  agriChemQtyPerCycle?: number | string;
+  regularStore?: string;
+  serviceTypes?: string;
+  brandsUsed?: string;
 };

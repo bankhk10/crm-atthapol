@@ -52,6 +52,17 @@ const defaultInitialValues: CustomerFormValues = {
   farmSize: "",
   cropType: "",
   farmPlots: [],
+  // Broker defaults
+  currentCropVolume: "",
+  farmerNetworkCount: "",
+  plotCount: "",
+  plantingCyclesPerYear: "",
+  creditTermForFarmers: "",
+  agriChemValuePerCycle: "",
+  agriChemQtyPerCycle: "",
+  regularStore: "",
+  serviceTypes: "",
+  brandsUsed: "",
 };
 
 export function CustomerCreateClient({ employeeOptions, dealerOptions, defaultType = "DEALER" }: CustomerCreateClientProps) {

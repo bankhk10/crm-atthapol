@@ -63,6 +63,17 @@ export default async function CustomerEditPage({ params }: { params: Promise<{ c
     farmSize: (customer as any).farmSize ?? "",
     cropType: (customer as any).cropType ?? "",
     farmPlots: (customer as any).farmPlots ?? [],
+    // Broker fields
+    currentCropVolume: (customer as any).currentCropVolume ?? "",
+    farmerNetworkCount: (customer as any).farmerNetworkCount ?? "",
+    plotCount: (customer as any).plotCount ?? "",
+    plantingCyclesPerYear: (customer as any).plantingCyclesPerYear ?? "",
+    creditTermForFarmers: (customer as any).creditTermForFarmers ?? "",
+    agriChemValuePerCycle: (customer as any).agriChemValuePerCycle ?? "",
+    agriChemQtyPerCycle: (customer as any).agriChemQtyPerCycle ?? "",
+    regularStore: (customer as any).regularStore ?? "",
+    serviceTypes: (customer as any).serviceTypes ?? "",
+    brandsUsed: (customer as any).brandsUsed ?? "",
   };
 
   return (

@@ -52,6 +52,8 @@ function typeLabel(type: CustomerListItem["type"]) {
       return "SubDealer";
     case "FARMER":
       return "Farmer";
+    case "BROKER":
+      return "Broker";
   }
 }
 
@@ -196,6 +198,8 @@ export function CustomersTable({ customers, query }: CustomersTableProps) {
                             ? "success"
                             : c.type === "SUBDEALER"
                             ? "secondary"
+                            : c.type === "BROKER"
+                            ? "info"
                             : "primary"
                         }
                         variant="outlined"
