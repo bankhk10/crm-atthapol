@@ -36,9 +36,18 @@ const CreateOrderSchema = z.object({
   paymentStatus: z.enum(["UNPAID","PARTIAL","PAID","OVERDUE"]).optional(),
   shippingFee: z.number().min(0).optional().default(0),
   otherCharges: z.number().min(0).optional().default(0),
+  usePromotion: z.boolean().optional().default(false),
+  promotionAmount: z.number().min(0).optional(),
   poNumber: z.string().optional(),
   note: z.string().optional(),
   items: z.array(OrderItemSchema).min(1),
+}).superRefine((val, ctx) => {
+  if (val.usePromotion) {
+    const amt = val.promotionAmount ?? 0;
+    if (!(typeof amt === 'number') || !(amt > 0)) {
+      ctx.addIssue({ code: 'custom', path: ['promotionAmount'], message: 'กรอกจำนวนเงินส่งเสริมการขายให้ถูกต้อง' });
+    }
+  }
 });
 
 type CreateOrderInput = z.infer<typeof CreateOrderSchema>;
@@ -163,6 +172,25 @@ export async function POST(req: NextRequest) {
       try {
         created = await prisma.$transaction(async (tx) => {
           const soNumber = await generateSoNumberTx(tx);
+          // Handle promotion budget usage
+          let promoUsed = 0;
+          if (data.usePromotion && (data.promotionAmount ?? 0) > 0) {
+            const amt = Number(data.promotionAmount || 0);
+            const cust = await (tx as any).customer.findUnique({ where: { id: data.customerId }, include: { dealerDetail: true } });
+            const dd = (cust as any)?.dealerDetail;
+            if (!dd?.id) {
+              throw new Error('PROMO_NOT_SUPPORTED');
+            }
+            // atomic conditional decrement
+            const result = await (tx as any).dealerDetail.updateMany({
+              where: { id: dd.id, promotionBudget: { gte: amt } },
+              data: { promotionBudget: { decrement: amt } },
+            });
+            if (!result || (result.count ?? 0) !== 1) {
+              throw new Error('PROMO_BUDGET_NOT_ENOUGH');
+            }
+            promoUsed = amt;
+          }
           const order = await (tx as any).saleOrder.create({
             data: {
               soNumber,
@@ -181,6 +209,7 @@ export async function POST(req: NextRequest) {
               paymentCondition: (data.paymentCondition as any) ?? "PREPAID",
               shippingFee: data.shippingFee ?? 0,
               otherCharges: data.otherCharges ?? 0,
+              promotionSpent: promoUsed || 0,
               poNumber: data.poNumber,
               note: data.note,
               subTotal: totals.subTotal,

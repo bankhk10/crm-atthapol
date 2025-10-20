@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Box,
@@ -16,6 +16,8 @@ import {
   Stack,
   TextField,
   Typography,
+  Checkbox,
+  FormControlLabel,
 } from "@mui/material";
 import Autocomplete from "@mui/material/Autocomplete";
 import AddIcon from "@mui/icons-material/Add";
@@ -120,6 +122,10 @@ export function CreateOrderDialog({ open, onClose, customerOptions, employeeOpti
   const [items, setItems] = useState<Item[]>([{ ...DEFAULT_ITEM }]);
   const [isSubmitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [usePromotion, setUsePromotion] = useState(false);
+  const [promotionAmount, setPromotionAmount] = useState<number | "">("");
+  const [promotionAvailable, setPromotionAvailable] = useState<number | null>(null);
+  const [promotionLoading, setPromotionLoading] = useState(false);
 
   const totals = useMemo(
     () => computeTotals(items, Number(vatRate || 0), Number(shippingFee || 0), Number(otherCharges || 0)),
@@ -146,7 +152,27 @@ export function CreateOrderDialog({ open, onClose, customerOptions, employeeOpti
     setNote("");
     setItems([{ ...DEFAULT_ITEM }]);
     setError(null);
+    setUsePromotion(false);
+    setPromotionAmount("");
+    setPromotionAvailable(null);
+    setPromotionLoading(false);
   };
+
+  // Load promotion budget when customer changes
+  useEffect(() => {
+    if (!customerId) {
+      setPromotionAvailable(null);
+      return;
+    }
+    let cancelled = false;
+    setPromotionLoading(true);
+    fetch(`/api/customers/${customerId}/promotion-budget`)
+      .then((r) => r.json())
+      .then((d) => { if (!cancelled) setPromotionAvailable(Number(d?.promotionBudget ?? 0)); })
+      .catch(() => { if (!cancelled) setPromotionAvailable(0); })
+      .finally(() => { if (!cancelled) setPromotionLoading(false); });
+    return () => { cancelled = true; };
+  }, [customerId]);
 
   const canSubmit = customerId && items.length > 0 && items.every((i) => {
     if (!i.productId || i.qty <= 0) return false;
@@ -154,7 +180,10 @@ export function CreateOrderDialog({ open, onClose, customerOptions, employeeOpti
     if (!p) return false;
     // allow oversell? If not, enforce qty <= stockOnHand
     return i.qty <= (p.stockOnHand ?? 0) || true; // keep always true for now; UI highlights if exceeded
-  });
+  }) && (!usePromotion || (
+    promotionAmount !== "" && Number(promotionAmount) > 0 &&
+    (promotionAvailable === null || Number(promotionAmount) <= Number(promotionAvailable))
+  ));
 
   const handleSubmit = async () => {
     if (!canSubmit || isSubmitting) return;
@@ -177,6 +206,8 @@ export function CreateOrderDialog({ open, onClose, customerOptions, employeeOpti
         paymentStatus,
         shippingFee: Number(shippingFee || 0),
         otherCharges: Number(otherCharges || 0),
+        usePromotion,
+        promotionAmount: promotionAmount === "" ? undefined : Number(promotionAmount),
         poNumber: poNumber || undefined,
         note: note || undefined,
         items: items.map((it) => ({
@@ -250,6 +281,27 @@ export function CreateOrderDialog({ open, onClose, customerOptions, employeeOpti
                 </MenuItem>
               ))}
             </TextField>
+          </Stack>
+
+          {/* Promotion usage controls (above payment condition) */}
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="center">
+            <FormControlLabel
+              control={<Checkbox checked={usePromotion} onChange={(e) => { const checked = e.target.checked; setUsePromotion(checked); if (!checked) setPromotionAmount(""); }} />}
+              label="ใช้วงเงินส่งเสริมการขาย"
+            />
+            <Box sx={{ color: 'text.secondary', fontSize: 14, minWidth: 200 }}>
+              คงเหลือ: {promotionLoading ? '...' : (promotionAvailable ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท
+            </Box>
+            <TextField
+              label="ใช้วงเงิน (บาท)"
+              type="number"
+              value={promotionAmount}
+              onChange={(e) => setPromotionAmount(e.target.value === "" ? "" : Number(e.target.value))}
+              disabled={!usePromotion}
+              error={usePromotion && typeof promotionAmount === 'number' && promotionAvailable !== null && Number(promotionAmount) > Number(promotionAvailable)}
+              helperText={usePromotion && typeof promotionAmount === 'number' && promotionAvailable !== null && Number(promotionAmount) > Number(promotionAvailable) ? 'เกินวงเงินคงเหลือ' : undefined}
+              sx={{ flex: 1 }}
+            />
           </Stack>
 
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
@@ -425,6 +477,8 @@ export function CreateOrderDialog({ open, onClose, customerOptions, employeeOpti
               </Button>
             </Stack>
           </Box>
+
+          
 
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField label="ค่าขนส่ง" type="number" value={shippingFee} onChange={(e) => setShippingFee(e.target.value === "" ? "" : Number(e.target.value))} fullWidth />

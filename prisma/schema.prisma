@@ -568,6 +568,8 @@ model SaleOrder {
   taxAmount       Float            @default(0)
   shippingFee     Float            @default(0)
   otherCharges    Float            @default(0)
+  // Amount of promotion budget spent for this order
+  promotionSpent  Float?           @default(0)
   grandTotal      Float            @default(0)
 
   poNumber        String?
