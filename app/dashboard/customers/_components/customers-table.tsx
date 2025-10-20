@@ -109,8 +109,8 @@ export function CustomersTable({ customers, query }: CustomersTableProps) {
     { id: "name", label: "ชื่อลูกค้า", width: 240, align: "left" },
     { id: "phone", label: "เบอร์โทร", width: 140, align: "left" },
     { id: "email", label: "อีเมล", width: 200, align: "left" },
-    { id: "address", label: "ที่อยู่", width: 360, align: "left" },
-    { id: "type", label: "ประเภท", width: 100, align: "center" },
+    { id: "address", label: "ที่อยู่", width: 320, align: "left" },
+    { id: "type", label: "ประเภท", width: 150, align: "center" },
   ];
 
   const filtered = useMemo(() => {
