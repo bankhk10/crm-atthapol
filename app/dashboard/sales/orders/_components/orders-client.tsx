@@ -4,11 +4,15 @@ import { useEffect, useMemo, useState } from "react";
 import { Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from "@mui/material";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+import Link from "next/link";
 import AddIcon from "@mui/icons-material/Add";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import thLocale from "dayjs/locale/th";
 import { CreateOrderDialog, type Option, type ProductOption } from "./create-order-dialog";
+import { useSession } from "next-auth/react";
+import { hasPermission } from "@/lib/permissions";
 
 dayjs.extend(relativeTime);
 dayjs.locale(thLocale);
@@ -49,6 +53,7 @@ type Props = {
 };
 
 export function OrdersClient({ customerOptions, employeeOptions, productOptions }: Props) {
+  const { data: session } = useSession();
   const [items, setItems] = useState<OrderItem[]>([]);
   const [total, setTotal] = useState(0);
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
@@ -56,6 +61,11 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<null | { type: "cancel" | "delete"; order: OrderItem }>(null);
+
+  const canCreate = hasPermission(session?.user?.permissions, "sales", "create");
+  const canView = hasPermission(session?.user?.permissions, "sales", "view");
+  const canCancel = hasPermission(session?.user?.permissions, "sales", "reject");
+  const canDelete = hasPermission(session?.user?.permissions, "sales", "delete");
 
   const chips = useMemo(
     () => [
@@ -123,9 +133,11 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
             <Chip key={c.value} label={c.label} color={statusFilter === c.value ? "primary" : "default"} onClick={() => setStatusFilter(c.value)} />
           ))}
         </Stack>
-        <Button startIcon={<AddIcon />} variant="contained" onClick={() => setOpen(true)} sx={{ width: { xs: "100%", sm: "auto" } }}>
-          สร้างใบสั่งขาย
-        </Button>
+        {canCreate && (
+          <Button startIcon={<AddIcon />} variant="contained" onClick={() => setOpen(true)} sx={{ width: { xs: "100%", sm: "auto" } }}>
+            สร้างใบสั่งขาย
+          </Button>
+        )}
       </Stack>
 
       <TableContainer component={Paper}>
@@ -163,26 +175,42 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
                   <TableCell>{o.paymentStatus}</TableCell>
                   <TableCell align="right">
                     <Stack direction="row" spacing={1} justifyContent="flex-end">
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        color="warning"
-                        startIcon={<CancelOutlinedIcon fontSize="small" />}
-                        disabled={o.status === "CANCELLED" || busyId === o.id}
-                        onClick={() => setConfirm({ type: "cancel", order: o })}
-                      >
-                        ยกเลิก
-                      </Button>
-                      <Button
+                      {canView && (
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          color="primary"
+                          startIcon={<VisibilityOutlinedIcon fontSize="small" />}
+                          component={Link as any}
+                          href={`/dashboard/sales/orders/${o.id}`}
+                        >
+                          ดู
+                        </Button>
+                      )}
+                      {canCancel && (
+                        <Button
+                         size="small"
+                         variant="outlined"
+                         color="warning"
+                         startIcon={<CancelOutlinedIcon fontSize="small" />}
+                         disabled={o.status === "CANCELLED" || busyId === o.id}
+                         onClick={() => setConfirm({ type: "cancel", order: o })}
+                         >
+                           ยกเลิก
+                         </Button>
+                      )}
+                      {canDelete && (
+                        <Button
                         size="small"
                         variant="outlined"
                         color="error"
                         startIcon={<DeleteOutlineIcon fontSize="small" />}
                         disabled={busyId === o.id}
                         onClick={() => setConfirm({ type: "delete", order: o })}
-                      >
-                        ลบ
-                      </Button>
+                        >
+                          ลบ
+                        </Button>
+                      )}
                     </Stack>
                   </TableCell>
                 </TableRow>
