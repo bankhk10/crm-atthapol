@@ -35,6 +35,21 @@ type Item = {
 
 const DEFAULT_ITEM: Item = { nameSnapshot: "", unit: "", qty: 1, unitPrice: 0, discountPercent: 0, discountAmount: 0 };
 
+// Workflow status options (UI layer) same as create-order
+const STATUS_OPTIONS = [
+  { value: "DRAFT", label: "ร่าง" },
+  { value: "PENDING_APPROVAL", label: "รออนุมัติ" },
+  { value: "APPROVED", label: "อนุมัติ" },
+  { value: "REJECTED", label: "ปฏิเสธ" },
+  { value: "AWAITING_PAYMENT", label: "รอชำระเงิน" },
+  { value: "PAID", label: "ชำระเงินแล้ว" },
+  { value: "AWAITING_STOCK", label: "รอสินค้า" },
+  { value: "READY_TO_SHIP", label: "รอจัดส่ง" },
+  { value: "IN_TRANSIT", label: "อยู่ระหว่างจัดส่ง" },
+  { value: "COMPLETED", label: "สำเร็จ" },
+  { value: "CANCELLED", label: "ยกเลิก" },
+];
+
 function computeTotals(items: Item[], vatRate: number, shippingFee: number, otherCharges: number) {
   let subTotal = 0; let discountTotal = 0; let taxAmount = 0;
   for (const it of items) {
@@ -67,6 +82,8 @@ export function EditOrderDialog({ open, orderId, onClose, customerOptions, emplo
   const [shipTo, setShipTo] = useState("");
   const [status, setStatus] = useState("DRAFT");
   const [paymentStatus, setPaymentStatus] = useState("UNPAID");
+  // UI workflow status, mapped to backend fields
+  const [workflowStatus, setWorkflowStatus] = useState<string>("DRAFT");
   const [shippingFee, setShippingFee] = useState<number | "">(0);
   const [otherCharges, setOtherCharges] = useState<number | "">(0);
   const [poNumber, setPoNumber] = useState("");
@@ -96,6 +113,18 @@ export function EditOrderDialog({ open, orderId, onClose, customerOptions, emplo
         setShipTo(so.shipTo || "");
         setStatus(so.status || "DRAFT");
         setPaymentStatus(so.paymentStatus || "UNPAID");
+        // derive workflowStatus from backend
+        setWorkflowStatus((() => {
+          const st = (so.status || "DRAFT") as string;
+          const ps = (so.paymentStatus || "UNPAID") as string;
+          if (st === "DRAFT") return "DRAFT";
+          if (st === "CANCELLED") return "CANCELLED"; // or REJECTED, but both map to CANCELLED in backend
+          if (st === "INVOICED") return ps === "PAID" ? "PAID" : "AWAITING_PAYMENT";
+          if (st === "SHIPPED") return ps === "PAID" ? "COMPLETED" : "IN_TRANSIT";
+          if (st === "APPROVED") return "APPROVED"; // or READY_TO_SHIP
+          if (st === "CONFIRMED") return "PENDING_APPROVAL"; // or AWAITING_STOCK
+          return "DRAFT";
+        })());
         setShippingFee(Number(so.shippingFee || 0));
         setOtherCharges(Number(so.otherCharges || 0));
         setPoNumber(so.poNumber || "");
@@ -158,6 +187,51 @@ export function EditOrderDialog({ open, orderId, onClose, customerOptions, emplo
     finally { setSubmitting(false); }
   };
 
+  // Map UI workflow status to backend status/paymentStatus
+  const applyWorkflowMapping = (wf: string) => {
+    setWorkflowStatus(wf);
+    switch (wf) {
+      case "DRAFT":
+        setStatus("DRAFT");
+        break;
+      case "PENDING_APPROVAL":
+        setStatus("CONFIRMED");
+        break;
+      case "APPROVED":
+        setStatus("APPROVED");
+        break;
+      case "REJECTED":
+        setStatus("CANCELLED");
+        break;
+      case "AWAITING_PAYMENT":
+        setStatus("INVOICED");
+        setPaymentStatus("UNPAID");
+        break;
+      case "PAID":
+        setStatus("INVOICED");
+        setPaymentStatus("PAID");
+        break;
+      case "AWAITING_STOCK":
+        setStatus("CONFIRMED");
+        break;
+      case "READY_TO_SHIP":
+        setStatus("APPROVED");
+        break;
+      case "IN_TRANSIT":
+        setStatus("SHIPPED");
+        break;
+      case "COMPLETED":
+        setStatus("SHIPPED");
+        setPaymentStatus("PAID");
+        break;
+      case "CANCELLED":
+        setStatus("CANCELLED");
+        break;
+      default:
+        break;
+    }
+  };
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>แก้ไขใบสั่งขาย</DialogTitle>
@@ -218,8 +292,8 @@ export function EditOrderDialog({ open, orderId, onClose, customerOptions, emplo
           </Stack>
 
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-            <TextField select label="สถานะเอกสาร" value={status} onChange={(e) => setStatus(e.target.value)} fullWidth>
-              {["DRAFT","CONFIRMED","APPROVED","SHIPPED","INVOICED","CANCELLED"].map((s) => (<MenuItem key={s} value={s}>{s}</MenuItem>))}
+            <TextField select label="สถานะเอกสาร" value={workflowStatus} onChange={(e) => applyWorkflowMapping(e.target.value)} fullWidth>
+              {STATUS_OPTIONS.map((s) => (<MenuItem key={s.value} value={s.value}>{s.label}</MenuItem>))}
             </TextField>
             <TextField select label="สถานะชำระเงิน" value={paymentStatus} onChange={(e) => setPaymentStatus(e.target.value)} fullWidth>
               {["UNPAID","PARTIAL","PAID","OVERDUE"].map((s) => (<MenuItem key={s} value={s}>{s}</MenuItem>))}

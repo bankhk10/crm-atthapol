@@ -66,12 +66,19 @@ const DEFAULT_ITEM: Item = {
   discountAmount: 0,
 };
 
+// Workflow status options requested for the create order page (UI layer)
+// These map to existing backend enums on change/submit.
 const STATUS_OPTIONS = [
-  { value: "DRAFT", label: "ฉบับร่าง" },
-  { value: "CONFIRMED", label: "ยืนยันแล้ว" },
+  { value: "DRAFT", label: "ร่าง" },
+  { value: "PENDING_APPROVAL", label: "รออนุมัติ" },
   { value: "APPROVED", label: "อนุมัติ" },
-  { value: "SHIPPED", label: "จัดส่งแล้ว" },
-  { value: "INVOICED", label: "ออกบิลแล้ว" },
+  { value: "REJECTED", label: "ปฏิเสธ" },
+  { value: "AWAITING_PAYMENT", label: "รอชำระเงิน" },
+  { value: "PAID", label: "ชำระเงินแล้ว" },
+  { value: "AWAITING_STOCK", label: "รอสินค้า" },
+  { value: "READY_TO_SHIP", label: "รอจัดส่ง" },
+  { value: "IN_TRANSIT", label: "อยู่ระหว่างจัดส่ง" },
+  { value: "COMPLETED", label: "สำเร็จ" },
   { value: "CANCELLED", label: "ยกเลิก" },
 ];
 
@@ -113,8 +120,11 @@ export function CreateOrderDialog({ open, onClose, customerOptions, employeeOpti
   const [vatRate, setVatRate] = useState<number>(7);
   const [billTo, setBillTo] = useState("");
   const [shipTo, setShipTo] = useState("");
+  // Internal fields persisted to backend
   const [status, setStatus] = useState("DRAFT");
   const [paymentStatus, setPaymentStatus] = useState("UNPAID");
+  // UI workflow status (maps to internal status + paymentStatus)
+  const [workflowStatus, setWorkflowStatus] = useState<string>("DRAFT");
   const [shippingFee, setShippingFee] = useState<number | "">(0);
   const [otherCharges, setOtherCharges] = useState<number | "">(0);
   const [poNumber, setPoNumber] = useState("");
@@ -143,6 +153,7 @@ export function CreateOrderDialog({ open, onClose, customerOptions, employeeOpti
     setVatRate(7);
     setBillTo("");
     setShipTo("");
+    setWorkflowStatus("DRAFT");
     setStatus("DRAFT");
     setPaymentStatus("UNPAID");
     setPaymentCondition("PREPAID");
@@ -156,6 +167,52 @@ export function CreateOrderDialog({ open, onClose, customerOptions, employeeOpti
     setPromotionAmount("");
     setPromotionAvailable(null);
     setPromotionLoading(false);
+  };
+
+  // Map UI workflow status to backend status/paymentStatus
+  const applyWorkflowMapping = (wf: string) => {
+    setWorkflowStatus(wf);
+    switch (wf) {
+      case "DRAFT":
+        setStatus("DRAFT");
+        // keep payment as chosen or default
+        break;
+      case "PENDING_APPROVAL":
+        setStatus("CONFIRMED");
+        break;
+      case "APPROVED":
+        setStatus("APPROVED");
+        break;
+      case "REJECTED":
+        setStatus("CANCELLED");
+        break;
+      case "AWAITING_PAYMENT":
+        setStatus("INVOICED");
+        setPaymentStatus("UNPAID");
+        break;
+      case "PAID":
+        setStatus("INVOICED");
+        setPaymentStatus("PAID");
+        break;
+      case "AWAITING_STOCK":
+        setStatus("CONFIRMED");
+        break;
+      case "READY_TO_SHIP":
+        setStatus("APPROVED");
+        break;
+      case "IN_TRANSIT":
+        setStatus("SHIPPED");
+        break;
+      case "COMPLETED":
+        setStatus("SHIPPED");
+        setPaymentStatus("PAID");
+        break;
+      case "CANCELLED":
+        setStatus("CANCELLED");
+        break;
+      default:
+        break;
+    }
   };
 
   // Load promotion budget when customer changes
@@ -373,7 +430,7 @@ export function CreateOrderDialog({ open, onClose, customerOptions, employeeOpti
           </Stack>
 
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-            <TextField select label="สถานะเอกสาร" value={status} onChange={(e) => setStatus(e.target.value)} fullWidth>
+            <TextField select label="สถานะเอกสาร" value={workflowStatus} onChange={(e) => applyWorkflowMapping(e.target.value)} fullWidth>
               {STATUS_OPTIONS.map((s) => (
                 <MenuItem key={s.value} value={s.value}>
                   {s.label}

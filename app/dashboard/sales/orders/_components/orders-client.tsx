@@ -30,6 +30,34 @@ type OrderItem = {
   salesperson?: { id: string; firstName?: string | null; lastName?: string | null; prefix?: string | null; user?: { name?: string | null; email?: string | null } | null } | null;
 };
 
+// UI workflow status options (same set as create/edit)
+const WORKFLOW_STATUS_OPTIONS = [
+  { value: "ALL", label: "ทั้งหมด" },
+  { value: "DRAFT", label: "ร่าง" },
+  { value: "PENDING_APPROVAL", label: "รออนุมัติ" },
+  { value: "APPROVED", label: "อนุมัติ" },
+  { value: "REJECTED", label: "ปฏิเสธ" },
+  { value: "AWAITING_PAYMENT", label: "รอชำระเงิน" },
+  { value: "PAID", label: "ชำระเงินแล้ว" },
+  { value: "AWAITING_STOCK", label: "รอสินค้า" },
+  { value: "READY_TO_SHIP", label: "รอจัดส่ง" },
+  { value: "IN_TRANSIT", label: "อยู่ระหว่างจัดส่ง" },
+  { value: "COMPLETED", label: "สำเร็จ" },
+  { value: "CANCELLED", label: "ยกเลิก" },
+];
+
+function workflowFromBackend(status: string, paymentStatus: string): string {
+  if (status === "DRAFT") return "DRAFT";
+  if (status === "CANCELLED") return "CANCELLED"; // could also represent REJECTED
+  if (status === "INVOICED") return paymentStatus === "PAID" ? "PAID" : "AWAITING_PAYMENT";
+  if (status === "SHIPPED") return paymentStatus === "PAID" ? "COMPLETED" : "IN_TRANSIT";
+  if (status === "APPROVED") return "APPROVED"; // or READY_TO_SHIP
+  if (status === "CONFIRMED") return "PENDING_APPROVAL"; // or AWAITING_STOCK
+  return status || "DRAFT";
+}
+
+// Server now supports workflow filter directly via `workflow` query param
+
 function displayCustomerName(c: OrderItem["customer"]) {
   if (!c) return "-";
   const name = (c as any).name as string | undefined;
@@ -71,18 +99,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
   const canDelete = hasPermission(session?.user?.permissions, "sales", "delete");
   const canEdit = hasPermission(session?.user?.permissions, "sales", "edit");
 
-  const chips = useMemo(
-    () => [
-      { value: "ALL", label: "ทั้งหมด" },
-      { value: "DRAFT", label: "ฉบับร่าง" },
-      { value: "CONFIRMED", label: "ยืนยันแล้ว" },
-      { value: "APPROVED", label: "อนุมัติ" },
-      { value: "SHIPPED", label: "จัดส่งแล้ว" },
-      { value: "INVOICED", label: "ออกบิลแล้ว" },
-      { value: "CANCELLED", label: "ยกเลิก" },
-    ],
-    [],
-  );
+  const chips = useMemo(() => WORKFLOW_STATUS_OPTIONS, []);
 
   const load = async () => {
     setLoading(true);
@@ -90,10 +107,11 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
       const params = new URLSearchParams();
       params.set("page", "1");
       params.set("pageSize", "20");
-      if (statusFilter !== "ALL") params.set("status", statusFilter);
+      if (statusFilter !== "ALL") params.set("workflow", statusFilter);
       const res = await fetch(`/api/sales/orders?${params.toString()}`);
       const data = await res.json();
-      setItems(data.items || []);
+      const list: OrderItem[] = data.items || [];
+      setItems(list);
       setTotal(data.total || 0);
     } catch (_) {
       // ignore
@@ -176,7 +194,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
                   <TableCell>{displayCustomerName(o.customer)}</TableCell>
                   <TableCell>{o.salesperson ? displayEmployeeName(o.salesperson as any) : "-"}</TableCell>
                   <TableCell align="right">{o.grandTotal?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                  <TableCell>{o.status}</TableCell>
+                  <TableCell>{WORKFLOW_STATUS_OPTIONS.find((x) => x.value === workflowFromBackend(o.status, o.paymentStatus))?.label || o.status}</TableCell>
                   <TableCell>{o.paymentCondition === 'POSTPAID' ? 'ส่งก่อน-โอนทีหลัง' : 'โอนก่อน-ส่งทีหลัง'}</TableCell>
                   <TableCell>{o.paymentStatus}</TableCell>
                   <TableCell align="right">

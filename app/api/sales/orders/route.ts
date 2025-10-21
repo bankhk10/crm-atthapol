@@ -110,20 +110,80 @@ export async function GET(req: NextRequest) {
 
     const customerId = searchParams.get("customerId") || undefined;
     const status = searchParams.get("status") || undefined;
+    // New filters: paymentStatus (single or comma-separated/repeated) and workflow (UI status)
+    const paymentStatusParam = (searchParams.getAll as any)?.call(searchParams, "paymentStatus") ?? [];
+    const workflow = (searchParams.get("workflow") || "").toUpperCase() || undefined;
+
+    // Normalize paymentStatus values
+    let paymentStatusValues: string[] | undefined = undefined;
+    if (paymentStatusParam && paymentStatusParam.length > 0) {
+      const parts: string[] = [];
+      for (const p of paymentStatusParam) {
+        if (!p) continue;
+        const segs = String(p)
+          .split(",")
+          .map((s) => s.trim().toUpperCase())
+          .filter(Boolean);
+        parts.push(...segs);
+      }
+      if (parts.length > 0) paymentStatusValues = Array.from(new Set(parts));
+    }
+
+    // Build base where
+    const where: any = { deletedAt: null, customerId };
+    if (status) where.status = status as any;
+    if (paymentStatusValues && paymentStatusValues.length > 0) {
+      where.paymentStatus = paymentStatusValues.length === 1 ? (paymentStatusValues[0] as any) : ({ in: paymentStatusValues as any } as any);
+    }
+
+    // Apply workflow mapping to where when provided
+    if (workflow && workflow !== "ALL") {
+      switch (workflow) {
+        case "DRAFT":
+          where.status = "DRAFT";
+          break;
+        case "PENDING_APPROVAL":
+        case "AWAITING_STOCK":
+          where.status = "CONFIRMED";
+          break;
+        case "APPROVED":
+        case "READY_TO_SHIP":
+          where.status = "APPROVED";
+          break;
+        case "REJECTED":
+        case "CANCELLED":
+          where.status = "CANCELLED";
+          break;
+        case "AWAITING_PAYMENT":
+          where.status = "INVOICED";
+          where.paymentStatus = { in: ["UNPAID", "PARTIAL", "OVERDUE"] };
+          break;
+        case "PAID":
+          where.status = "INVOICED";
+          where.paymentStatus = "PAID";
+          break;
+        case "IN_TRANSIT":
+          where.status = "SHIPPED";
+          where.paymentStatus = { in: ["UNPAID", "PARTIAL", "OVERDUE"] };
+          break;
+        case "COMPLETED":
+          where.status = "SHIPPED";
+          where.paymentStatus = "PAID";
+          break;
+        default:
+          break;
+      }
+    }
 
     const [items, total] = await Promise.all([
       prisma.saleOrder.findMany({
-        where: {
-          deletedAt: null,
-          customerId,
-          status: status as any,
-        },
+        where,
         include: { items: true, customer: true, salesperson: true },
         orderBy: { createdAt: "desc" },
         skip,
         take: pageSize,
       }),
-      prisma.saleOrder.count({ where: { deletedAt: null, customerId, status: status as any } }),
+      prisma.saleOrder.count({ where }),
     ]);
 
     return NextResponse.json({ items, total, page, pageSize });
