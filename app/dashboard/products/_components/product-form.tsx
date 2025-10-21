@@ -335,6 +335,7 @@ export function ProductForm({
             <DatePicker
               label="วันที่ผลิต"
               value={values.mfgDate ? new Date(values.mfgDate) : null}
+              views={['year', 'month', 'day']}
               onChange={(d) =>
                 setValues((prev) => ({
                   ...prev,
@@ -348,6 +349,7 @@ export function ProductForm({
             <DatePicker
               label="วันหมดอายุ"
               value={values.expDate ? new Date(values.expDate) : null}
+              views={['year', 'month', 'day']}
               onChange={(d) =>
                 setValues((prev) => ({
                   ...prev,

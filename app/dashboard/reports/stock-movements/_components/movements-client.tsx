@@ -101,8 +101,8 @@ export function MovementsClient({ productOptions, initialSaleOrderId }: Props) {
             ))}
           </TextField>
           <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={th}>
-            <DatePicker label="ตั้งแต่" value={from ? new Date(from) : null} onChange={(v) => setFrom(v ? v.toISOString().slice(0, 10) : null)} slotProps={{ textField: { size: "small" } }} />
-            <DatePicker label="ถึง" value={to ? new Date(to) : null} onChange={(v) => setTo(v ? v.toISOString().slice(0, 10) : null)} slotProps={{ textField: { size: "small" } }} />
+            <DatePicker label="ตั้งแต่" value={from ? new Date(from) : null} views={['year', 'month', 'day']} onChange={(v) => setFrom(v ? v.toISOString().slice(0, 10) : null)} slotProps={{ textField: { size: "small" } }} />
+            <DatePicker label="ถึง" value={to ? new Date(to) : null} views={['year', 'month', 'day']} onChange={(v) => setTo(v ? v.toISOString().slice(0, 10) : null)} slotProps={{ textField: { size: "small" } }} />
           </LocalizationProvider>
           <Button color="inherit" onClick={() => { setTypeFilter("ALL"); setProductId(""); setFrom(null); setTo(null); }}>ล้างตัวกรอง</Button>
         </Stack>

@@ -379,12 +379,14 @@ export function CreateOrderDialog({ open, onClose, customerOptions, employeeOpti
               <DatePicker
                 label="วันที่สั่งซื้อ"
                 value={orderDate ? new Date(orderDate) : null}
+                views={['year', 'month', 'day']}
                 onChange={(v) => setOrderDate(v ? v.toISOString().slice(0, 10) : null)}
                 slotProps={{ textField: { fullWidth: true } }}
               />
               <DatePicker
                 label="ครบกำหนดชำระ"
                 value={dueDate ? new Date(dueDate) : null}
+                views={['year', 'month', 'day']}
                 onChange={(v) => setDueDate(v ? v.toISOString().slice(0, 10) : null)}
                 slotProps={{ textField: { fullWidth: true } }}
               />
@@ -393,6 +395,7 @@ export function CreateOrderDialog({ open, onClose, customerOptions, employeeOpti
               <DatePicker
                 label="วันที่จัดส่ง"
                 value={shippingDate ? new Date(shippingDate) : null}
+                views={['year', 'month', 'day']}
                 onChange={(v) => setShippingDate(v ? v.toISOString().slice(0, 10) : null)}
                 slotProps={{ textField: { fullWidth: true } }}
               />

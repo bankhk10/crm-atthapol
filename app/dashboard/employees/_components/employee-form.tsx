@@ -236,6 +236,7 @@ export function EmployeeForm({
               <DatePicker
                 label="วันเกิด"
                 value={values.birthDate ? new Date(values.birthDate) : null}
+                views={['year', 'month', 'day']}
                 onChange={(newValue) => {
                   setValues((prev) => ({
                     ...prev,
@@ -314,6 +315,7 @@ export function EmployeeForm({
             <DatePicker
               label="วันที่เริ่มงาน"
               value={values.startDate ? new Date(values.startDate) : null}
+              views={['year', 'month', 'day']}
               onChange={(newValue) => {
                 setValues((prev) => ({
                   ...prev,

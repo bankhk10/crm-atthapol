@@ -242,6 +242,7 @@ export function CustomerForm({
                 <DatePicker
                   label="วันเกิด"
                   value={values.birthDate ? new Date(values.birthDate) : null}
+                  views={['year', 'month', 'day']}
                   onChange={(newValue) => {
                     setValues((prev) => ({
                       ...prev,

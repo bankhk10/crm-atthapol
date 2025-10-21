@@ -267,11 +267,11 @@ export function EditOrderDialog({ open, orderId, onClose, customerOptions, emplo
 
           <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={th}>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-              <DatePicker label="วันที่สั่งซื้อ" value={orderDate ? new Date(orderDate) : null} onChange={(v) => setOrderDate(v ? v.toISOString().slice(0, 10) : null)} slotProps={{ textField: { fullWidth: true } }} />
-              <DatePicker label="ครบกำหนดชำระ" value={dueDate ? new Date(dueDate) : null} onChange={(v) => setDueDate(v ? v.toISOString().slice(0, 10) : null)} slotProps={{ textField: { fullWidth: true } }} />
+              <DatePicker label="วันที่สั่งซื้อ" value={orderDate ? new Date(orderDate) : null} views={['year', 'month', 'day']} onChange={(v) => setOrderDate(v ? v.toISOString().slice(0, 10) : null)} slotProps={{ textField: { fullWidth: true } }} />
+              <DatePicker label="ครบกำหนดชำระ" value={dueDate ? new Date(dueDate) : null} views={['year', 'month', 'day']} onChange={(v) => setDueDate(v ? v.toISOString().slice(0, 10) : null)} slotProps={{ textField: { fullWidth: true } }} />
             </Stack>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-              <DatePicker label="วันที่จัดส่ง" value={shippingDate ? new Date(shippingDate) : null} onChange={(v) => setShippingDate(v ? v.toISOString().slice(0, 10) : null)} slotProps={{ textField: { fullWidth: true } }} />
+              <DatePicker label="วันที่จัดส่ง" value={shippingDate ? new Date(shippingDate) : null} views={['year', 'month', 'day']} onChange={(v) => setShippingDate(v ? v.toISOString().slice(0, 10) : null)} slotProps={{ textField: { fullWidth: true } }} />
             </Stack>
           </LocalizationProvider>
 

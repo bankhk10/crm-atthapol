@@ -204,6 +204,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
             <DatePicker
               label="ถึง"
               value={shippingTo ? new Date(shippingTo) : null}
+              views={['year', 'month', 'day']}
               onChange={(v) => setShippingTo(v ? v.toISOString().slice(0, 10) : null)}
               slotProps={{ textField: { fullWidth: true, size: "small" } }}
             />
