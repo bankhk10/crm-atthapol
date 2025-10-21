@@ -20,6 +20,8 @@ import { EditOrderDialog } from "./edit-order-dialog";
 import { useSession } from "next-auth/react";
 import { hasPermission } from "@/lib/permissions";
 import { th } from "date-fns/locale";
+import { useTheme } from "@mui/material/styles";
+import useMediaQuery from "@mui/material/useMediaQuery";
 
 dayjs.extend(relativeTime);
 dayjs.locale(thLocale);
@@ -131,6 +133,9 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
   const [page, setPage] = useState(0); // 0-based for TablePagination
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+
   const canCreate = hasPermission(session?.user?.permissions, "sales", "create");
   const canView = hasPermission(session?.user?.permissions, "sales", "view");
   const canCancel = hasPermission(session?.user?.permissions, "sales", "reject");
@@ -202,6 +207,14 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
       setBusyId(null);
     }
   };
+
+  function workflowChipSx(wf: string) {
+    if (wf === "COMPLETED") return { color: "#fff", bgcolor: "#22C55E" } as const;
+    if (wf === "CANCELLED") return { color: "#fff", bgcolor: "#EF4444" } as const;
+    if (wf === "IN_TRANSIT" || wf === "READY_TO_SHIP" || wf === "AWAITING_STOCK")
+      return { color: "#000", bgcolor: "#FACC15" } as const;
+    return { color: "#424242", bgcolor: "#E0E0E0" } as const;
+  }
 
   // Client-side sorting (current page only)
   function descendingComparator(a: OrderItem, b: OrderItem, key: SortableKeys) {
@@ -347,9 +360,83 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
         </LocalizationProvider>
       </Stack>
 
+      {/* Mobile cards layout */}
+      <Stack spacing={1.25} sx={{ p: 1.5, display: { xs: 'block', md: 'none' } }}>
+        {sortedItems.map((o) => {
+          const wf = workflowFromBackend(o.status, o.paymentStatus);
+          const wfLabel = WORKFLOW_STATUS_OPTIONS.find((x) => x.value === wf)?.label || o.status;
+          return (
+            <Paper key={o.id} variant="outlined" sx={{ p: 1.25, borderRadius: 2 }}>
+              <Stack spacing={1}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Typography fontWeight={700}>SO {o.soNumber}</Typography>
+                  <Chip size="small" label={wfLabel} sx={{ fontWeight: 600, px: 1.2, borderRadius: '9999px', ...workflowChipSx(wf) }} />
+                </Stack>
+                <Typography variant="body2" color="text.secondary">ลูกค้า: {displayCustomerName(o.customer)}</Typography>
+                <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                  <Chip size="small" label={`วันที่: ${dayjs(o.orderDate).format('DD/MM/YYYY')}`} />
+                  <Chip size="small" label={`จัดส่ง: ${o.shippingDate ? dayjs(o.shippingDate).format('DD/MM/YYYY') : '-'}`} />
+                  <Chip size="small" label={`ยอดรวม: ${o.grandTotal?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
+                  <Chip size="small" label={`ชำระ: ${PAYMENT_STATUS_LABEL[o.paymentStatus] || o.paymentStatus}`} />
+                </Stack>
+                {(canView || canEdit || canCancel || canDelete) && (
+                  <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                    {canView && (
+                      <Tooltip title="ดูรายละเอียด" arrow>
+                        <IconButton component={Link as any} href={`/dashboard/sales/orders/${o.id}`} size="small">
+                          <VisibilityOutlinedIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                    {canEdit && (
+                      <Tooltip title={wf === 'COMPLETED' ? 'แก้ไขไม่ได้ (เสร็จสิ้น)' : 'แก้ไข'} arrow>
+                        <span>
+                          <IconButton size="small" disabled={wf === 'COMPLETED'} onClick={() => setEditId(o.id)}>
+                            <EditOutlinedIcon fontSize="small" />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                    )}
+                    {canView && (
+                      <Tooltip title="ดูประวัติสต็อก" arrow>
+                        <IconButton component={Link as any} href={`/dashboard/reports/stock-movements?saleOrderId=${o.id}`} size="small">
+                          <HistoryOutlinedIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                    {canCancel && (
+                      <Tooltip title={o.status === 'CANCELLED' ? 'ถูกยกเลิกแล้ว' : 'ยกเลิก'} arrow>
+                        <span>
+                          <IconButton size="small" disabled={o.status === 'CANCELLED' || busyId === o.id} onClick={() => setConfirm({ type: 'cancel', order: o })}>
+                            <CancelOutlinedIcon fontSize="small" />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                    )}
+                    {canDelete && (
+                      <Tooltip title="ลบ" arrow>
+                        <span>
+                          <IconButton size="small" disabled={busyId === o.id} onClick={() => setConfirm({ type: 'delete', order: o })}>
+                            <DeleteOutlineIcon fontSize="small" />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                    )}
+                  </Stack>
+                )}
+              </Stack>
+            </Paper>
+          );
+        })}
+        {sortedItems.length === 0 && (
+          <Typography color="text.secondary" align="center">{loading ? 'กำลังโหลด...' : 'ยังไม่มีรายการ'}</Typography>
+        )}
+      </Stack>
+
       <TableContainer
         component={Paper}
         sx={{
+          display: { xs: 'none', md: 'block' },
           borderTopLeftRadius: 12,
           borderTopRightRadius: 12,
           "&::-webkit-scrollbar": { width: 8 },
