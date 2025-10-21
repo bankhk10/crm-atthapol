@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from "@mui/material";
+import { Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, Tooltip, TableSortLabel, TablePagination, IconButton } from "@mui/material";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -9,6 +9,7 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import Link from "next/link";
 import AddIcon from "@mui/icons-material/Add";
 import dayjs from "dayjs";
@@ -34,6 +35,30 @@ type OrderItem = {
   paymentStatus: string;
   customer?: { id: string; name?: string; companyName?: string; prefix?: string; firstName?: string; lastName?: string } | null;
   salesperson?: { id: string; firstName?: string | null; lastName?: string | null; prefix?: string | null; user?: { name?: string | null; email?: string | null } | null } | null;
+};
+
+type Order = "asc" | "desc";
+type SortableKeys =
+  | "soNumber"
+  | "orderDate"
+  | "shippingDate"
+  | "customerName"
+  // | "salespersonName"
+  | "grandTotal"
+  | "status"
+  | "paymentCondition"
+  | "paymentStatus";
+
+const visuallyHidden = {
+  border: 0,
+  clip: "rect(0 0 0 0)",
+  height: 1,
+  margin: -1,
+  overflow: "hidden",
+  padding: 0,
+  position: "absolute" as const,
+  width: 1,
+  whiteSpace: "nowrap" as const,
 };
 
 // UI workflow status options (same set as create/edit)
@@ -100,6 +125,12 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
   const [confirm, setConfirm] = useState<null | { type: "cancel" | "delete"; order: OrderItem }>(null);
   const [editId, setEditId] = useState<string | null>(null);
 
+  // Sorting & Pagination (match products table UX)
+  const [order, setOrder] = useState<Order>("asc");
+  const [orderBy, setOrderBy] = useState<SortableKeys>("orderDate");
+  const [page, setPage] = useState(0); // 0-based for TablePagination
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
   const canCreate = hasPermission(session?.user?.permissions, "sales", "create");
   const canView = hasPermission(session?.user?.permissions, "sales", "view");
   const canCancel = hasPermission(session?.user?.permissions, "sales", "reject");
@@ -127,8 +158,8 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      params.set("page", "1");
-      params.set("pageSize", "20");
+      params.set("page", String(page + 1));
+      params.set("pageSize", String(rowsPerPage));
       if (statusFilter !== "ALL") params.set("workflow", statusFilter);
       if (paymentFilter !== "ALL") params.set("paymentStatus", paymentFilter);
       if (shippingFrom) params.set("shippingDateFrom", new Date(shippingFrom).toISOString());
@@ -148,7 +179,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter, paymentFilter, shippingFrom, shippingTo]);
+  }, [statusFilter, paymentFilter, shippingFrom, shippingTo, page, rowsPerPage]);
 
   const doCancel = async (order: OrderItem) => {
     setBusyId(order.id);
@@ -170,6 +201,109 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
     } finally {
       setBusyId(null);
     }
+  };
+
+  // Client-side sorting (current page only)
+  function descendingComparator(a: OrderItem, b: OrderItem, key: SortableKeys) {
+    const mapVal = (o: OrderItem, k: SortableKeys) => {
+      switch (k) {
+        case "customerName":
+          return (displayCustomerName(o.customer) || "").toString().toLowerCase();
+        // case "salespersonName":
+        //   return (o.salesperson ? displayEmployeeName(o.salesperson as any) : "").toString().toLowerCase();
+        case "grandTotal":
+          return Number(o.grandTotal ?? 0);
+        case "orderDate":
+          return o.orderDate ? new Date(o.orderDate).getTime() : 0;
+        case "shippingDate":
+          return o.shippingDate ? new Date(o.shippingDate).getTime() : 0;
+        default:
+          return ((o as any)[k] ?? "").toString().toLowerCase();
+      }
+    };
+    const av = mapVal(a, key);
+    const bv = mapVal(b, key);
+    if (typeof av === "number" && typeof bv === "number") return (bv as number) - (av as number);
+    if (bv < av) return -1;
+    if (bv > av) return 1;
+    return 0;
+  }
+  const sortedItems = useMemo(() => {
+    const arr = [...items];
+    const comp = (a: OrderItem, b: OrderItem) =>
+      order === "asc"
+        ? descendingComparator(a, b, orderBy)
+        : -descendingComparator(a, b, orderBy);
+    return arr.sort(comp);
+  }, [items, order, orderBy]);
+
+  const headCells: { id: SortableKeys; label: string; width?: number; align?: "left" | "center" | "right" }[] = [
+    { id: "soNumber", label: "เลขที่ SO", width: 120 },
+    { id: "orderDate", label: "วันที่", width: 110 },
+    { id: "shippingDate", label: "วันที่จัดส่ง", width: 120 },
+    { id: "customerName", label: "ลูกค้า", width: 220 },
+    // { id: "salespersonName", label: "พนักงานขาย", width: 200 },
+    { id: "grandTotal", label: "ยอดรวม", width: 120, align: "right" },
+    { id: "status", label: "สถานะ", width: 120 },
+    { id: "paymentCondition", label: "เงื่อนไขชำระ", width: 140 },
+    { id: "paymentStatus", label: "ชำระเงิน", width: 120 },
+  ];
+
+  function EnhancedTableHead({ order, orderBy, onRequestSort, showActions }: { order: Order; orderBy: SortableKeys; onRequestSort: (e: React.MouseEvent<unknown>, p: SortableKeys) => void; showActions: boolean }) {
+    const createSortHandler = (property: SortableKeys) => (event: React.MouseEvent<unknown>) => {
+      onRequestSort(event, property);
+    };
+    return (
+      <TableHead
+        sx={{
+          bgcolor: "#ccccceff",
+          "& .MuiTableCell-root": {
+            bgcolor: "#ccccceff",
+            color: "#1a1919ff",
+            fontFamily: "Prompt, sans-serif",
+            fontSize: "1rem",
+            fontWeight: 800,
+            borderBottom: "none",
+            whiteSpace: "nowrap",
+          },
+        }}
+      >
+        <TableRow>
+          {headCells.map((h) => (
+            <TableCell key={h.id} align={h.align ?? (h.id === "grandTotal" ? "right" : "left")} sx={{ width: h.width }}>
+              <Tooltip title={`เรียงตาม ${h.label}`} arrow>
+                <TableSortLabel
+                  active={orderBy === h.id}
+                  direction={orderBy === h.id ? order : "asc"}
+                  sx={{ color: "inherit !important", "& .MuiTableSortLabel-icon": { color: "#fff !important" } }}
+                  onClick={createSortHandler(h.id)}
+                >
+                  {h.label}
+                  {orderBy === h.id && (
+                    <Box component="span" sx={visuallyHidden}>
+                      {order === "desc" ? "sorted descending" : "sorted ascending"}
+                    </Box>
+                  )}
+                </TableSortLabel>
+              </Tooltip>
+            </TableCell>
+          ))}
+          {showActions && (
+            <TableCell align="center" sx={{ width: 120 }}>
+              <Tooltip title="การกระทำ" arrow>
+                <span>การกระทำ</span>
+              </Tooltip>
+            </TableCell>
+          )}
+        </TableRow>
+      </TableHead>
+    );
+  }
+
+  const handleRequestSort = (_: React.MouseEvent<unknown>, property: SortableKeys) => {
+    const isAsc = orderBy === property && order === "asc";
+    setOrder(isAsc ? "desc" : "asc");
+    setOrderBy(property);
   };
 
   return (
@@ -213,115 +347,146 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
         </LocalizationProvider>
       </Stack>
 
-      <TableContainer component={Paper}>
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell>เลขที่ SO</TableCell>
-              <TableCell>วันที่</TableCell>
-              <TableCell>วันที่จัดส่ง</TableCell>
-              <TableCell>ลูกค้า</TableCell>
-              <TableCell>พนักงานขาย</TableCell>
-              <TableCell align="right">ยอดรวม</TableCell>
-              <TableCell>สถานะ</TableCell>
-              <TableCell>เงื่อนไขชำระ</TableCell>
-              <TableCell>ชำระเงิน</TableCell>
-              <TableCell align="right">การทำงาน</TableCell>
-            </TableRow>
-          </TableHead>
+      <TableContainer
+        component={Paper}
+        sx={{
+          borderTopLeftRadius: 12,
+          borderTopRightRadius: 12,
+          "&::-webkit-scrollbar": { width: 8 },
+          "&::-webkit-scrollbar-thumb": { backgroundColor: "#ccc", borderRadius: 6 },
+        }}
+      >
+        <Table aria-labelledby="ordersTableTitle" sx={{ minWidth: 900, tableLayout: "fixed" }}>
+          <EnhancedTableHead order={order} orderBy={orderBy} onRequestSort={handleRequestSort} showActions={canView || canEdit || canCancel || canDelete} />
           <TableBody>
-            {items.length === 0 ? (
+            {sortedItems.map((o, idx) => (
+              <TableRow
+                key={o.id}
+                hover
+                sx={{
+                  "&:nth-of-type(even)": { bgcolor: "#fafafa" },
+                  "&:hover": { bgcolor: "#f0f0f0" },
+                }}
+              >
+                <TableCell sx={{ width: 120, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  <Tooltip title={o.soNumber} arrow>
+                    <span>{o.soNumber}</span>
+                  </Tooltip>
+                </TableCell>
+                <TableCell sx={{ width: 110 }}>
+                  <Tooltip title={dayjs(o.orderDate).format("DD/MM/YYYY")} arrow>
+                    <span>{dayjs(o.orderDate).format("DD/MM/YYYY")}</span>
+                  </Tooltip>
+                </TableCell>
+                <TableCell sx={{ width: 120 }}>
+                  <Tooltip title={o.shippingDate ? dayjs(o.shippingDate).format("DD/MM/YYYY") : "-"} arrow>
+                    <span>{o.shippingDate ? dayjs(o.shippingDate).format("DD/MM/YYYY") : "-"}</span>
+                  </Tooltip>
+                </TableCell>
+                <TableCell sx={{ width: 220, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  <Tooltip title={displayCustomerName(o.customer)} arrow>
+                    <span>{displayCustomerName(o.customer)}</span>
+                  </Tooltip>
+                </TableCell>
+                {/* <TableCell sx={{ width: 200, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  <Tooltip title={o.salesperson ? displayEmployeeName(o.salesperson as any) : "-"} arrow>
+                    <span>{o.salesperson ? displayEmployeeName(o.salesperson as any) : "-"}</span>
+                  </Tooltip>
+                </TableCell> */}
+                <TableCell align="right" sx={{ width: 120 }}>
+                  <Tooltip title={o.grandTotal?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} arrow>
+                    <span>{o.grandTotal?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </Tooltip>
+                </TableCell>
+                <TableCell sx={{ width: 120 }}>
+                  <Tooltip title={WORKFLOW_STATUS_OPTIONS.find((x) => x.value === workflowFromBackend(o.status, o.paymentStatus))?.label || o.status} arrow>
+                    <span>{WORKFLOW_STATUS_OPTIONS.find((x) => x.value === workflowFromBackend(o.status, o.paymentStatus))?.label || o.status}</span>
+                  </Tooltip>
+                </TableCell>
+                <TableCell sx={{ width: 140 }}>
+                  <Tooltip title={o.paymentCondition === 'POSTPAID' ? 'ส่งก่อน-โอนทีหลัง' : 'โอนก่อน-ส่งทีหลัง'} arrow>
+                    <span>{o.paymentCondition === 'POSTPAID' ? 'ส่งก่อน-โอนทีหลัง' : 'โอนก่อน-ส่งทีหลัง'}</span>
+                  </Tooltip>
+                </TableCell>
+                <TableCell sx={{ width: 120 }}>
+                  <Tooltip title={PAYMENT_STATUS_LABEL[o.paymentStatus] || o.paymentStatus} arrow>
+                    <span>{PAYMENT_STATUS_LABEL[o.paymentStatus] || o.paymentStatus}</span>
+                  </Tooltip>
+                </TableCell>
+                {(canView || canEdit || canCancel || canDelete) && (
+                  <TableCell align="center" sx={{ width: 120 }}>
+                    <Stack direction="row" spacing={0.5} justifyContent="center">
+                      {canView && (
+                        <Tooltip title="ดูรายละเอียด" arrow>
+                          <IconButton component={Link as any} href={`/dashboard/sales/orders/${o.id}`} size="small" color="primary">
+                            <VisibilityOutlinedIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                      {canEdit && (
+                        <Tooltip title={workflowFromBackend(o.status, o.paymentStatus) === "COMPLETED" ? "แก้ไขไม่ได้ (เสร็จสิ้น)" : "แก้ไข"} arrow>
+                          <span>
+                            <IconButton size="small" color="secondary" disabled={workflowFromBackend(o.status, o.paymentStatus) === "COMPLETED"} onClick={() => setEditId(o.id)}>
+                              <EditOutlinedIcon fontSize="small" />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+                      )}
+                      {canView && (
+                        <Tooltip title="ดูประวัติสต็อก" arrow>
+                          <IconButton component={Link as any} href={`/dashboard/reports/stock-movements?saleOrderId=${o.id}`} size="small" color="info">
+                            <HistoryOutlinedIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                      {canCancel && (
+                        <Tooltip title={o.status === "CANCELLED" ? "ถูกยกเลิกแล้ว" : "ยกเลิก"} arrow>
+                          <span>
+                            <IconButton size="small" color="warning" disabled={o.status === "CANCELLED" || busyId === o.id} onClick={() => setConfirm({ type: "cancel", order: o })}>
+                              <CancelOutlinedIcon fontSize="small" />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+                      )}
+                      {canDelete && (
+                        <Tooltip title="ลบ" arrow>
+                          <span>
+                            <IconButton size="small" color="error" disabled={busyId === o.id} onClick={() => setConfirm({ type: "delete", order: o })}>
+                              <DeleteOutlineIcon fontSize="small" />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+                      )}
+                    </Stack>
+                  </TableCell>
+                )}
+              </TableRow>
+            ))}
+            {sortedItems.length === 0 && (
               <TableRow>
-                <TableCell colSpan={9}>
+                <TableCell colSpan={headCells.length + ((canView || canEdit || canCancel || canDelete) ? 1 : 0)}>
                   <Box py={4} textAlign="center">
                     <Typography color="text.secondary">{loading ? "กำลังโหลด..." : "ยังไม่มีรายการ"}</Typography>
                   </Box>
                 </TableCell>
               </TableRow>
-            ) : (
-              items.map((o) => (
-                <TableRow key={o.id} hover>
-                  <TableCell>{o.soNumber}</TableCell>
-                  <TableCell>{dayjs(o.orderDate).format("DD/MM/YYYY")}</TableCell>
-                  <TableCell>{o.shippingDate ? dayjs(o.shippingDate).format("DD/MM/YYYY") : "-"}</TableCell>
-                  <TableCell>{displayCustomerName(o.customer)}</TableCell>
-                  <TableCell>{o.salesperson ? displayEmployeeName(o.salesperson as any) : "-"}</TableCell>
-                  <TableCell align="right">{o.grandTotal?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                  <TableCell>{WORKFLOW_STATUS_OPTIONS.find((x) => x.value === workflowFromBackend(o.status, o.paymentStatus))?.label || o.status}</TableCell>
-                  <TableCell>{o.paymentCondition === 'POSTPAID' ? 'ส่งก่อน-โอนทีหลัง' : 'โอนก่อน-ส่งทีหลัง'}</TableCell>
-                  <TableCell>{PAYMENT_STATUS_LABEL[o.paymentStatus] || o.paymentStatus}</TableCell>
-                  <TableCell align="right">
-                    <Stack direction="row" spacing={1} justifyContent="flex-end">
-                      {canView && (
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          color="primary"
-                          startIcon={<VisibilityOutlinedIcon fontSize="small" />}
-                          component={Link as any}
-                          href={`/dashboard/sales/orders/${o.id}`}
-                        >
-                          ดู
-                        </Button>
-                      )}
-                      {canEdit && (
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          color="secondary"
-                          disabled={workflowFromBackend(o.status, o.paymentStatus) === "COMPLETED"}
-                          onClick={() => {
-                            if (workflowFromBackend(o.status, o.paymentStatus) === "COMPLETED") return;
-                            setEditId(o.id);
-                          }}
-                        >
-                          แก้ไข
-                        </Button>
-                      )}
-                      {canView && (
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          color="info"
-                          startIcon={<HistoryOutlinedIcon fontSize="small" />}
-                          component={Link as any}
-                          href={`/dashboard/reports/stock-movements?saleOrderId=${o.id}`}
-                        >
-                          ดูประวัติ
-                        </Button>
-                      )}
-                      {canCancel && (
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          color="warning"
-                         startIcon={<CancelOutlinedIcon fontSize="small" />}
-                         disabled={o.status === "CANCELLED" || busyId === o.id}
-                         onClick={() => setConfirm({ type: "cancel", order: o })}
-                         >
-                           ยกเลิก
-                         </Button>
-                      )}
-                      {canDelete && (
-                        <Button
-                        size="small"
-                        variant="outlined"
-                        color="error"
-                        startIcon={<DeleteOutlineIcon fontSize="small" />}
-                        disabled={busyId === o.id}
-                        onClick={() => setConfirm({ type: "delete", order: o })}
-                        >
-                          ลบ
-                        </Button>
-                      )}
-                    </Stack>
-                  </TableCell>
-                </TableRow>
-              ))
             )}
           </TableBody>
         </Table>
       </TableContainer>
+
+      <TablePagination
+        rowsPerPageOptions={[5, 10, 20, 50]}
+        component="div"
+        count={total}
+        rowsPerPage={rowsPerPage}
+        page={page}
+        onPageChange={(_, p) => setPage(p)}
+        onRowsPerPageChange={(e) => {
+          setRowsPerPage(parseInt(e.target.value, 10));
+          setPage(0);
+        }}
+      />
 
       <CreateOrderDialog
         open={open}
