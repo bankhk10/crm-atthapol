@@ -170,7 +170,7 @@ export function CustomersTable({ customers, query }: CustomersTableProps) {
                         color: "#fff",
                         bgcolor: 
                           c.type === "FARMER"
-                            ? "#22C55E"
+                            ? "#11853bff"
                             : c.type === "SUBDEALER"
                               ? "#7C3AED"
                               : c.type === "BROKER"
@@ -361,7 +361,7 @@ export function CustomersTable({ customers, query }: CustomersTableProps) {
                             color: "#fff",
                             bgcolor: 
                               c.type === "FARMER"
-                                ? "#22C55E"
+                                ? "#11853bff"
                                 : c.type === "SUBDEALER"
                                   ? "#7C3AED"
                                   : c.type === "BROKER"
