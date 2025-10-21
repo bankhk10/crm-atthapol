@@ -283,6 +283,13 @@ export function ProductForm({
             value={values.price ?? ""}
             onChange={handleChange("price")}
             fullWidth
+            inputProps={{
+              min: 0,
+              onWheel: (e: React.WheelEvent<HTMLInputElement>) => {
+                e.preventDefault();
+                (e.currentTarget as HTMLInputElement).blur();
+              },
+            }}
           />
           <TextField
             type="number"
@@ -290,6 +297,14 @@ export function ProductForm({
             value={values.qtyOnHand ?? 0}
             onChange={handleChange("qtyOnHand")}
             fullWidth
+            inputProps={{
+              min: 0,
+              step: 1,
+              onWheel: (e: React.WheelEvent<HTMLInputElement>) => {
+                e.preventDefault();
+                (e.currentTarget as HTMLInputElement).blur();
+              },
+            }}
           />
         </Stack>
 
