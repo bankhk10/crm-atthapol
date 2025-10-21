@@ -89,6 +89,7 @@ export default async function SalesOrderDetailPage({ params }: { params: Promise
             <Stack spacing={0.5}>
               <div>เลขที่เอกสาร: {so.soNumber}</div>
               <div>วันที่สั่งซื้อ: {new Date(so.orderDate).toLocaleDateString()}</div>
+              <div>วันที่จัดส่ง: {so.shippingDate ? new Date(so.shippingDate).toLocaleDateString() : '-'}</div>
               <div>ครบกำหนด: {so.dueDate ? new Date(so.dueDate).toLocaleDateString() : '-'}</div>
               <div>สกุลเงิน: {so.currency} | VAT: {so.vatRate}% ({so.vatIncluded ? 'รวม' : 'ไม่รวม'})</div>
             </Stack>

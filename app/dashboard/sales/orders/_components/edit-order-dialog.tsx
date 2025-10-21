@@ -71,6 +71,7 @@ export function EditOrderDialog({ open, orderId, onClose, customerOptions, emplo
   const [salespersonId, setSalespersonId] = useState("");
   const [orderDate, setOrderDate] = useState<string | null>(null);
   const [dueDate, setDueDate] = useState<string | null>(null);
+  const [shippingDate, setShippingDate] = useState<string | null>(null);
   const [creditTermDays, setCreditTermDays] = useState<number | "">("");
   const [paymentCondition, setPaymentCondition] = useState<"PREPAID" | "POSTPAID">("PREPAID");
   const [currency, setCurrency] = useState("THB");
@@ -102,6 +103,7 @@ export function EditOrderDialog({ open, orderId, onClose, customerOptions, emplo
         setSalespersonId(so.salespersonId || "");
         setOrderDate(so.orderDate ? new Date(so.orderDate).toISOString().slice(0,10) : null);
         setDueDate(so.dueDate ? new Date(so.dueDate).toISOString().slice(0,10) : null);
+        setShippingDate(so.shippingDate ? new Date(so.shippingDate).toISOString().slice(0,10) : null);
         setCreditTermDays(typeof so.creditTermDays === 'number' ? so.creditTermDays : "");
         setPaymentCondition((so.paymentCondition as any) === 'POSTPAID' ? 'POSTPAID' : 'PREPAID');
         setCurrency(so.currency || "THB");
@@ -154,6 +156,7 @@ export function EditOrderDialog({ open, orderId, onClose, customerOptions, emplo
         salespersonId: salespersonId || undefined,
         orderDate: orderDate ? new Date(orderDate).toISOString() : undefined,
         dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
+        shippingDate: shippingDate ? new Date(shippingDate).toISOString() : undefined,
         creditTermDays: creditTermDays === "" ? undefined : Number(creditTermDays),
         paymentCondition,
         currency,
@@ -260,6 +263,9 @@ export function EditOrderDialog({ open, orderId, onClose, customerOptions, emplo
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <DatePicker label="วันที่สั่งซื้อ" value={orderDate ? new Date(orderDate) : null} onChange={(v) => setOrderDate(v ? v.toISOString().slice(0, 10) : null)} slotProps={{ textField: { fullWidth: true } }} />
               <DatePicker label="ครบกำหนดชำระ" value={dueDate ? new Date(dueDate) : null} onChange={(v) => setDueDate(v ? v.toISOString().slice(0, 10) : null)} slotProps={{ textField: { fullWidth: true } }} />
+            </Stack>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              <DatePicker label="วันที่จัดส่ง" value={shippingDate ? new Date(shippingDate) : null} onChange={(v) => setShippingDate(v ? v.toISOString().slice(0, 10) : null)} slotProps={{ textField: { fullWidth: true } }} />
             </Stack>
           </LocalizationProvider>
 

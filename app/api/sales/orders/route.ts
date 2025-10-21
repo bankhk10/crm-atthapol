@@ -25,6 +25,7 @@ const CreateOrderSchema = z.object({
   salespersonId: z.string().optional(),
   orderDate: z.string().datetime().optional(),
   dueDate: z.string().datetime().optional(),
+  shippingDate: z.string().datetime().optional(),
   creditTermDays: z.number().int().optional(),
   paymentCondition: z.enum(["PREPAID","POSTPAID"]).optional(),
   currency: z.string().default("THB"),
@@ -113,6 +114,8 @@ export async function GET(req: NextRequest) {
     // New filters: paymentStatus (single or comma-separated/repeated) and workflow (UI status)
     const paymentStatusParam = (searchParams.getAll as any)?.call(searchParams, "paymentStatus") ?? [];
     const workflow = (searchParams.get("workflow") || "").toUpperCase() || undefined;
+    const shippingDateFrom = searchParams.get("shippingDateFrom") || undefined;
+    const shippingDateTo = searchParams.get("shippingDateTo") || undefined;
 
     // Normalize paymentStatus values
     let paymentStatusValues: string[] | undefined = undefined;
@@ -173,6 +176,20 @@ export async function GET(req: NextRequest) {
         default:
           break;
       }
+    }
+
+    // Apply shipping date range if provided
+    if (shippingDateFrom || shippingDateTo) {
+      const range: any = {};
+      if (shippingDateFrom) {
+        const d = new Date(shippingDateFrom);
+        if (!isNaN(d.getTime())) range.gte = d;
+      }
+      if (shippingDateTo) {
+        const d = new Date(shippingDateTo);
+        if (!isNaN(d.getTime())) range.lte = d;
+      }
+      if (Object.keys(range).length > 0) (where as any).shippingDate = range;
     }
 
     const [items, total] = await Promise.all([
@@ -258,6 +275,7 @@ export async function POST(req: NextRequest) {
               salespersonId: data.salespersonId,
               orderDate: data.orderDate ? new Date(data.orderDate) : new Date(),
               dueDate: data.dueDate ? new Date(data.dueDate) : null,
+              shippingDate: data.shippingDate ? new Date(data.shippingDate) : null,
               creditTermDays: data.creditTermDays,
               currency: data.currency ?? "THB",
               vatIncluded: data.vatIncluded ?? true,

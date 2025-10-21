@@ -111,6 +111,7 @@ export function CreateOrderDialog({ open, onClose, customerOptions, employeeOpti
   const [salespersonId, setSalespersonId] = useState("");
   const [orderDate, setOrderDate] = useState<string | null>(new Date().toISOString().slice(0, 10));
   const [dueDate, setDueDate] = useState<string | null>(null);
+  const [shippingDate, setShippingDate] = useState<string | null>(null);
   const [creditTermDays, setCreditTermDays] = useState<number | "">("");
   const [paymentCondition, setPaymentCondition] = useState<"PREPAID" | "POSTPAID">("PREPAID");
   const [currency, setCurrency] = useState("THB");
@@ -145,6 +146,7 @@ export function CreateOrderDialog({ open, onClose, customerOptions, employeeOpti
     setSalespersonId("");
     setOrderDate(new Date().toISOString().slice(0, 10));
     setDueDate(null);
+    setShippingDate(null);
     setCreditTermDays("");
     setCurrency("THB");
     setVatIncluded(true);
@@ -242,6 +244,7 @@ export function CreateOrderDialog({ open, onClose, customerOptions, employeeOpti
         salespersonId: salespersonId || undefined,
         orderDate: orderDate ? new Date(orderDate).toISOString() : undefined,
         dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
+        shippingDate: shippingDate ? new Date(shippingDate).toISOString() : undefined,
         creditTermDays: creditTermDays === "" ? undefined : Number(creditTermDays),
         paymentCondition,
         currency,
@@ -383,6 +386,14 @@ export function CreateOrderDialog({ open, onClose, customerOptions, employeeOpti
                 label="ครบกำหนดชำระ"
                 value={dueDate ? new Date(dueDate) : null}
                 onChange={(v) => setDueDate(v ? v.toISOString().slice(0, 10) : null)}
+                slotProps={{ textField: { fullWidth: true } }}
+              />
+            </Stack>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              <DatePicker
+                label="วันที่จัดส่ง"
+                value={shippingDate ? new Date(shippingDate) : null}
+                onChange={(v) => setShippingDate(v ? v.toISOString().slice(0, 10) : null)}
                 slotProps={{ textField: { fullWidth: true } }}
               />
             </Stack>

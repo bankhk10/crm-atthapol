@@ -550,6 +550,7 @@ model SaleOrder {
   customerId      String
   salespersonId   String?
   orderDate       DateTime         @default(now())
+  shippingDate    DateTime?
   dueDate         DateTime?
   creditTermDays  Int?
   paymentCondition PaymentCondition @default(PREPAID)
@@ -585,6 +586,7 @@ model SaleOrder {
   deletedAt DateTime?
 
   @@index([orderDate])
+  @@index([shippingDate])
   @@index([customerId])
   @@index([salespersonId])
 }

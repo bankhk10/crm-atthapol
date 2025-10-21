@@ -2,6 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from "@mui/material";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
@@ -14,6 +17,7 @@ import { CreateOrderDialog, type Option, type ProductOption } from "./create-ord
 import { EditOrderDialog } from "./edit-order-dialog";
 import { useSession } from "next-auth/react";
 import { hasPermission } from "@/lib/permissions";
+import { th } from "date-fns/locale";
 
 dayjs.extend(relativeTime);
 dayjs.locale(thLocale);
@@ -22,6 +26,7 @@ type OrderItem = {
   id: string;
   soNumber: string;
   orderDate: string;
+  shippingDate?: string | null;
   grandTotal: number;
   status: string;
   paymentCondition?: string;
@@ -85,6 +90,8 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
   const [items, setItems] = useState<OrderItem[]>([]);
   const [total, setTotal] = useState(0);
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [shippingFrom, setShippingFrom] = useState<string | null>(null);
+  const [shippingTo, setShippingTo] = useState<string | null>(null);
   const [paymentFilter, setPaymentFilter] = useState<string>("ALL");
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -123,6 +130,8 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
       params.set("pageSize", "20");
       if (statusFilter !== "ALL") params.set("workflow", statusFilter);
       if (paymentFilter !== "ALL") params.set("paymentStatus", paymentFilter);
+      if (shippingFrom) params.set("shippingDateFrom", new Date(shippingFrom).toISOString());
+      if (shippingTo) params.set("shippingDateTo", new Date(shippingTo).toISOString());
       const res = await fetch(`/api/sales/orders?${params.toString()}`);
       const data = await res.json();
       const list: OrderItem[] = data.items || [];
@@ -138,7 +147,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter, paymentFilter]);
+  }, [statusFilter, paymentFilter, shippingFrom, shippingTo]);
 
   const doCancel = async (order: OrderItem) => {
     setBusyId(order.id);
@@ -182,6 +191,23 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
             <Chip key={c.value} label={`ชำระเงิน: ${c.label}`} color={paymentFilter === c.value ? "secondary" : "default"} onClick={() => setPaymentFilter(c.value)} />
           ))}
         </Stack>
+        <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={th}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ xs: "stretch", sm: "center" }}>
+            <DatePicker
+              label="จัดส่งตั้งแต่"
+              value={shippingFrom ? new Date(shippingFrom) : null}
+              onChange={(v) => setShippingFrom(v ? v.toISOString().slice(0, 10) : null)}
+              slotProps={{ textField: { fullWidth: true, size: "small" } }}
+            />
+            <DatePicker
+              label="ถึง"
+              value={shippingTo ? new Date(shippingTo) : null}
+              onChange={(v) => setShippingTo(v ? v.toISOString().slice(0, 10) : null)}
+              slotProps={{ textField: { fullWidth: true, size: "small" } }}
+            />
+            <Button onClick={() => { setShippingFrom(null); setShippingTo(null); }} color="inherit" sx={{ whiteSpace: 'nowrap' }}>ล้างช่วงวันที่</Button>
+          </Stack>
+        </LocalizationProvider>
       </Stack>
 
       <TableContainer component={Paper}>
@@ -190,6 +216,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
             <TableRow>
               <TableCell>เลขที่ SO</TableCell>
               <TableCell>วันที่</TableCell>
+              <TableCell>วันที่จัดส่ง</TableCell>
               <TableCell>ลูกค้า</TableCell>
               <TableCell>พนักงานขาย</TableCell>
               <TableCell align="right">ยอดรวม</TableCell>
@@ -213,6 +240,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
                 <TableRow key={o.id} hover>
                   <TableCell>{o.soNumber}</TableCell>
                   <TableCell>{dayjs(o.orderDate).format("DD/MM/YYYY")}</TableCell>
+                  <TableCell>{o.shippingDate ? dayjs(o.shippingDate).format("DD/MM/YYYY") : "-"}</TableCell>
                   <TableCell>{displayCustomerName(o.customer)}</TableCell>
                   <TableCell>{o.salesperson ? displayEmployeeName(o.salesperson as any) : "-"}</TableCell>
                   <TableCell align="right">{o.grandTotal?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
