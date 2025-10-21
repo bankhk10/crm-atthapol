@@ -4,7 +4,7 @@ import { ActionButtons } from "../_components/action-buttons";
 export default function SalesPage() {
   return (
     <>
-      <ActionButtons resource="sales" />
+      {/* <ActionButtons resource="sales" /> */}
       <Stack spacing={2}>
         <Typography variant="h4" fontWeight={700}>
           การขาย

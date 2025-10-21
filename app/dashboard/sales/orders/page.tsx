@@ -24,7 +24,7 @@ export default async function SalesOrdersPage() {
 
   return (
     <>
-      <ActionButtons resource="sales" />
+      {/* <ActionButtons resource="sales" /> */}
       <Stack spacing={2}>
         <Typography variant="h4" fontWeight={700}>
           รายการขาย
