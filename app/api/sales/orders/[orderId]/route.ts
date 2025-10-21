@@ -169,6 +169,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ orderId
     const updated = await prisma.$transaction(async (tx) => {
       const exists = await tx.saleOrder.findUnique({ where: { id: orderId } });
       if (!exists || (exists as any).deletedAt) throw new Error("NOT_FOUND");
+      if ((exists as any).status === "SHIPPED") throw new Error("LOCKED");
 
       // release all existing reservations
       await releaseReservations(tx, orderId);
@@ -227,13 +228,14 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ orderId
         include: { items: true },
       });
 
-      // Reserve or deduct stock per items depending on shippingDate presence
+      // Reserve or deduct stock per items depending on shippingDate or status
       for (const item of (order.items as any[])) {
         if (!item.productId || !item.qty) continue;
         let remaining = Math.max(0, Math.floor(Number(item.qty)));
         if (!Number.isFinite(remaining) || remaining <= 0) continue;
         const stocks = await tx.stock.findMany({ where: { productId: item.productId, deletedAt: null }, orderBy: [{ expDate: "asc" }, { mfgDate: "asc" }, { createdAt: "asc" }] });
-        const isImmediateIssue = Boolean(data.shippingDate);
+        // Issue immediately if there is a shipping date OR order status is SHIPPED (COMPLETED in UI)
+        const isImmediateIssue = Boolean(order.shippingDate) || (order.status === "SHIPPED");
         for (const s of stocks as any[]) {
           if (remaining <= 0) break;
           const onHand = Number(s.qtyOnHand || 0);
@@ -260,6 +262,9 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ orderId
   } catch (err) {
     if (err instanceof Error && err.message === "NOT_FOUND") {
       return NextResponse.json({ error: "ไม่พบใบสั่งขาย" }, { status: 404 });
+    }
+    if (err instanceof Error && err.message === "LOCKED") {
+      return NextResponse.json({ error: "เอกสารสถานะสำเร็จ ไม่สามารถแก้ไขได้" }, { status: 400 });
     }
     console.error("[PUT /api/sales/orders/:id] error", err);
     return NextResponse.json({ error: "บันทึกการแก้ไขไม่สำเร็จ" }, { status: 500 });

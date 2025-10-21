@@ -319,7 +319,7 @@ export async function POST(req: NextRequest) {
             include: { items: true },
           });
 
-          // Reserve or Deduct stock per item depending on shippingDate presence
+          // Reserve or Deduct stock per item depending on shippingDate or status
           for (const item of order.items as any[]) {
             if (!item.productId || !item.qty) continue;
             let remaining = Math.max(0, Math.floor(Number(item.qty)));
@@ -330,7 +330,8 @@ export async function POST(req: NextRequest) {
               orderBy: [{ expDate: "asc" }, { mfgDate: "asc" }, { createdAt: "asc" }],
             });
 
-            const isImmediateIssue = Boolean(data.shippingDate);
+            // Issue immediately if there is a shipping date OR order status is SHIPPED (COMPLETED in UI)
+            const isImmediateIssue = Boolean(order.shippingDate) || (order.status === "SHIPPED");
             for (const s of stocks as any[]) {
               if (remaining <= 0) break;
               const onHand = Number(s.qtyOnHand || 0);

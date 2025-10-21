@@ -10,6 +10,7 @@ export type ProductListItem = {
   price?: number | null;
   expDate?: string | null;
   stockOnHand: number;
+  stockAvailable: number;
   stockReserved: number;
   status: "ACTIVE" | "INACTIVE" | "EXPIRED";
   createdAt: string;
@@ -24,7 +25,8 @@ export async function getProducts(): Promise<ProductListItem[]> {
     return items.map((p) => {
       const totals = (p.stocks || []).reduce(
         (acc, s) => {
-          acc.onHand += (s.qtyOnHand || 0) - (s.qtyReserved || 0);
+          // Show physical on-hand quantity here (no reservation deduction)
+          acc.onHand += s.qtyOnHand || 0;
           acc.reserved += s.qtyReserved || 0;
           return acc;
         },
@@ -40,6 +42,7 @@ export async function getProducts(): Promise<ProductListItem[]> {
         price: p.price ?? null,
         expDate: p.expDate ? new Date(p.expDate).toISOString() : null,
         stockOnHand: totals.onHand,
+        stockAvailable: Math.max(0, totals.onHand - totals.reserved),
         stockReserved: totals.reserved,
         status: p.status as any,
         createdAt: new Date(p.createdAt).toISOString(),

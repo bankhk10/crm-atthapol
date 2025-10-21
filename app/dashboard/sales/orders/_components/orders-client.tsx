@@ -199,6 +199,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
               value={shippingFrom ? new Date(shippingFrom) : null}
               onChange={(v) => setShippingFrom(v ? v.toISOString().slice(0, 10) : null)}
               slotProps={{ textField: { fullWidth: true, size: "small" } }}
+              views={['year', 'month', 'day']}
             />
             <DatePicker
               label="ถึง"
@@ -267,7 +268,11 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
                           size="small"
                           variant="outlined"
                           color="secondary"
-                          onClick={() => setEditId(o.id)}
+                          disabled={workflowFromBackend(o.status, o.paymentStatus) === "COMPLETED"}
+                          onClick={() => {
+                            if (workflowFromBackend(o.status, o.paymentStatus) === "COMPLETED") return;
+                            setEditId(o.id);
+                          }}
                         >
                           แก้ไข
                         </Button>

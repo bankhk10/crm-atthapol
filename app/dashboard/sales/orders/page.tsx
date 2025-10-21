@@ -18,7 +18,8 @@ export default async function SalesOrdersPage() {
     nameTH: p.nameTH,
     unit: p.unit ?? null,
     price: p.price ?? null,
-    stockOnHand: p.stockOnHand,
+    // Use available stock for ordering (on-hand minus reserved)
+    stockOnHand: p.stockAvailable,
   }));
 
   return (

@@ -90,6 +90,7 @@ export function EditOrderDialog({ open, orderId, onClose, customerOptions, emplo
   const [items, setItems] = useState<Item[]>([{ ...DEFAULT_ITEM }]);
 
   const totals = useMemo(() => computeTotals(items, Number(vatRate || 0), Number(shippingFee || 0), Number(otherCharges || 0)), [items, vatRate, shippingFee, otherCharges]);
+  const isLocked = (workflowStatus === "COMPLETED") || (status === "SHIPPED");
 
   useEffect(() => {
     if (!open || !orderId) return;
@@ -229,6 +230,11 @@ export function EditOrderDialog({ open, orderId, onClose, customerOptions, emplo
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>แก้ไขใบสั่งขาย</DialogTitle>
       <DialogContent dividers>
+        {isLocked && (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            เอกสารถูกทำเครื่องหมายว่า "สำเร็จ" จึงไม่สามารถแก้ไขได้
+          </Alert>
+        )}
         <Stack spacing={2}>
           {error && <Alert severity="error" onClose={() => setError(null)}>{error}</Alert>}
 
@@ -353,7 +359,7 @@ export function EditOrderDialog({ open, orderId, onClose, customerOptions, emplo
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} color="inherit">ปิด</Button>
-        <Button onClick={handleSubmit} variant="contained" disabled={!canSubmit || isSubmitting}>บันทึกการแก้ไข</Button>
+        <Button onClick={handleSubmit} variant="contained" disabled={isLocked || !canSubmit || isSubmitting}>บันทึกการแก้ไข</Button>
       </DialogActions>
     </Dialog>
   );

@@ -33,8 +33,8 @@ export async function POST(_req: NextRequest, context: { params: Promise<{ order
 
       await releaseReservations(tx, orderId);
 
-      // If order had shippingDate (immediate issue), return qtyOnHand back
-      if ((order as any).shippingDate) {
+      // If order had shippingDate OR status is SHIPPED (treated as issued), return qtyOnHand back
+      if ((order as any).shippingDate || (order as any).status === "SHIPPED") {
         const items = await tx.saleOrderItem.findMany({ where: { saleOrderId: orderId } });
         for (const item of items as any[]) {
           if (!item.productId || !item.qty) continue;

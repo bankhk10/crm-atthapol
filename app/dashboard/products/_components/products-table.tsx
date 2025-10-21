@@ -44,6 +44,7 @@ type SortableKeys =
   | "brand"
   | "status"
   | "stockOnHand"
+  | "stockAvailable"
   | "stockReserved"
   | "createdAt";
 
@@ -59,8 +60,9 @@ const headCells: readonly HeadCell[] = [
   { id: "productCode", label: "รหัสสินค้า", width: 110 },
   { id: "nameTH", label: "ชื่อสินค้า", width: 230 },
   { id: "brand", label: "แบรนด์", width: 100 },
-  { id: "stockOnHand", label: "สต็อกคงเหลือ", width: 80 },
-  { id: "stockReserved", label: "สต็อกจอง", width: 80 },
+  { id: "stockOnHand", label: "จำนวนสินค้า", width: 90, numeric: true },
+  { id: "stockAvailable", label: "พร้อมขาย", width: 90, numeric: true },
+  { id: "stockReserved", label: "สต็อกจอง", width: 90, numeric: true },
   { id: "status", label: "สถานะ", width: 130 },
 ];
 
@@ -76,6 +78,12 @@ const visuallyHidden = {
   whiteSpace: "nowrap" as const,
 };
 
+const numericKeys = new Set<SortableKeys>([
+  "stockOnHand",
+  "stockAvailable",
+  "stockReserved",
+]);
+
 function descendingComparator(
   a: ProductListItem,
   b: ProductListItem,
@@ -83,11 +91,17 @@ function descendingComparator(
 ) {
   const av = a[orderBy];
   const bv = b[orderBy];
-  const as = String(av ?? "").toLowerCase();
-  const bs = String(bv ?? "").toLowerCase();
-  if (bs < as) return -1;
-  if (bs > as) return 1;
-  return 0;
+  if (numericKeys.has(orderBy)) {
+    const an = Number(av ?? 0);
+    const bn = Number(bv ?? 0);
+    return bn - an;
+  } else {
+    const as = String(av ?? "").toLowerCase();
+    const bs = String(bv ?? "").toLowerCase();
+    if (bs < as) return -1;
+    if (bs > as) return 1;
+    return 0;
+  }
 }
 
 function getComparator(order: Order, orderBy: SortableKeys) {
@@ -132,7 +146,7 @@ function EnhancedTableHead({
         {headCells.map((headCell) => (
           <TableCell
             key={headCell.id}
-            align={["brand", "stockOnHand", "stockReserved", "status"].includes(headCell.id) ? "center" : "left"}
+            align={["brand", "stockOnHand", "stockAvailable", "stockReserved", "status"].includes(headCell.id) ? "center" : "left"}
             sx={{
               width: headCell.width,
               display: ["brand", "expDate"].includes(headCell.id)
@@ -198,6 +212,7 @@ export function ProductsTable({ products, query }: Props) {
         p.status,
         p.category, // ยังรองรับค้นหาด้วยหมวด แม้ไม่ได้แสดงคอลัมน์
         String(p.stockOnHand ?? 0),
+        String((p as any).stockAvailable ?? 0),
       ]
         .join(" ")
         .toLowerCase()
@@ -302,7 +317,8 @@ export function ProductsTable({ products, query }: Props) {
                   รหัส: {p.productCode} {p.brand ? `• แบรนด์: ${p.brand}` : ""}
                 </Typography>
                 <Stack direction="row" spacing={1}>
-                  <Chip size="small" label={`คงเหลือ: ${p.stockOnHand}`} />
+                  <Chip size="small" label={`จำนวน: ${p.stockOnHand}`} />
+                  <Chip size="small" label={`พร้อมขาย: ${p.stockAvailable ?? Math.max(0, (p.stockOnHand ?? 0) - (p.stockReserved ?? 0))}`} />
                   <Chip size="small" label={`จอง: ${p.stockReserved}`} />
                 </Stack>
                 {showActions && (
@@ -398,12 +414,17 @@ export function ProductsTable({ products, query }: Props) {
                     <span>{p.brand ?? "-"}</span>
                   </Tooltip>
                 </TableCell>
-                <TableCell sx={{ width: 80 }} align="center">
+                <TableCell sx={{ width: 90 }} align="center">
                   <Tooltip title={String(p.stockOnHand)} arrow>
                     <span>{p.stockOnHand}</span>
                   </Tooltip>
                 </TableCell>
-                <TableCell sx={{ width: 80 }} align="center">
+                <TableCell sx={{ width: 90 }} align="center">
+                  <Tooltip title={String(p.stockAvailable ?? Math.max(0, (p.stockOnHand ?? 0) - (p.stockReserved ?? 0)))} arrow>
+                    <span>{p.stockAvailable ?? Math.max(0, (p.stockOnHand ?? 0) - (p.stockReserved ?? 0))}</span>
+                  </Tooltip>
+                </TableCell>
+                <TableCell sx={{ width: 90 }} align="center">
                   <Tooltip title={String(p.stockReserved)} arrow>
                     <span>{p.stockReserved}</span>
                   </Tooltip>

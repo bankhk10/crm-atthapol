@@ -206,7 +206,7 @@ export default async function ProductDetailPage({
                     {(product.stocks || []).flatMap((s: any) => [
                       <Info
                         key={`${s.id}-onhand`}
-                        label="สต็อกคงเหลือ : "
+                        label="จำนวนสินค้า : "
                         value={s.qtyOnHand ?? "-"}
                       />,
                       <Info
