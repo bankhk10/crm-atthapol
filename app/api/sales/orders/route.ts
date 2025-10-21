@@ -319,7 +319,7 @@ export async function POST(req: NextRequest) {
             include: { items: true },
           });
 
-          // Reserve stock per item
+          // Reserve or Deduct stock per item depending on shippingDate presence
           for (const item of order.items as any[]) {
             if (!item.productId || !item.qty) continue;
             let remaining = Math.max(0, Math.floor(Number(item.qty)));
@@ -330,6 +330,7 @@ export async function POST(req: NextRequest) {
               orderBy: [{ expDate: "asc" }, { mfgDate: "asc" }, { createdAt: "asc" }],
             });
 
+            const isImmediateIssue = Boolean(data.shippingDate);
             for (const s of stocks as any[]) {
               if (remaining <= 0) break;
               const onHand = Number(s.qtyOnHand || 0);
@@ -338,8 +339,16 @@ export async function POST(req: NextRequest) {
               if (available <= 0) continue;
               const alloc = Math.min(available, remaining);
               if (alloc <= 0) continue;
-              await tx.stock.update({ where: { id: s.id }, data: { qtyReserved: { increment: alloc } } });
-              await (tx as any).saleOrderStockReservation.create({ data: { saleOrderId: order.id, stockId: s.id, qty: alloc } });
+              if (isImmediateIssue) {
+                // Deduct on-hand immediately, do not reserve
+                await tx.stock.update({ where: { id: s.id }, data: { qtyOnHand: { decrement: alloc } } });
+                await (tx as any).stockMovement.create({ data: { stockId: s.id, productId: s.productId, saleOrderId: order.id, type: 'ISSUE', qty: alloc } });
+              } else {
+                // Reserve only
+                await tx.stock.update({ where: { id: s.id }, data: { qtyReserved: { increment: alloc } } });
+                await (tx as any).saleOrderStockReservation.create({ data: { saleOrderId: order.id, stockId: s.id, qty: alloc } });
+                await (tx as any).stockMovement.create({ data: { stockId: s.id, productId: s.productId, saleOrderId: order.id, type: 'RESERVE', qty: alloc } });
+              }
               remaining -= alloc;
             }
           }

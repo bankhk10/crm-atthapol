@@ -16,6 +16,7 @@ async function releaseReservations(tx: any, saleOrderId: string) {
     const releaseQty = Math.min(current, qty);
     if (releaseQty > 0) {
       await tx.stock.update({ where: { id: r.stockId }, data: { qtyReserved: { decrement: releaseQty } } });
+      await (tx as any).stockMovement.create({ data: { stockId: r.stockId, productId: (await tx.stock.findUnique({ where: { id: r.stockId }, select: { productId: true } })).productId, saleOrderId: saleOrderId, type: 'RELEASE', qty: releaseQty } });
     }
     await (tx as any).saleOrderStockReservation.update({ where: { id: r.id }, data: { releasedAt: new Date() } });
   }
@@ -226,18 +227,29 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ orderId
         include: { items: true },
       });
 
-      // re-reserve stock per items
+      // Reserve or deduct stock per items depending on shippingDate presence
       for (const item of (order.items as any[])) {
         if (!item.productId || !item.qty) continue;
         let remaining = Math.max(0, Math.floor(Number(item.qty)));
         if (!Number.isFinite(remaining) || remaining <= 0) continue;
         const stocks = await tx.stock.findMany({ where: { productId: item.productId, deletedAt: null }, orderBy: [{ expDate: "asc" }, { mfgDate: "asc" }, { createdAt: "asc" }] });
+        const isImmediateIssue = Boolean(data.shippingDate);
         for (const s of stocks as any[]) {
           if (remaining <= 0) break;
-          const onHand = Number(s.qtyOnHand || 0); const reserved = Number(s.qtyReserved || 0); const available = Math.max(0, onHand - reserved);
-          if (available <= 0) continue; const alloc = Math.min(available, remaining); if (alloc <= 0) continue;
-          await tx.stock.update({ where: { id: s.id }, data: { qtyReserved: { increment: alloc } } });
-          await (tx as any).saleOrderStockReservation.create({ data: { saleOrderId: order.id, stockId: s.id, qty: alloc } });
+          const onHand = Number(s.qtyOnHand || 0);
+          const reserved = Number(s.qtyReserved || 0);
+          const available = Math.max(0, onHand - reserved);
+          if (available <= 0) continue;
+          const alloc = Math.min(available, remaining);
+          if (alloc <= 0) continue;
+          if (isImmediateIssue) {
+            await tx.stock.update({ where: { id: s.id }, data: { qtyOnHand: { decrement: alloc } } });
+            await (tx as any).stockMovement.create({ data: { stockId: s.id, productId: s.productId, saleOrderId: order.id, type: 'ISSUE', qty: alloc } });
+          } else {
+            await tx.stock.update({ where: { id: s.id }, data: { qtyReserved: { increment: alloc } } });
+            await (tx as any).saleOrderStockReservation.create({ data: { saleOrderId: order.id, stockId: s.id, qty: alloc } });
+            await (tx as any).stockMovement.create({ data: { stockId: s.id, productId: s.productId, saleOrderId: order.id, type: 'RESERVE', qty: alloc } });
+          }
           remaining -= alloc;
         }
       }

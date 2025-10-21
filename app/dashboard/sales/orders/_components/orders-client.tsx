@@ -8,6 +8,7 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
 import Link from "next/link";
 import AddIcon from "@mui/icons-material/Add";
 import dayjs from "dayjs";
@@ -269,6 +270,18 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
                           onClick={() => setEditId(o.id)}
                         >
                           แก้ไข
+                        </Button>
+                      )}
+                      {canView && (
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          color="info"
+                          startIcon={<HistoryOutlinedIcon fontSize="small" />}
+                          component={Link as any}
+                          href={`/dashboard/reports/stock-movements?saleOrderId=${o.id}`}
+                        >
+                          ดูประวัติ
                         </Button>
                       )}
                       {canCancel && (

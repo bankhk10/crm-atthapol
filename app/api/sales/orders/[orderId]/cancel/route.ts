@@ -15,6 +15,8 @@ async function releaseReservations(tx: any, saleOrderId: string) {
     const releaseQty = Math.min(current, qty);
     if (releaseQty > 0) {
       await tx.stock.update({ where: { id: r.stockId }, data: { qtyReserved: { decrement: releaseQty } } });
+      const p = await tx.stock.findUnique({ where: { id: r.stockId }, select: { productId: true } });
+      await (tx as any).stockMovement.create({ data: { stockId: r.stockId, productId: p?.productId as string, saleOrderId: saleOrderId, type: 'RELEASE', qty: releaseQty } });
     }
     await (tx as any).saleOrderStockReservation.update({ where: { id: r.id }, data: { releasedAt: new Date() } });
   }
@@ -30,6 +32,28 @@ export async function POST(_req: NextRequest, context: { params: Promise<{ order
       }
 
       await releaseReservations(tx, orderId);
+
+      // If order had shippingDate (immediate issue), return qtyOnHand back
+      if ((order as any).shippingDate) {
+        const items = await tx.saleOrderItem.findMany({ where: { saleOrderId: orderId } });
+        for (const item of items as any[]) {
+          if (!item.productId || !item.qty) continue;
+          let remaining = Math.max(0, Math.floor(Number(item.qty)));
+          if (!Number.isFinite(remaining) || remaining <= 0) continue;
+          const stocks = await tx.stock.findMany({
+            where: { productId: item.productId, deletedAt: null },
+            orderBy: [{ expDate: "asc" }, { mfgDate: "asc" }, { createdAt: "asc" }],
+          });
+          for (const s of stocks as any[]) {
+            if (remaining <= 0) break;
+            const alloc = Math.min(remaining, Number.MAX_SAFE_INTEGER);
+            if (alloc <= 0) continue;
+            await tx.stock.update({ where: { id: s.id }, data: { qtyOnHand: { increment: alloc } } });
+            await (tx as any).stockMovement.create({ data: { stockId: s.id, productId: s.productId, saleOrderId: orderId, type: 'RETURN', qty: alloc } });
+            remaining -= alloc;
+          }
+        }
+      }
 
       const updated = await tx.saleOrder.update({
         where: { id: orderId },

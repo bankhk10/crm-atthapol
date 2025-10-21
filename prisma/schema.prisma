@@ -98,16 +98,16 @@ enum PaymentStatus {
 
 // Payment condition for Sale Orders
 enum PaymentCondition {
-  PREPAID   // โอนเงินก่อนแล้วค่อยส่งของ
-  POSTPAID  // ส่งของก่อนแล้วค่อยโอนเงิน
+  PREPAID // โอนเงินก่อนแล้วค่อยส่งของ
+  POSTPAID // ส่งของก่อนแล้วค่อยโอนเงิน
 }
 
 // ====================
 // PRODUCT & STOCK
 // ====================
 model Product {
-  id            String         @id @default(cuid())
-  productCode   String         @unique
+  id            String        @id @default(cuid())
+  productCode   String        @unique
   lotNumber     String?
   nameTH        String
   nameEN        String?
@@ -117,39 +117,69 @@ model Product {
   price         Float?
   mfgDate       DateTime?
   expDate       DateTime?
-  status        ProductStatus  @default(ACTIVE)
+  status        ProductStatus @default(ACTIVE)
   imageUrl      String?
   description   String?
   features      String?
   packagingSize String?
 
-  stocks   Stock[]
-  images   ProductImage[]
-  plants   ProductPlant[]
+  stocks         Stock[]
+  images         ProductImage[]
+  plants         ProductPlant[]
   saleOrderItems SaleOrderItem[]
+  movements      StockMovement[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  deletedAt      DateTime?
+}
+
+model Stock {
+  id          String    @id @default(cuid())
+  productId   String
+  qtyOnHand   Int       @default(0)
+  qtyReserved Int       @default(0)
+  qtyVirtual  Int       @default(0)
+  lotNumber   String?
+  note        String?
+  mfgDate     DateTime?
+  expDate     DateTime?
+
+  product      Product                     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  reservations SaleOrderStockReservation[]
+  movements    StockMovement[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 }
 
-model Stock {
-  id          String   @id @default(cuid())
+// Track stock movements for audit/reporting
+enum StockMovementType {
+  RESERVE // increase reserved (SO without shipping date)
+  RELEASE // release reserved (cancel/update)
+  ISSUE // deduct on-hand (SO with shipping date)
+  RETURN // return on-hand (cancel)
+}
+
+model StockMovement {
+  id          String            @id @default(cuid())
+  stockId     String?
   productId   String
-  qtyOnHand   Int      @default(0)
-  qtyReserved Int      @default(0)
-  qtyVirtual  Int      @default(0)
-  lotNumber   String?
+  saleOrderId String?
+  type        StockMovementType
+  qty         Float             @default(0)
   note        String?
-  mfgDate     DateTime?
-  expDate     DateTime?
 
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  reservations SaleOrderStockReservation[]
+  stock     Stock?     @relation(fields: [stockId], references: [id])
+  product   Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  saleOrder SaleOrder? @relation(fields: [saleOrderId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+  @@index([stockId])
+  @@index([saleOrderId])
+  @@index([createdAt])
 }
 
 model ProductImage {
@@ -196,16 +226,16 @@ model User {
   role             Role      @default(USER)
   roleDefinitionId String?
 
-  accounts           Account[]
-  sessions           Session[]
-  employee           Employee?
-  roleDefinition     RoleDefinition? @relation(fields: [roleDefinitionId], references: [id])
-  performedAuditLogs AuditLog[]      @relation("AuditPerformedByUser")
-  createdInteractions Interaction[]  @relation("UserCreatedInteractions")
+  accounts            Account[]
+  sessions            Session[]
+  employee            Employee?
+  roleDefinition      RoleDefinition? @relation(fields: [roleDefinitionId], references: [id])
+  performedAuditLogs  AuditLog[]      @relation("AuditPerformedByUser")
+  createdInteractions Interaction[]   @relation("UserCreatedInteractions")
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  deletedAt   DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 }
 
 model Account {
@@ -277,7 +307,7 @@ model Employee {
   // Customers handled by this employee
   responsibleCustomers Customer[]
   // Sale orders created/owned by this employee
-  saleOrders          SaleOrder[]
+  saleOrders           SaleOrder[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -346,7 +376,7 @@ model AuditLog {
 // CUSTOMERS
 // ====================
 model CustomerGroup {
-  id          String   @id @default(cuid())
+  id          String  @id @default(cuid())
   name        String
   description String?
   discount    Float?
@@ -364,25 +394,25 @@ model Customer {
   customerGroupId       String?
   customerType          CustomerType
   relationshipScore     Int?
-  saleOrders SaleOrder[]
-  prefix      String?
-  firstName   String?
-  lastName    String?
-  age         Int?
-  gender      Gender?
-  phone       String?
-  email       String?
-  birthDate   DateTime?
-  companyName String?
-  taxId       String?
-  address     String?
-  subdistrict String?
-  district    String?
-  province    String?
-  postalCode  String?
-  status      PartnerStatus @default(ACTIVE)
+  saleOrders            SaleOrder[]
+  prefix                String?
+  firstName             String?
+  lastName              String?
+  age                   Int?
+  gender                Gender?
+  phone                 String?
+  email                 String?
+  birthDate             DateTime?
+  companyName           String?
+  taxId                 String?
+  address               String?
+  subdistrict           String?
+  district              String?
+  province              String?
+  postalCode            String?
+  status                PartnerStatus @default(ACTIVE)
 
-  responsibleEmployee Employee?     @relation(fields: [responsibleEmployeeId], references: [id])
+  responsibleEmployee Employee?      @relation(fields: [responsibleEmployeeId], references: [id])
   customerGroup       CustomerGroup? @relation(fields: [customerGroupId], references: [id])
 
   dealerDetail    DealerDetail?
@@ -399,13 +429,13 @@ model Customer {
 }
 
 model DealerDetail {
-  id          String         @id @default(cuid())
-  customerId  String         @unique
-  region      String?
-  status      PartnerStatus  @default(ACTIVE)
-  contactName String?
-  contactPhone String?
-  creditLimit Float?
+  id              String        @id @default(cuid())
+  customerId      String        @unique
+  region          String?
+  status          PartnerStatus @default(ACTIVE)
+  contactName     String?
+  contactPhone    String?
+  creditLimit     Float?
   promotionBudget Float?
 
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
@@ -419,12 +449,12 @@ model DealerDetail {
 }
 
 model SubDealerDetail {
-  id          String         @id @default(cuid())
-  customerId  String         @unique
-  dealerId    String?
-  status      PartnerStatus  @default(ACTIVE)
+  id         String        @id @default(cuid())
+  customerId String        @unique
+  dealerId   String?
+  status     PartnerStatus @default(ACTIVE)
 
-  customer Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customer Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
   dealer   DealerDetail? @relation(fields: [dealerId], references: [id])
 
   createdAt DateTime  @default(now())
@@ -433,8 +463,8 @@ model SubDealerDetail {
 }
 
 model FarmerDetail {
-  id                  String         @id @default(cuid())
-  customerId          String         @unique
+  id                  String  @id @default(cuid())
+  customerId          String  @unique
   dealerId            String?
   areaSize            Float?
   latitude            Float?
@@ -450,8 +480,8 @@ model FarmerDetail {
   productionChannel   String?
   harvestingCost      Float?
 
-  customer Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  dealer   DealerDetail? @relation(fields: [dealerId], references: [id])
+  customer  Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  dealer    DealerDetail? @relation(fields: [dealerId], references: [id])
   farmPlots FarmPlot[]
 
   createdAt DateTime  @default(now())
@@ -460,8 +490,8 @@ model FarmerDetail {
 }
 
 model BrokerDetail {
-  id                    String   @id @default(cuid())
-  customerId            String   @unique
+  id                    String  @id @default(cuid())
+  customerId            String  @unique
   cropTypes             String?
   currentCropVolume     String?
   farmerNetworkCount    Int?
@@ -483,18 +513,18 @@ model BrokerDetail {
 }
 
 model FarmPlot {
-  id              String        @id @default(cuid())
-  farmerDetailId  String
-  farmerDetail    FarmerDetail  @relation(fields: [farmerDetailId], references: [id], onDelete: Cascade)
+  id             String       @id @default(cuid())
+  farmerDetailId String
+  farmerDetail   FarmerDetail @relation(fields: [farmerDetailId], references: [id], onDelete: Cascade)
 
-  latitude        Float?
-  longitude       Float?
-  plantingArea    Float?
-  cropType        String?
-  cropVariety     String?
-  soilType        String?
-  waterSource     String?
-  machineryUsed   Json?
+  latitude      Float?
+  longitude     Float?
+  plantingArea  Float?
+  cropType      String?
+  cropVariety   String?
+  soilType      String?
+  waterSource   String?
+  machineryUsed Json?
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -514,7 +544,7 @@ model Sale {
   paymentStatus String
   dueDate       DateTime?
 
-  customer   Customer?  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -525,19 +555,19 @@ model Sale {
 // INTERACTIONS
 // ====================
 model Interaction {
-  id        String             @id @default(cuid())
-  date      DateTime
-  channel   InteractionChannel
-  notes     String?
+  id      String             @id @default(cuid())
+  date    DateTime
+  channel InteractionChannel
+  notes   String?
 
   customerId String?
   customer   Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   createdById String?
-  createdBy   User? @relation("UserCreatedInteractions", fields: [createdById], references: [id])
+  createdBy   User?   @relation("UserCreatedInteractions", fields: [createdById], references: [id])
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 }
 
@@ -545,41 +575,42 @@ model Interaction {
 // SALES ORDERS
 // ====================
 model SaleOrder {
-  id              String           @id @default(cuid())
-  soNumber        String           @unique
-  customerId      String
-  salespersonId   String?
-  orderDate       DateTime         @default(now())
-  shippingDate    DateTime?
-  dueDate         DateTime?
-  creditTermDays  Int?
+  id               String           @id @default(cuid())
+  soNumber         String           @unique
+  customerId       String
+  salespersonId    String?
+  orderDate        DateTime         @default(now())
+  shippingDate     DateTime?
+  dueDate          DateTime?
+  creditTermDays   Int?
   paymentCondition PaymentCondition @default(PREPAID)
 
-  currency        String           @default("THB")
-  vatIncluded     Boolean          @default(true)
-  vatRate         Float            @default(7)
+  currency    String  @default("THB")
+  vatIncluded Boolean @default(true)
+  vatRate     Float   @default(7)
 
-  billTo          String?
-  shipTo          String?
-  status          SaleOrderStatus  @default(DRAFT)
-  paymentStatus   PaymentStatus    @default(UNPAID)
+  billTo        String?
+  shipTo        String?
+  status        SaleOrderStatus @default(DRAFT)
+  paymentStatus PaymentStatus   @default(UNPAID)
 
-  subTotal        Float            @default(0)
-  discountTotal   Float            @default(0)
-  taxAmount       Float            @default(0)
-  shippingFee     Float            @default(0)
-  otherCharges    Float            @default(0)
+  subTotal       Float  @default(0)
+  discountTotal  Float  @default(0)
+  taxAmount      Float  @default(0)
+  shippingFee    Float  @default(0)
+  otherCharges   Float  @default(0)
   // Amount of promotion budget spent for this order
-  promotionSpent  Float?           @default(0)
-  grandTotal      Float            @default(0)
+  promotionSpent Float? @default(0)
+  grandTotal     Float  @default(0)
 
-  poNumber        String?
-  note            String?
+  poNumber String?
+  note     String?
 
-  customer     Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  salesperson  Employee? @relation(fields: [salespersonId], references: [id])
+  customer     Customer                    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  salesperson  Employee?                   @relation(fields: [salespersonId], references: [id])
   items        SaleOrderItem[]
   reservations SaleOrderStockReservation[]
+  movements    StockMovement[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -592,34 +623,34 @@ model SaleOrder {
 }
 
 model SaleOrderItem {
-  id                  String     @id @default(cuid())
-  saleOrderId         String
-  productId           String?
+  id          String  @id @default(cuid())
+  saleOrderId String
+  productId   String?
 
   productCodeSnapshot String?
   nameSnapshot        String?
   unit                String?
   qty                 Float
   unitPrice           Float
-  discountPercent     Float?     @default(0)
-  discountAmount      Float?     @default(0)
+  discountPercent     Float?  @default(0)
+  discountAmount      Float?  @default(0)
   lineVatRate         Float?
-  amount              Float      @default(0)
+  amount              Float   @default(0)
 
-  lotNumber           String?
-  mfgDate             DateTime?
-  expDate             DateTime?
-  note                String?
+  lotNumber String?
+  mfgDate   DateTime?
+  expDate   DateTime?
+  note      String?
 
   saleOrder SaleOrder @relation(fields: [saleOrderId], references: [id], onDelete: Cascade)
   product   Product?  @relation(fields: [productId], references: [id])
 
-  @@index([saleOrderId])
-  @@index([productId])
-
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
+
+  @@index([saleOrderId])
+  @@index([productId])
 }
 
 // Track per-stock reservations linked to a sale order
@@ -638,4 +669,3 @@ model SaleOrderStockReservation {
   @@index([saleOrderId])
   @@index([stockId])
 }
-
