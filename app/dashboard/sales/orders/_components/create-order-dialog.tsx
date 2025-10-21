@@ -73,8 +73,6 @@ const STATUS_OPTIONS = [
   { value: "PENDING_APPROVAL", label: "รออนุมัติ" },
   { value: "APPROVED", label: "อนุมัติ" },
   { value: "REJECTED", label: "ปฏิเสธ" },
-  { value: "AWAITING_PAYMENT", label: "รอชำระเงิน" },
-  { value: "PAID", label: "ชำระเงินแล้ว" },
   { value: "AWAITING_STOCK", label: "รอสินค้า" },
   { value: "READY_TO_SHIP", label: "รอจัดส่ง" },
   { value: "IN_TRANSIT", label: "อยู่ระหว่างจัดส่ง" },
@@ -185,14 +183,6 @@ export function CreateOrderDialog({ open, onClose, customerOptions, employeeOpti
         break;
       case "REJECTED":
         setStatus("CANCELLED");
-        break;
-      case "AWAITING_PAYMENT":
-        setStatus("INVOICED");
-        setPaymentStatus("UNPAID");
-        break;
-      case "PAID":
-        setStatus("INVOICED");
-        setPaymentStatus("PAID");
         break;
       case "AWAITING_STOCK":
         setStatus("CONFIRMED");

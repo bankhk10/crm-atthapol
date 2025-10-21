@@ -20,7 +20,7 @@ const WORKFLOW_STATUS_OPTIONS = [
 function workflowFromBackend(status: string, paymentStatus: string): string {
   if (status === "DRAFT") return "DRAFT";
   if (status === "CANCELLED") return "CANCELLED"; // could represent REJECTED too
-  if (status === "INVOICED") return paymentStatus === "PAID" ? "PAID" : "AWAITING_PAYMENT";
+  if (status === "INVOICED") return "READY_TO_SHIP"; // move payment-related labels to payment status
   if (status === "SHIPPED") return paymentStatus === "PAID" ? "COMPLETED" : "IN_TRANSIT";
   if (status === "APPROVED") return "APPROVED"; // or READY_TO_SHIP
   if (status === "CONFIRMED") return "PENDING_APPROVAL"; // or AWAITING_STOCK

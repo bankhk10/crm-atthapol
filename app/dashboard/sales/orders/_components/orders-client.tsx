@@ -37,8 +37,6 @@ const WORKFLOW_STATUS_OPTIONS = [
   { value: "PENDING_APPROVAL", label: "รออนุมัติ" },
   { value: "APPROVED", label: "อนุมัติ" },
   { value: "REJECTED", label: "ปฏิเสธ" },
-  { value: "AWAITING_PAYMENT", label: "รอชำระเงิน" },
-  { value: "PAID", label: "ชำระเงินแล้ว" },
   { value: "AWAITING_STOCK", label: "รอสินค้า" },
   { value: "READY_TO_SHIP", label: "รอจัดส่ง" },
   { value: "IN_TRANSIT", label: "อยู่ระหว่างจัดส่ง" },
@@ -49,7 +47,7 @@ const WORKFLOW_STATUS_OPTIONS = [
 function workflowFromBackend(status: string, paymentStatus: string): string {
   if (status === "DRAFT") return "DRAFT";
   if (status === "CANCELLED") return "CANCELLED"; // could also represent REJECTED
-  if (status === "INVOICED") return paymentStatus === "PAID" ? "PAID" : "AWAITING_PAYMENT";
+  if (status === "INVOICED") return "READY_TO_SHIP"; // move payment-related labels to payment status
   if (status === "SHIPPED") return paymentStatus === "PAID" ? "COMPLETED" : "IN_TRANSIT";
   if (status === "APPROVED") return "APPROVED"; // or READY_TO_SHIP
   if (status === "CONFIRMED") return "PENDING_APPROVAL"; // or AWAITING_STOCK
@@ -87,6 +85,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
   const [items, setItems] = useState<OrderItem[]>([]);
   const [total, setTotal] = useState(0);
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [paymentFilter, setPaymentFilter] = useState<string>("ALL");
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -100,6 +99,21 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
   const canEdit = hasPermission(session?.user?.permissions, "sales", "edit");
 
   const chips = useMemo(() => WORKFLOW_STATUS_OPTIONS, []);
+  const paymentChips = useMemo(
+    () => [
+      { value: "ALL", label: "ทั้งหมด" },
+      { value: "UNPAID", label: "ยังไม่ชำระ" },
+      { value: "PARTIAL", label: "บางส่วน" },
+      { value: "PAID", label: "ชำระแล้ว" },
+      { value: "OVERDUE", label: "เกินกำหนด" },
+    ],
+    [],
+  );
+
+  const PAYMENT_STATUS_LABEL: Record<string, string> = useMemo(
+    () => ({ UNPAID: "ยังไม่ชำระ", PARTIAL: "บางส่วน", PAID: "ชำระแล้ว", OVERDUE: "เกินกำหนด" }),
+    [],
+  );
 
   const load = async () => {
     setLoading(true);
@@ -108,6 +122,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
       params.set("page", "1");
       params.set("pageSize", "20");
       if (statusFilter !== "ALL") params.set("workflow", statusFilter);
+      if (paymentFilter !== "ALL") params.set("paymentStatus", paymentFilter);
       const res = await fetch(`/api/sales/orders?${params.toString()}`);
       const data = await res.json();
       const list: OrderItem[] = data.items || [];
@@ -123,7 +138,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter]);
+  }, [statusFilter, paymentFilter]);
 
   const doCancel = async (order: OrderItem) => {
     setBusyId(order.id);
@@ -149,17 +164,24 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
 
   return (
     <Stack spacing={2}>
-      <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "stretch", sm: "center" }} spacing={1}>
+      <Stack spacing={1}>
+        <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "stretch", sm: "center" }} spacing={1}>
+          <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+            {chips.map((c) => (
+              <Chip key={c.value} label={c.label} color={statusFilter === c.value ? "primary" : "default"} onClick={() => setStatusFilter(c.value)} />
+            ))}
+          </Stack>
+          {canCreate && (
+            <Button startIcon={<AddIcon />} variant="contained" onClick={() => setOpen(true)} sx={{ width: { xs: "100%", sm: "auto" } }}>
+              สร้างใบสั่งขาย
+            </Button>
+          )}
+        </Stack>
         <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-          {chips.map((c) => (
-            <Chip key={c.value} label={c.label} color={statusFilter === c.value ? "primary" : "default"} onClick={() => setStatusFilter(c.value)} />
+          {paymentChips.map((c) => (
+            <Chip key={c.value} label={`ชำระเงิน: ${c.label}`} color={paymentFilter === c.value ? "secondary" : "default"} onClick={() => setPaymentFilter(c.value)} />
           ))}
         </Stack>
-        {canCreate && (
-          <Button startIcon={<AddIcon />} variant="contained" onClick={() => setOpen(true)} sx={{ width: { xs: "100%", sm: "auto" } }}>
-            สร้างใบสั่งขาย
-          </Button>
-        )}
       </Stack>
 
       <TableContainer component={Paper}>
@@ -196,7 +218,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
                   <TableCell align="right">{o.grandTotal?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                   <TableCell>{WORKFLOW_STATUS_OPTIONS.find((x) => x.value === workflowFromBackend(o.status, o.paymentStatus))?.label || o.status}</TableCell>
                   <TableCell>{o.paymentCondition === 'POSTPAID' ? 'ส่งก่อน-โอนทีหลัง' : 'โอนก่อน-ส่งทีหลัง'}</TableCell>
-                  <TableCell>{o.paymentStatus}</TableCell>
+                  <TableCell>{PAYMENT_STATUS_LABEL[o.paymentStatus] || o.paymentStatus}</TableCell>
                   <TableCell align="right">
                     <Stack direction="row" spacing={1} justifyContent="flex-end">
                       {canView && (
