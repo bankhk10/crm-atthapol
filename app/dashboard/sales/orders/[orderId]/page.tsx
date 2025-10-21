@@ -2,6 +2,38 @@ import { prisma } from "@/lib/prisma";
 import { Box, Chip, Divider, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, Button } from "@mui/material";
 import Link from "next/link";
 
+// UI workflow status options and helper mapping from backend enums
+const WORKFLOW_STATUS_OPTIONS = [
+  { value: "DRAFT", label: "ร่าง" },
+  { value: "PENDING_APPROVAL", label: "รออนุมัติ" },
+  { value: "APPROVED", label: "อนุมัติ" },
+  { value: "REJECTED", label: "ปฏิเสธ" },
+  { value: "AWAITING_PAYMENT", label: "รอชำระเงิน" },
+  { value: "PAID", label: "ชำระเงินแล้ว" },
+  { value: "AWAITING_STOCK", label: "รอสินค้า" },
+  { value: "READY_TO_SHIP", label: "รอจัดส่ง" },
+  { value: "IN_TRANSIT", label: "อยู่ระหว่างจัดส่ง" },
+  { value: "COMPLETED", label: "สำเร็จ" },
+  { value: "CANCELLED", label: "ยกเลิก" },
+];
+
+function workflowFromBackend(status: string, paymentStatus: string): string {
+  if (status === "DRAFT") return "DRAFT";
+  if (status === "CANCELLED") return "CANCELLED"; // could represent REJECTED too
+  if (status === "INVOICED") return paymentStatus === "PAID" ? "PAID" : "AWAITING_PAYMENT";
+  if (status === "SHIPPED") return paymentStatus === "PAID" ? "COMPLETED" : "IN_TRANSIT";
+  if (status === "APPROVED") return "APPROVED"; // or READY_TO_SHIP
+  if (status === "CONFIRMED") return "PENDING_APPROVAL"; // or AWAITING_STOCK
+  return status || "DRAFT";
+}
+
+const PAYMENT_STATUS_LABEL: Record<string, string> = {
+  UNPAID: "ยังไม่ชำระ",
+  PARTIAL: "บางส่วน",
+  PAID: "ชำระแล้ว",
+  OVERDUE: "เกินกำหนด",
+};
+
 function fmtCurrency(n: number | null | undefined) {
   if (typeof n !== "number") return "-";
   return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -40,8 +72,13 @@ export default async function SalesOrderDetailPage({ params }: { params: Promise
       <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "flex-start", sm: "center" }}>
         <Typography variant="h4" fontWeight={700}>ใบสั่งขาย #{so.soNumber}</Typography>
         <Stack direction="row" spacing={1}>
-          <Chip label={String(so.status)} color={so.status === "CANCELLED" ? "default" : "primary"} variant={so.status === "CANCELLED" ? "outlined" : "filled"} />
-          <Chip label={`ชำระเงิน: ${String(so.paymentStatus)}`} variant="outlined" />
+          {(() => {
+            const wf = workflowFromBackend(String(so.status || ""), String(so.paymentStatus || ""));
+            const label = WORKFLOW_STATUS_OPTIONS.find((x) => x.value === wf)?.label || String(so.status);
+            const isCancelled = wf === "CANCELLED" || wf === "REJECTED";
+            return <Chip label={label} color={isCancelled ? "default" : "primary"} variant={isCancelled ? "outlined" : "filled"} />;
+          })()}
+          <Chip label={`ชำระเงิน: ${PAYMENT_STATUS_LABEL[String(so.paymentStatus || "")] || String(so.paymentStatus)}`} variant="outlined" />
         </Stack>
       </Stack>
 
