@@ -1,7 +1,28 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, Tooltip, TableSortLabel, TablePagination, IconButton } from "@mui/material";
+import {
+  Box,
+  Button,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Paper,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Typography,
+  Tooltip,
+  TableSortLabel,
+  TablePagination,
+  IconButton,
+} from "@mui/material";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -35,8 +56,21 @@ type OrderItem = {
   status: string;
   paymentCondition?: string;
   paymentStatus: string;
-  customer?: { id: string; name?: string; companyName?: string; prefix?: string; firstName?: string; lastName?: string } | null;
-  salesperson?: { id: string; firstName?: string | null; lastName?: string | null; prefix?: string | null; user?: { name?: string | null; email?: string | null } | null } | null;
+  customer?: {
+    id: string;
+    name?: string;
+    companyName?: string;
+    prefix?: string;
+    firstName?: string;
+    lastName?: string;
+  } | null;
+  salesperson?: {
+    id: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    prefix?: string | null;
+    user?: { name?: string | null; email?: string | null } | null;
+  } | null;
 };
 
 type Order = "asc" | "desc";
@@ -124,7 +158,9 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [confirm, setConfirm] = useState<null | { type: "cancel" | "delete"; order: OrderItem }>(null);
+  const [confirm, setConfirm] = useState<null | { type: "cancel" | "delete"; order: OrderItem }>(
+    null,
+  );
   const [editId, setEditId] = useState<string | null>(null);
 
   // Sorting & Pagination (match products table UX)
@@ -244,25 +280,38 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
   const sortedItems = useMemo(() => {
     const arr = [...items];
     const comp = (a: OrderItem, b: OrderItem) =>
-      order === "asc"
-        ? descendingComparator(a, b, orderBy)
-        : -descendingComparator(a, b, orderBy);
+      order === "asc" ? descendingComparator(a, b, orderBy) : -descendingComparator(a, b, orderBy);
     return arr.sort(comp);
   }, [items, order, orderBy]);
 
-  const headCells: { id: SortableKeys; label: string; width?: number; align?: "left" | "center" | "right" }[] = [
-    { id: "soNumber", label: "เลขที่ SO", width: 120 },
-    { id: "orderDate", label: "วันที่", width: 110 },
-    { id: "shippingDate", label: "วันที่จัดส่ง", width: 120 },
-    { id: "customerName", label: "ลูกค้า", width: 220 },
+  const headCells: {
+    id: SortableKeys;
+    label: string;
+    width?: number;
+    align?: "left" | "center" | "right";
+  }[] = [
+    { id: "soNumber", label: "เลขที่ SO", width: 150 },
+    { id: "orderDate", label: "วันที่", width: 90 },
+    { id: "shippingDate", label: "วันที่จัดส่ง", width: 90 },
+    { id: "customerName", label: "ลูกค้า", width: 150 },
     // { id: "salespersonName", label: "พนักงานขาย", width: 200 },
-    { id: "grandTotal", label: "ยอดรวม", width: 120, align: "right" },
-    { id: "status", label: "สถานะ", width: 120 },
+    { id: "grandTotal", label: "ยอดรวม", width: 100, align: "right" },
+    { id: "status", label: "สถานะ", width: 100 },
     { id: "paymentCondition", label: "เงื่อนไขชำระ", width: 140 },
     { id: "paymentStatus", label: "ชำระเงิน", width: 120 },
   ];
 
-  function EnhancedTableHead({ order, orderBy, onRequestSort, showActions }: { order: Order; orderBy: SortableKeys; onRequestSort: (e: React.MouseEvent<unknown>, p: SortableKeys) => void; showActions: boolean }) {
+  function EnhancedTableHead({
+    order,
+    orderBy,
+    onRequestSort,
+    showActions,
+  }: {
+    order: Order;
+    orderBy: SortableKeys;
+    onRequestSort: (e: React.MouseEvent<unknown>, p: SortableKeys) => void;
+    showActions: boolean;
+  }) {
     const createSortHandler = (property: SortableKeys) => (event: React.MouseEvent<unknown>) => {
       onRequestSort(event, property);
     };
@@ -283,12 +332,19 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
       >
         <TableRow>
           {headCells.map((h) => (
-            <TableCell key={h.id} align={h.align ?? (h.id === "grandTotal" ? "right" : "left")} sx={{ width: h.width }}>
+            <TableCell
+              key={h.id}
+              align={h.align ?? (h.id === "grandTotal" ? "right" : "left")}
+              sx={{ width: h.width }}
+            >
               <Tooltip title={`เรียงตาม ${h.label}`} arrow>
                 <TableSortLabel
                   active={orderBy === h.id}
                   direction={orderBy === h.id ? order : "asc"}
-                  sx={{ color: "inherit !important", "& .MuiTableSortLabel-icon": { color: "#fff !important" } }}
+                  sx={{
+                    color: "inherit !important",
+                    "& .MuiTableSortLabel-icon": { color: "#fff !important" },
+                  }}
                   onClick={createSortHandler(h.id)}
                 >
                   {h.label}
@@ -322,46 +378,79 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
   return (
     <Stack spacing={2}>
       <Stack spacing={1}>
-        <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "stretch", sm: "center" }} spacing={1}>
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          justifyContent="space-between"
+          alignItems={{ xs: "stretch", sm: "center" }}
+          spacing={1}
+        >
           <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
             {chips.map((c) => (
-              <Chip key={c.value} label={c.label} color={statusFilter === c.value ? "primary" : "default"} onClick={() => setStatusFilter(c.value)} />
+              <Chip
+                key={c.value}
+                label={c.label}
+                color={statusFilter === c.value ? "primary" : "default"}
+                onClick={() => setStatusFilter(c.value)}
+              />
             ))}
           </Stack>
           {canCreate && (
-            <Button startIcon={<AddIcon />} variant="contained" onClick={() => setOpen(true)} sx={{ width: { xs: "100%", sm: "auto" } }}>
+            <Button
+              startIcon={<AddIcon />}
+              variant="contained"
+              onClick={() => setOpen(true)}
+              sx={{ width: { xs: "100%", sm: "auto" } }}
+            >
               สร้างใบสั่งขาย
             </Button>
           )}
         </Stack>
         <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
           {paymentChips.map((c) => (
-            <Chip key={c.value} label={`ชำระเงิน: ${c.label}`} color={paymentFilter === c.value ? "secondary" : "default"} onClick={() => setPaymentFilter(c.value)} />
+            <Chip
+              key={c.value}
+              label={`ชำระเงิน: ${c.label}`}
+              color={paymentFilter === c.value ? "secondary" : "default"}
+              onClick={() => setPaymentFilter(c.value)}
+            />
           ))}
         </Stack>
         <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={th}>
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ xs: "stretch", sm: "center" }}>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={1}
+            alignItems={{ xs: "stretch", sm: "center" }}
+          >
             <DatePicker
               label="จัดส่งตั้งแต่"
               value={shippingFrom ? new Date(shippingFrom) : null}
               onChange={(v) => setShippingFrom(v ? v.toISOString().slice(0, 10) : null)}
               slotProps={{ textField: { fullWidth: true, size: "small" } }}
-              views={['year', 'month', 'day']}
+              views={["year", "month", "day"]}
             />
             <DatePicker
               label="ถึง"
               value={shippingTo ? new Date(shippingTo) : null}
-              views={['year', 'month', 'day']}
+              views={["year", "month", "day"]}
               onChange={(v) => setShippingTo(v ? v.toISOString().slice(0, 10) : null)}
               slotProps={{ textField: { fullWidth: true, size: "small" } }}
             />
-            <Button onClick={() => { setShippingFrom(null); setShippingTo(null); }} color="inherit" sx={{ whiteSpace: 'nowrap' }}>ล้างช่วงวันที่</Button>
+            <Button
+              onClick={() => {
+                setShippingFrom(null);
+                setShippingTo(null);
+              }}
+              color="inherit"
+              sx={{ whiteSpace: "nowrap" }}
+            >
+              ล้างช่วงวันที่
+            </Button>
           </Stack>
         </LocalizationProvider>
       </Stack>
 
       {/* Mobile cards layout */}
-      <Stack spacing={1.25} sx={{ p: 1.5, display: { xs: 'block', md: 'none' } }}>
+      <Stack spacing={1.25} sx={{ p: 1.5, display: { xs: "block", md: "none" } }}>
         {sortedItems.map((o) => {
           const wf = workflowFromBackend(o.status, o.paymentStatus);
           const wfLabel = WORKFLOW_STATUS_OPTIONS.find((x) => x.value === wf)?.label || o.status;
@@ -370,44 +459,67 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
               <Stack spacing={1}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
                   <Typography fontWeight={700}>SO {o.soNumber}</Typography>
-                  <Chip size="small" label={wfLabel} sx={{ fontWeight: 600, px: 1.2, borderRadius: '9999px', ...workflowChipSx(wf) }} />
+                  <Chip
+                    size="small"
+                    label={wfLabel}
+                    sx={{ fontWeight: 600, px: 1.2, borderRadius: "9999px", ...workflowChipSx(wf) }}
+                  />
                 </Stack>
-                <Typography variant="body2" color="text.secondary">ลูกค้า: {displayCustomerName(o.customer)}</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  ลูกค้า: {displayCustomerName(o.customer)}
+                </Typography>
                 <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-                  <Chip size="small" label={`วันที่: ${dayjs(o.orderDate).format('DD/MM/YYYY')}`} />
-                  <Chip size="small" label={`จัดส่ง: ${o.shippingDate ? dayjs(o.shippingDate).format('DD/MM/YYYY') : '-'}`} />
-                  <Chip size="small" label={`ยอดรวม: ${o.grandTotal?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
-                  <Chip size="small" label={`ชำระ: ${PAYMENT_STATUS_LABEL[o.paymentStatus] || o.paymentStatus}`} />
+                  <Chip size="small" label={`วันที่: ${dayjs(o.orderDate).format("DD/MM/YYYY")}`} />
+                  <Chip
+                    size="small"
+                    label={`จัดส่ง: ${o.shippingDate ? dayjs(o.shippingDate).format("DD/MM/YYYY") : "-"}`}
+                  />
+                  <Chip
+                    size="small"
+                    label={`ยอดรวม: ${o.grandTotal?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                  />
+                  <Chip
+                    size="small"
+                    label={`ชำระ: ${PAYMENT_STATUS_LABEL[o.paymentStatus] || o.paymentStatus}`}
+                  />
                 </Stack>
                 {(canView || canEdit || canCancel || canDelete) && (
                   <Stack direction="row" spacing={0.5} justifyContent="flex-end">
                     {canView && (
                       <Tooltip title="ดูรายละเอียด" arrow>
-                        <IconButton component={Link as any} href={`/dashboard/sales/orders/${o.id}`} size="small">
+                        <IconButton
+                          component={Link as any}
+                          href={`/dashboard/sales/orders/${o.id}`}
+                          size="small"
+                        >
                           <VisibilityOutlinedIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
                     )}
                     {canEdit && (
-                      <Tooltip title={wf === 'COMPLETED' ? 'แก้ไขไม่ได้ (เสร็จสิ้น)' : 'แก้ไข'} arrow>
+                      <Tooltip
+                        title={wf === "COMPLETED" ? "แก้ไขไม่ได้ (เสร็จสิ้น)" : "แก้ไข"}
+                        arrow
+                      >
                         <span>
-                          <IconButton size="small" disabled={wf === 'COMPLETED'} onClick={() => setEditId(o.id)}>
+                          <IconButton
+                            size="small"
+                            disabled={wf === "COMPLETED"}
+                            onClick={() => setEditId(o.id)}
+                          >
                             <EditOutlinedIcon fontSize="small" />
                           </IconButton>
                         </span>
                       </Tooltip>
                     )}
-                    {canView && (
-                      <Tooltip title="ดูประวัติสต็อก" arrow>
-                        <IconButton component={Link as any} href={`/dashboard/reports/stock-movements?saleOrderId=${o.id}`} size="small">
-                          <HistoryOutlinedIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    )}
                     {canCancel && (
-                      <Tooltip title={o.status === 'CANCELLED' ? 'ถูกยกเลิกแล้ว' : 'ยกเลิก'} arrow>
+                      <Tooltip title={o.status === "CANCELLED" ? "ถูกยกเลิกแล้ว" : "ยกเลิก"} arrow>
                         <span>
-                          <IconButton size="small" disabled={o.status === 'CANCELLED' || busyId === o.id} onClick={() => setConfirm({ type: 'cancel', order: o })}>
+                          <IconButton
+                            size="small"
+                            disabled={o.status === "CANCELLED" || busyId === o.id}
+                            onClick={() => setConfirm({ type: "cancel", order: o })}
+                          >
                             <CancelOutlinedIcon fontSize="small" />
                           </IconButton>
                         </span>
@@ -416,7 +528,11 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
                     {canDelete && (
                       <Tooltip title="ลบ" arrow>
                         <span>
-                          <IconButton size="small" disabled={busyId === o.id} onClick={() => setConfirm({ type: 'delete', order: o })}>
+                          <IconButton
+                            size="small"
+                            disabled={busyId === o.id}
+                            onClick={() => setConfirm({ type: "delete", order: o })}
+                          >
                             <DeleteOutlineIcon fontSize="small" />
                           </IconButton>
                         </span>
@@ -429,14 +545,16 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
           );
         })}
         {sortedItems.length === 0 && (
-          <Typography color="text.secondary" align="center">{loading ? 'กำลังโหลด...' : 'ยังไม่มีรายการ'}</Typography>
+          <Typography color="text.secondary" align="center">
+            {loading ? "กำลังโหลด..." : "ยังไม่มีรายการ"}
+          </Typography>
         )}
       </Stack>
 
       <TableContainer
         component={Paper}
         sx={{
-          display: { xs: 'none', md: 'block' },
+          display: { xs: "none", md: "block" },
           borderTopLeftRadius: 12,
           borderTopRightRadius: 12,
           "&::-webkit-scrollbar": { width: 8 },
@@ -444,7 +562,12 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
         }}
       >
         <Table aria-labelledby="ordersTableTitle" sx={{ minWidth: 900, tableLayout: "fixed" }}>
-          <EnhancedTableHead order={order} orderBy={orderBy} onRequestSort={handleRequestSort} showActions={canView || canEdit || canCancel || canDelete} />
+          <EnhancedTableHead
+            order={order}
+            orderBy={orderBy}
+            onRequestSort={handleRequestSort}
+            showActions={canView || canEdit || canCancel || canDelete}
+          />
           <TableBody>
             {sortedItems.map((o, idx) => (
               <TableRow
@@ -455,7 +578,14 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
                   "&:hover": { bgcolor: "#f0f0f0" },
                 }}
               >
-                <TableCell sx={{ width: 120, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                <TableCell
+                  sx={{
+                    width: 120,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
                   <Tooltip title={o.soNumber} arrow>
                     <span>{o.soNumber}</span>
                   </Tooltip>
@@ -466,11 +596,21 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
                   </Tooltip>
                 </TableCell>
                 <TableCell sx={{ width: 120 }}>
-                  <Tooltip title={o.shippingDate ? dayjs(o.shippingDate).format("DD/MM/YYYY") : "-"} arrow>
+                  <Tooltip
+                    title={o.shippingDate ? dayjs(o.shippingDate).format("DD/MM/YYYY") : "-"}
+                    arrow
+                  >
                     <span>{o.shippingDate ? dayjs(o.shippingDate).format("DD/MM/YYYY") : "-"}</span>
                   </Tooltip>
                 </TableCell>
-                <TableCell sx={{ width: 220, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                <TableCell
+                  sx={{
+                    width: 220,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
                   <Tooltip title={displayCustomerName(o.customer)} arrow>
                     <span>{displayCustomerName(o.customer)}</span>
                   </Tooltip>
@@ -481,18 +621,49 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
                   </Tooltip>
                 </TableCell> */}
                 <TableCell align="right" sx={{ width: 120 }}>
-                  <Tooltip title={o.grandTotal?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} arrow>
-                    <span>{o.grandTotal?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <Tooltip
+                    title={o.grandTotal?.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                    arrow
+                  >
+                    <span>
+                      {o.grandTotal?.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </span>
                   </Tooltip>
                 </TableCell>
                 <TableCell sx={{ width: 120 }}>
-                  <Tooltip title={WORKFLOW_STATUS_OPTIONS.find((x) => x.value === workflowFromBackend(o.status, o.paymentStatus))?.label || o.status} arrow>
-                    <span>{WORKFLOW_STATUS_OPTIONS.find((x) => x.value === workflowFromBackend(o.status, o.paymentStatus))?.label || o.status}</span>
+                  <Tooltip
+                    title={
+                      WORKFLOW_STATUS_OPTIONS.find(
+                        (x) => x.value === workflowFromBackend(o.status, o.paymentStatus),
+                      )?.label || o.status
+                    }
+                    arrow
+                  >
+                    <span>
+                      {WORKFLOW_STATUS_OPTIONS.find(
+                        (x) => x.value === workflowFromBackend(o.status, o.paymentStatus),
+                      )?.label || o.status}
+                    </span>
                   </Tooltip>
                 </TableCell>
                 <TableCell sx={{ width: 140 }}>
-                  <Tooltip title={o.paymentCondition === 'POSTPAID' ? 'ส่งก่อน-โอนทีหลัง' : 'โอนก่อน-ส่งทีหลัง'} arrow>
-                    <span>{o.paymentCondition === 'POSTPAID' ? 'ส่งก่อน-โอนทีหลัง' : 'โอนก่อน-ส่งทีหลัง'}</span>
+                  <Tooltip
+                    title={
+                      o.paymentCondition === "POSTPAID" ? "ส่งก่อน-โอนทีหลัง" : "โอนก่อน-ส่งทีหลัง"
+                    }
+                    arrow
+                  >
+                    <span>
+                      {o.paymentCondition === "POSTPAID"
+                        ? "ส่งก่อน-โอนทีหลัง"
+                        : "โอนก่อน-ส่งทีหลัง"}
+                    </span>
                   </Tooltip>
                 </TableCell>
                 <TableCell sx={{ width: 120 }}>
@@ -501,35 +672,55 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
                   </Tooltip>
                 </TableCell>
                 {(canView || canEdit || canCancel || canDelete) && (
-                  <TableCell align="center" sx={{ width: 120 }}>
+                  <TableCell align="center" sx={{ width: 120, px: 2 }}>
                     <Stack direction="row" spacing={0.5} justifyContent="center">
                       {canView && (
                         <Tooltip title="ดูรายละเอียด" arrow>
-                          <IconButton component={Link as any} href={`/dashboard/sales/orders/${o.id}`} size="small" color="primary">
+                          <IconButton
+                            component={Link as any}
+                            href={`/dashboard/sales/orders/${o.id}`}
+                            size="small"
+                            color="primary"
+                          >
                             <VisibilityOutlinedIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
                       )}
                       {canEdit && (
-                        <Tooltip title={workflowFromBackend(o.status, o.paymentStatus) === "COMPLETED" ? "แก้ไขไม่ได้ (เสร็จสิ้น)" : "แก้ไข"} arrow>
+                        <Tooltip
+                          title={
+                            workflowFromBackend(o.status, o.paymentStatus) === "COMPLETED"
+                              ? "แก้ไขไม่ได้ (เสร็จสิ้น)"
+                              : "แก้ไข"
+                          }
+                          arrow
+                        >
                           <span>
-                            <IconButton size="small" color="secondary" disabled={workflowFromBackend(o.status, o.paymentStatus) === "COMPLETED"} onClick={() => setEditId(o.id)}>
+                            <IconButton
+                              size="small"
+                              color="secondary"
+                              disabled={
+                                workflowFromBackend(o.status, o.paymentStatus) === "COMPLETED"
+                              }
+                              onClick={() => setEditId(o.id)}
+                            >
                               <EditOutlinedIcon fontSize="small" />
                             </IconButton>
                           </span>
                         </Tooltip>
                       )}
-                      {canView && (
-                        <Tooltip title="ดูประวัติสต็อก" arrow>
-                          <IconButton component={Link as any} href={`/dashboard/reports/stock-movements?saleOrderId=${o.id}`} size="small" color="info">
-                            <HistoryOutlinedIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      )}
                       {canCancel && (
-                        <Tooltip title={o.status === "CANCELLED" ? "ถูกยกเลิกแล้ว" : "ยกเลิก"} arrow>
+                        <Tooltip
+                          title={o.status === "CANCELLED" ? "ถูกยกเลิกแล้ว" : "ยกเลิก"}
+                          arrow
+                        >
                           <span>
-                            <IconButton size="small" color="warning" disabled={o.status === "CANCELLED" || busyId === o.id} onClick={() => setConfirm({ type: "cancel", order: o })}>
+                            <IconButton
+                              size="small"
+                              color="warning"
+                              disabled={o.status === "CANCELLED" || busyId === o.id}
+                              onClick={() => setConfirm({ type: "cancel", order: o })}
+                            >
                               <CancelOutlinedIcon fontSize="small" />
                             </IconButton>
                           </span>
@@ -538,7 +729,12 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
                       {canDelete && (
                         <Tooltip title="ลบ" arrow>
                           <span>
-                            <IconButton size="small" color="error" disabled={busyId === o.id} onClick={() => setConfirm({ type: "delete", order: o })}>
+                            <IconButton
+                              size="small"
+                              color="error"
+                              disabled={busyId === o.id}
+                              onClick={() => setConfirm({ type: "delete", order: o })}
+                            >
                               <DeleteOutlineIcon fontSize="small" />
                             </IconButton>
                           </span>
@@ -551,9 +747,15 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
             ))}
             {sortedItems.length === 0 && (
               <TableRow>
-                <TableCell colSpan={headCells.length + ((canView || canEdit || canCancel || canDelete) ? 1 : 0)}>
+                <TableCell
+                  colSpan={
+                    headCells.length + (canView || canEdit || canCancel || canDelete ? 1 : 0)
+                  }
+                >
                   <Box py={4} textAlign="center">
-                    <Typography color="text.secondary">{loading ? "กำลังโหลด..." : "ยังไม่มีรายการ"}</Typography>
+                    <Typography color="text.secondary">
+                      {loading ? "กำลังโหลด..." : "ยังไม่มีรายการ"}
+                    </Typography>
                   </Box>
                 </TableCell>
               </TableRow>
@@ -604,7 +806,9 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setConfirm(null)} color="inherit">ปิด</Button>
+          <Button onClick={() => setConfirm(null)} color="inherit">
+            ปิด
+          </Button>
           <Button
             onClick={async () => {
               if (!confirm) return;
