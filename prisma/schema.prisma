@@ -596,6 +596,8 @@ model SaleOrder {
 
   subTotal       Float  @default(0)
   discountTotal  Float  @default(0)
+  // Additional order-level discount in currency (not included in discountTotal)
+  orderDiscount  Float  @default(0)
   taxAmount      Float  @default(0)
   shippingFee    Float  @default(0)
   otherCharges   Float  @default(0)

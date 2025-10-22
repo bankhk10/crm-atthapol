@@ -98,6 +98,7 @@ const UpdateOrderSchema = z.object({
   paymentStatus: z.enum(["UNPAID","PARTIAL","PAID","OVERDUE"]).optional(),
   shippingFee: z.number().min(0).optional().default(0),
   otherCharges: z.number().min(0).optional().default(0),
+  orderDiscount: z.number().min(0).optional().default(0),
   poNumber: z.string().optional(),
   note: z.string().optional(),
   items: z.array(OrderItemSchema).min(1),
@@ -124,7 +125,8 @@ function computeTotals(payload: z.infer<typeof UpdateOrderSchema>) {
     subTotal += taxable; discountTotal += d; taxAmount += taxable * (lineVat / 100);
   }
   const shipping = payload.shippingFee ?? 0; const others = payload.otherCharges ?? 0;
-  const grandTotal = subTotal + taxAmount + shipping + others;
+  const od = Math.max(0, Number((payload as any).orderDiscount ?? 0));
+  const grandTotal = Math.max(0, subTotal + taxAmount + shipping + others - od);
   return { subTotal, discountTotal, taxAmount, grandTotal };
 }
 
@@ -197,6 +199,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ orderId
           paymentCondition: (data.paymentCondition as any) ?? (exists as any).paymentCondition,
           shippingFee: data.shippingFee ?? 0,
           otherCharges: data.otherCharges ?? 0,
+          orderDiscount: (data as any).orderDiscount ?? 0,
           poNumber: data.poNumber,
           note: data.note,
           subTotal: totals.subTotal,

@@ -26,8 +26,17 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { th } from "date-fns/locale";
+import ThaiAddressPicker from "@/components/ThaiAddressPicker";
 
-export type Option = { id: string; label: string };
+export type Option = {
+  id: string;
+  label: string;
+  address?: string | null;
+  province?: string | null;
+  district?: string | null;
+  subdistrict?: string | null;
+  postalCode?: string | null;
+};
 export type ProductOption = {
   id: string;
   productCode: string;
@@ -126,6 +135,18 @@ export function CreateOrderDialog({
   const [vatRate, setVatRate] = useState<number>(7);
   const [billTo, setBillTo] = useState("");
   const [shipTo, setShipTo] = useState("");
+  // Billing address structured fields
+  const [billAddressLine, setBillAddressLine] = useState("");
+  const [billProvince, setBillProvince] = useState<string | undefined>(undefined);
+  const [billDistrict, setBillDistrict] = useState<string | undefined>(undefined);
+  const [billSubdistrict, setBillSubdistrict] = useState<string | undefined>(undefined);
+  const [billPostalCode, setBillPostalCode] = useState<string | undefined>(undefined);
+  // Shipping address structured fields
+  const [shipAddressLine, setShipAddressLine] = useState("");
+  const [shipProvince, setShipProvince] = useState<string | undefined>(undefined);
+  const [shipDistrict, setShipDistrict] = useState<string | undefined>(undefined);
+  const [shipSubdistrict, setShipSubdistrict] = useState<string | undefined>(undefined);
+  const [shipPostalCode, setShipPostalCode] = useState<string | undefined>(undefined);
   // Internal fields persisted to backend
   const [status, setStatus] = useState("DRAFT");
   const [paymentStatus, setPaymentStatus] = useState("UNPAID");
@@ -142,6 +163,7 @@ export function CreateOrderDialog({
   const [promotionAmount, setPromotionAmount] = useState<number | "">("");
   const [promotionAvailable, setPromotionAvailable] = useState<number | null>(null);
   const [promotionLoading, setPromotionLoading] = useState(false);
+  const [orderDiscount, setOrderDiscount] = useState<number | "">(0);
 
   const totals = useMemo(
     () =>
@@ -153,6 +175,11 @@ export function CreateOrderDialog({
       ),
     [items, vatRate, shippingFee, otherCharges],
   );
+  const netGrandTotal = useMemo(() => {
+    const od = Number(orderDiscount || 0);
+    const net = Math.max(0, (totals?.grandTotal ?? 0) - (isNaN(od) ? 0 : od));
+    return net;
+  }, [totals, orderDiscount]);
 
   const reset = () => {
     setCustomerId("");
@@ -166,12 +193,23 @@ export function CreateOrderDialog({
     setVatRate(7);
     setBillTo("");
     setShipTo("");
+    setBillAddressLine("");
+    setBillProvince(undefined);
+    setBillDistrict(undefined);
+    setBillSubdistrict(undefined);
+    setBillPostalCode(undefined);
+    setShipAddressLine("");
+    setShipProvince(undefined);
+    setShipDistrict(undefined);
+    setShipSubdistrict(undefined);
+    setShipPostalCode(undefined);
     setWorkflowStatus("DRAFT");
     setStatus("DRAFT");
     setPaymentStatus("UNPAID");
     setPaymentCondition("PREPAID");
     setShippingFee(0);
     setOtherCharges(0);
+    setOrderDiscount(0);
     setPoNumber("");
     setNote("");
     setItems([{ ...DEFAULT_ITEM }]);
@@ -264,6 +302,25 @@ export function CreateOrderDialog({
     setSubmitting(true);
     setError(null);
     try {
+      // Build formatted addresses
+      const buildAddress = (
+        line: string,
+        province?: string,
+        district?: string,
+        subdistrict?: string,
+        postalCode?: string,
+      ) => {
+        const parts: string[] = [];
+        if (line && line.trim()) parts.push(line.trim());
+        const geo: string[] = [];
+        if (subdistrict) geo.push(`ต.${subdistrict}`);
+        if (district) geo.push(`อ.${district}`);
+        if (province) geo.push(`จ.${province}`);
+        if (geo.length) parts.push(geo.join(" "));
+        if (postalCode) parts.push(String(postalCode));
+        return parts.join(" ");
+      };
+
       const payload: any = {
         customerId,
         salespersonId: salespersonId || undefined,
@@ -275,12 +332,31 @@ export function CreateOrderDialog({
         currency,
         vatIncluded,
         vatRate: Number(vatRate || 0),
-        billTo: billTo || undefined,
-        shipTo: shipTo || undefined,
+        billTo:
+          buildAddress(
+            billAddressLine,
+            billProvince,
+            billDistrict,
+            billSubdistrict,
+            billPostalCode,
+          ) ||
+          billTo ||
+          undefined,
+        shipTo:
+          buildAddress(
+            shipAddressLine,
+            shipProvince,
+            shipDistrict,
+            shipSubdistrict,
+            shipPostalCode,
+          ) ||
+          shipTo ||
+          undefined,
         status,
         paymentStatus,
         shippingFee: Number(shippingFee || 0),
         otherCharges: Number(otherCharges || 0),
+        orderDiscount: orderDiscount === "" ? 0 : Number(orderDiscount || 0),
         usePromotion,
         promotionAmount: promotionAmount === "" ? undefined : Number(promotionAmount),
         poNumber: poNumber || undefined,
@@ -334,6 +410,13 @@ export function CreateOrderDialog({
               value={customerOptions.find((c) => c.id === customerId) || null}
               onChange={(_, newValue) => {
                 setCustomerId(newValue ? newValue.id : "");
+                if (newValue) {
+                  setBillAddressLine(newValue.address ?? "");
+                  setBillProvince(newValue.province ?? undefined);
+                  setBillDistrict(newValue.district ?? undefined);
+                  setBillSubdistrict(newValue.subdistrict ?? undefined);
+                  setBillPostalCode(newValue.postalCode ?? undefined);
+                }
               }}
               fullWidth
               renderInput={(params) => <TextField {...params} label="ลูกค้า" required />}
@@ -460,15 +543,15 @@ export function CreateOrderDialog({
               fullWidth
               disabled={paymentCondition !== "POSTPAID"}
             />
-            <TextField
+            {/* <TextField
               label="สกุลเงิน"
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
               fullWidth
-            />
+            /> */}
           </Stack>
 
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          {/* <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
               select
               label="รวม VAT"
@@ -486,22 +569,90 @@ export function CreateOrderDialog({
               onChange={(e) => setVatRate(Number(e.target.value || 0))}
               fullWidth
             />
-          </Stack>
+          </Stack> */}
 
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-            <TextField
-              label="ที่อยู่วางบิล (Bill To)"
-              value={billTo}
-              onChange={(e) => setBillTo(e.target.value)}
-              fullWidth
+          {/* Billing Address */}
+          <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
+            <Typography variant="h6" fontWeight={960}>
+              ที่อยู่วางบิล
+            </Typography>
+          </Box>
+          <TextField
+            label="ที่อยู่ (บ้านเลขที่, หมู่, ซอย, ถนน)"
+            value={billAddressLine}
+            onChange={(e) => setBillAddressLine(e.target.value)}
+            fullWidth
+            placeholder="เลขที่ หมู่ ซอย ถนน"
+          />
+          <Box>
+            <ThaiAddressPicker
+              value={{
+                province: billProvince,
+                district: billDistrict,
+                subdistrict: billSubdistrict,
+                postalCode: billPostalCode,
+              }}
+              onChange={(next) => {
+                setBillProvince(next.province);
+                setBillDistrict(next.district);
+                setBillSubdistrict(next.subdistrict);
+                setBillPostalCode(next.postalCode ?? billPostalCode);
+              }}
             />
-            <TextField
-              label="ที่อยู่จัดส่ง (Ship To)"
-              value={shipTo}
-              onChange={(e) => setShipTo(e.target.value)}
-              fullWidth
+          </Box>
+
+          {/* Shipping Address */}
+          <Box
+            sx={{
+              backgroundColor: "#d9d9dbff",
+              borderRadius: 2,
+              px: 2,
+              py: 2,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <Typography variant="h6" fontWeight={960}>
+              ที่อยู่จัดส่ง
+            </Typography>
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={() => {
+                setShipAddressLine(billAddressLine);
+                setShipProvince(billProvince);
+                setShipDistrict(billDistrict);
+                setShipSubdistrict(billSubdistrict);
+                setShipPostalCode(billPostalCode);
+              }}
+            >
+              คัดลอกจากที่อยู่วางบิล
+            </Button>
+          </Box>
+          <TextField
+            label="ที่อยู่ (บ้านเลขที่, หมู่, ซอย, ถนน)"
+            value={shipAddressLine}
+            onChange={(e) => setShipAddressLine(e.target.value)}
+            fullWidth
+            placeholder="เลขที่ หมู่ ซอย ถนน"
+          />
+          <Box>
+            <ThaiAddressPicker
+              value={{
+                province: shipProvince,
+                district: shipDistrict,
+                subdistrict: shipSubdistrict,
+                postalCode: shipPostalCode,
+              }}
+              onChange={(next) => {
+                setShipProvince(next.province);
+                setShipDistrict(next.district);
+                setShipSubdistrict(next.subdistrict);
+                setShipPostalCode(next.postalCode ?? shipPostalCode);
+              }}
             />
-          </Stack>
+          </Box>
 
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
@@ -572,7 +723,7 @@ export function CreateOrderDialog({
                       )}
                       sx={{ minWidth: 300, flex: 1 }}
                     />
-                    <TextField
+                    {/* <TextField
                       label="หน่วย"
                       value={it.unit || ""}
                       onChange={(e) => {
@@ -582,7 +733,7 @@ export function CreateOrderDialog({
                         setItems(next);
                       }}
                       sx={{ width: { xs: "100%", sm: 120 } }}
-                    />
+                    /> */}
                     <TextField
                       label="จำนวน"
                       type="number"
@@ -621,7 +772,7 @@ export function CreateOrderDialog({
                       sx={{ width: { xs: "100%", sm: 160 } }}
                       required
                     />
-                    <TextField
+                    {/* <TextField
                       label="ส่วนลด %"
                       type="number"
                       value={it.discountPercent ?? 0}
@@ -632,7 +783,7 @@ export function CreateOrderDialog({
                         setItems(next);
                       }}
                       sx={{ width: { xs: "100%", sm: 120 } }}
-                    />
+                    /> */}
                     <TextField
                       label="ส่วนลด (บาท)"
                       type="number"
@@ -685,6 +836,15 @@ export function CreateOrderDialog({
               onChange={(e) => setOtherCharges(e.target.value === "" ? "" : Number(e.target.value))}
               fullWidth
             />
+            <TextField
+              label="ส่วนลดทั้งออเดอร์ (บาท)"
+              type="number"
+              value={orderDiscount}
+              onChange={(e) =>
+                setOrderDiscount(e.target.value === "" ? "" : Math.max(0, Number(e.target.value)))
+              }
+              fullWidth
+            />
           </Stack>
 
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
@@ -719,7 +879,7 @@ export function CreateOrderDialog({
             />
             <TextField
               label="ยอดรวมสุทธิ"
-              value={totals.grandTotal.toFixed(2)}
+              value={netGrandTotal.toFixed(2)}
               InputProps={{ readOnly: true }}
               fullWidth
             />

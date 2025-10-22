@@ -156,6 +156,8 @@ export default async function SalesOrderDetailPage({ params }: { params: Promise
             <Typography fontWeight={700} mb={1}>สรุปยอด</Typography>
             <Stack spacing={0.5}>
               <div>ยอดก่อนภาษี: {fmtCurrency(so.subTotal)}</div>
+              <div>ส่วนลดรายการ: {fmtCurrency(so.discountTotal)}</div>
+              <div>ส่วนลดทั้งออเดอร์: {fmtCurrency((so as any).orderDiscount ?? 0)}</div>
               <div>ภาษีมูลค่าเพิ่ม: {fmtCurrency(so.taxAmount)}</div>
               <div>ค่าขนส่ง: {fmtCurrency(so.shippingFee)}</div>
               <div>ค่าใช้จ่ายอื่น: {fmtCurrency(so.otherCharges)}</div>

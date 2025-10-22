@@ -37,6 +37,7 @@ const CreateOrderSchema = z.object({
   paymentStatus: z.enum(["UNPAID","PARTIAL","PAID","OVERDUE"]).optional(),
   shippingFee: z.number().min(0).optional().default(0),
   otherCharges: z.number().min(0).optional().default(0),
+  orderDiscount: z.number().min(0).optional().default(0),
   usePromotion: z.boolean().optional().default(false),
   promotionAmount: z.number().min(0).optional(),
   poNumber: z.string().optional(),
@@ -79,7 +80,8 @@ function computeTotals(payload: CreateOrderInput) {
 
   const shipping = payload.shippingFee ?? 0;
   const others = payload.otherCharges ?? 0;
-  const grandTotal = subTotal + taxAmount + shipping + others;
+  const od = Math.max(0, Number(payload.orderDiscount ?? 0));
+  const grandTotal = Math.max(0, subTotal + taxAmount + shipping + others - od);
 
   return { subTotal, discountTotal, taxAmount, grandTotal };
 }
@@ -277,19 +279,20 @@ export async function POST(req: NextRequest) {
               dueDate: data.dueDate ? new Date(data.dueDate) : null,
               shippingDate: data.shippingDate ? new Date(data.shippingDate) : null,
               creditTermDays: data.creditTermDays,
-              currency: data.currency ?? "THB",
-              vatIncluded: data.vatIncluded ?? true,
-              vatRate: data.vatRate ?? 7,
-              billTo: data.billTo,
-              shipTo: data.shipTo,
-              status: (data.status as any) ?? "DRAFT",
-              paymentStatus: (data.paymentStatus as any) ?? "UNPAID",
-              paymentCondition: (data.paymentCondition as any) ?? "PREPAID",
-              shippingFee: data.shippingFee ?? 0,
-              otherCharges: data.otherCharges ?? 0,
-              promotionSpent: promoUsed || 0,
-              poNumber: data.poNumber,
-              note: data.note,
+          currency: data.currency ?? "THB",
+          vatIncluded: data.vatIncluded ?? true,
+          vatRate: data.vatRate ?? 7,
+          billTo: data.billTo,
+          shipTo: data.shipTo,
+          status: (data.status as any) ?? "DRAFT",
+          paymentStatus: (data.paymentStatus as any) ?? "UNPAID",
+          paymentCondition: (data.paymentCondition as any) ?? "PREPAID",
+          shippingFee: data.shippingFee ?? 0,
+          otherCharges: data.otherCharges ?? 0,
+          orderDiscount: data.orderDiscount ?? 0,
+          promotionSpent: promoUsed || 0,
+          poNumber: data.poNumber,
+          note: data.note,
               subTotal: totals.subTotal,
               discountTotal: totals.discountTotal,
               taxAmount: totals.taxAmount,

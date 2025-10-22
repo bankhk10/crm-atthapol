@@ -23,8 +23,17 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { th } from "date-fns/locale";
+import ThaiAddressPicker from "@/components/ThaiAddressPicker";
 
-export type Option = { id: string; label: string };
+export type Option = {
+  id: string;
+  label: string;
+  address?: string | null;
+  province?: string | null;
+  district?: string | null;
+  subdistrict?: string | null;
+  postalCode?: string | null;
+};
 export type ProductOption = {
   id: string;
   productCode: string;
@@ -125,12 +134,24 @@ export function EditOrderDialog({
   const [vatRate, setVatRate] = useState<number>(7);
   const [billTo, setBillTo] = useState("");
   const [shipTo, setShipTo] = useState("");
+  // Structured address fields for UI
+  const [billAddressLine, setBillAddressLine] = useState("");
+  const [billProvince, setBillProvince] = useState<string | undefined>(undefined);
+  const [billDistrict, setBillDistrict] = useState<string | undefined>(undefined);
+  const [billSubdistrict, setBillSubdistrict] = useState<string | undefined>(undefined);
+  const [billPostalCode, setBillPostalCode] = useState<string | undefined>(undefined);
+  const [shipAddressLine, setShipAddressLine] = useState("");
+  const [shipProvince, setShipProvince] = useState<string | undefined>(undefined);
+  const [shipDistrict, setShipDistrict] = useState<string | undefined>(undefined);
+  const [shipSubdistrict, setShipSubdistrict] = useState<string | undefined>(undefined);
+  const [shipPostalCode, setShipPostalCode] = useState<string | undefined>(undefined);
   const [status, setStatus] = useState("DRAFT");
   const [paymentStatus, setPaymentStatus] = useState("UNPAID");
   // UI workflow status, mapped to backend fields
   const [workflowStatus, setWorkflowStatus] = useState<string>("DRAFT");
   const [shippingFee, setShippingFee] = useState<number | "">(0);
   const [otherCharges, setOtherCharges] = useState<number | "">(0);
+  const [orderDiscount, setOrderDiscount] = useState<number | "">(0);
   const [poNumber, setPoNumber] = useState("");
   const [note, setNote] = useState("");
   const [items, setItems] = useState<Item[]>([{ ...DEFAULT_ITEM }]);
@@ -170,6 +191,43 @@ export function EditOrderDialog({
         setVatRate(Number(so.vatRate || 0));
         setBillTo(so.billTo || "");
         setShipTo(so.shipTo || "");
+        // Prefill address lines and structured fields by parsing existing text
+        const parseAddress = (txt: string | null | undefined) => {
+          const s = String(txt || "").trim();
+          if (!s) return { street: "" } as const;
+          const out: { street: string; province?: string; district?: string; subdistrict?: string; postalCode?: string } = { street: s };
+          try {
+            // Extract postal code (last 5 digits)
+            const mZip = s.match(/(\d{5})(?!.*\d)/);
+            if (mZip) out.postalCode = mZip[1];
+            // Extract subdistrict, district, province with Thai prefixes
+            const mSub = s.match(/ต\.?\s*([^\s]+)/);
+            if (mSub) out.subdistrict = mSub[1];
+            const mDist = s.match(/อ\.?\s*([^\s]+)/);
+            if (mDist) out.district = mDist[1];
+            const mProv = s.match(/จ\.?\s*([^\s\d]+)/);
+            if (mProv) out.province = mProv[1];
+            // Street: before first of ต./อ./จ.
+            const cutIdx = (() => {
+              const idxs = [s.indexOf("ต."), s.indexOf("อ."), s.indexOf("จ.")].filter((i) => i >= 0);
+              return idxs.length ? Math.min(...(idxs as number[])) : -1;
+            })();
+            if (cutIdx > 0) out.street = s.slice(0, cutIdx).trim();
+          } catch {}
+          return out;
+        };
+        const b = parseAddress(so.billTo);
+        setBillAddressLine(b.street || "");
+        setBillProvince(b.province);
+        setBillDistrict(b.district);
+        setBillSubdistrict(b.subdistrict);
+        setBillPostalCode(b.postalCode);
+        const sh = parseAddress(so.shipTo);
+        setShipAddressLine(sh.street || "");
+        setShipProvince(sh.province);
+        setShipDistrict(sh.district);
+        setShipSubdistrict(sh.subdistrict);
+        setShipPostalCode(sh.postalCode);
         setStatus(so.status || "DRAFT");
         setPaymentStatus(so.paymentStatus || "UNPAID");
         // derive workflowStatus from backend
@@ -216,6 +274,20 @@ export function EditOrderDialog({
     setSubmitting(true);
     setError(null);
     try {
+      // Format addresses from structured fields; fallback to plain textarea values
+      const buildAddress = (line: string, province?: string, district?: string, subdistrict?: string, postalCode?: string) => {
+        const parts: string[] = [];
+        if (line && line.trim()) parts.push(line.trim());
+        const geo: string[] = [];
+        if (subdistrict) geo.push(`ต.${subdistrict}`);
+        if (district) geo.push(`อ.${district}`);
+        if (province) geo.push(`จ.${province}`);
+        if (geo.length) parts.push(geo.join(" "));
+        if (postalCode) parts.push(String(postalCode));
+        return parts.join(" ");
+      };
+
+      // Keep existing line discounts; send order-level discount separately
       const payload: any = {
         customerId,
         salespersonId: salespersonId || undefined,
@@ -227,12 +299,13 @@ export function EditOrderDialog({
         currency,
         vatIncluded,
         vatRate: Number(vatRate || 0),
-        billTo: billTo || undefined,
-        shipTo: shipTo || undefined,
+        billTo: buildAddress(billAddressLine, billProvince, billDistrict, billSubdistrict, billPostalCode) || billTo || undefined,
+        shipTo: buildAddress(shipAddressLine, shipProvince, shipDistrict, shipSubdistrict, shipPostalCode) || shipTo || undefined,
         status,
         paymentStatus,
         shippingFee: Number(shippingFee || 0),
         otherCharges: Number(otherCharges || 0),
+        orderDiscount: orderDiscount === "" ? 0 : Number(orderDiscount || 0),
         poNumber: poNumber || undefined,
         note: note || undefined,
         items: items.map((it) => ({
@@ -324,6 +397,13 @@ export function EditOrderDialog({
               value={customerOptions.find((c) => c.id === customerId) || null}
               onChange={(_, newValue) => {
                 setCustomerId(newValue ? newValue.id : "");
+                if (newValue) {
+                  setBillAddressLine(newValue.address ?? "");
+                  setBillProvince(newValue.province ?? undefined);
+                  setBillDistrict(newValue.district ?? undefined);
+                  setBillSubdistrict(newValue.subdistrict ?? undefined);
+                  setBillPostalCode(newValue.postalCode ?? undefined);
+                }
               }}
               fullWidth
               renderInput={(params) => <TextField {...params} label="ลูกค้า" required />}
@@ -399,15 +479,15 @@ export function EditOrderDialog({
               fullWidth
               disabled={paymentCondition !== "POSTPAID"}
             />
-            <TextField
+            {/* <TextField
               label="สกุลเงิน"
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
               fullWidth
-            />
+            /> */}
           </Stack>
 
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          {/* <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
               select
               label="รวม VAT"
@@ -425,22 +505,60 @@ export function EditOrderDialog({
               onChange={(e) => setVatRate(Number(e.target.value || 0))}
               fullWidth
             />
-          </Stack>
+          </Stack> */}
 
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-            <TextField
-              label="ที่อยู่วางบิล (Bill To)"
-              value={billTo}
-              onChange={(e) => setBillTo(e.target.value)}
-              fullWidth
+          {/* Billing Address */}
+          <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
+            <Typography variant="h6" fontWeight={960}>ที่อยู่วางบิล</Typography>
+          </Box>
+          <TextField
+            label="ที่อยู่ (บ้านเลขที่, หมู่, ซอย, ถนน)"
+            value={billAddressLine}
+            onChange={(e) => setBillAddressLine(e.target.value)}
+            fullWidth
+            placeholder="เลขที่ หมู่ ซอย ถนน"
+          />
+          <Box>
+            <ThaiAddressPicker
+              value={{ province: billProvince, district: billDistrict, subdistrict: billSubdistrict, postalCode: billPostalCode }}
+              onChange={(next) => {
+                setBillProvince(next.province);
+                setBillDistrict(next.district);
+                setBillSubdistrict(next.subdistrict);
+                setBillPostalCode(next.postalCode ?? billPostalCode);
+              }}
             />
-            <TextField
-              label="ที่อยู่จัดส่ง (Ship To)"
-              value={shipTo}
-              onChange={(e) => setShipTo(e.target.value)}
-              fullWidth
+          </Box>
+
+          {/* Shipping Address */}
+          <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Typography variant="h6" fontWeight={960}>ที่อยู่จัดส่ง</Typography>
+            <Button size="small" variant="outlined" onClick={() => {
+              setShipAddressLine(billAddressLine);
+              setShipProvince(billProvince);
+              setShipDistrict(billDistrict);
+              setShipSubdistrict(billSubdistrict);
+              setShipPostalCode(billPostalCode);
+            }}>คัดลอกจากที่อยู่วางบิล</Button>
+          </Box>
+          <TextField
+            label="ที่อยู่ (บ้านเลขที่, หมู่, ซอย, ถนน)"
+            value={shipAddressLine}
+            onChange={(e) => setShipAddressLine(e.target.value)}
+            fullWidth
+            placeholder="เลขที่ หมู่ ซอย ถนน"
+          />
+          <Box>
+            <ThaiAddressPicker
+              value={{ province: shipProvince, district: shipDistrict, subdistrict: shipSubdistrict, postalCode: shipPostalCode }}
+              onChange={(next) => {
+                setShipProvince(next.province);
+                setShipDistrict(next.district);
+                setShipSubdistrict(next.subdistrict);
+                setShipPostalCode(next.postalCode ?? shipPostalCode);
+              }}
             />
-          </Stack>
+          </Box>
 
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
@@ -548,7 +666,7 @@ export function EditOrderDialog({
                       sx={{ width: { xs: "100%", sm: 160 } }}
                       required
                     />
-                    <TextField
+                    {/* <TextField
                       label="ส่วนลด %"
                       type="number"
                       value={it.discountPercent ?? 0}
@@ -559,7 +677,7 @@ export function EditOrderDialog({
                         setItems(next);
                       }}
                       sx={{ width: { xs: "100%", sm: 120 } }}
-                    />
+                    /> */}
                     <TextField
                       label="ส่วนลด (บาท)"
                       type="number"
@@ -603,6 +721,13 @@ export function EditOrderDialog({
               onChange={(e) => setOtherCharges(e.target.value === "" ? "" : Number(e.target.value))}
               fullWidth
             />
+            <TextField
+              label="ส่วนลดทั้งออเดอร์ (บาท)"
+              type="number"
+              value={orderDiscount}
+              onChange={(e) => setOrderDiscount(e.target.value === "" ? "" : Math.max(0, Number(e.target.value)))}
+              fullWidth
+            />
           </Stack>
 
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
@@ -637,7 +762,7 @@ export function EditOrderDialog({
             />
             <TextField
               label="ยอดรวมสุทธิ"
-              value={totals.grandTotal.toFixed(2)}
+              value={(Math.max(0, totals.grandTotal - Number(orderDiscount || 0))).toFixed(2)}
               InputProps={{ readOnly: true }}
               fullWidth
             />

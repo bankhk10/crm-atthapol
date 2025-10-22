@@ -7,7 +7,15 @@ import { getProducts } from "@/app/dashboard/products/data";
 
 export default async function SalesOrdersPage() {
   const [customers, employees, products] = await Promise.all([getCustomers(), getEmployees(), getProducts()]);
-  const customerOptions = customers.map((c) => ({ id: c.id, label: c.name }));
+  const customerOptions = customers.map((c) => ({
+    id: c.id,
+    label: c.name,
+    address: c.address ?? null,
+    province: c.province ?? null,
+    district: c.district ?? null,
+    subdistrict: c.subdistrict ?? null,
+    postalCode: c.postalCode ?? null,
+  }));
   const employeeOptions = employees.map((e) => ({
     id: e.id,
     label: ([e.prefix, e.firstName, e.lastName].filter(Boolean).join(" ") || e.user?.name || e.user?.email || e.id) as string,
