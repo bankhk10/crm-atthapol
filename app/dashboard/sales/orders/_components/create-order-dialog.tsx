@@ -106,7 +106,14 @@ function computeTotals(items: Item[], vatRate: number, shippingFee: number, othe
   return { subTotal, discountTotal, taxAmount, grandTotal };
 }
 
-export function CreateOrderDialog({ open, onClose, customerOptions, employeeOptions, productOptions, onCreated }: Props) {
+export function CreateOrderDialog({
+  open,
+  onClose,
+  customerOptions,
+  employeeOptions,
+  productOptions,
+  onCreated,
+}: Props) {
   const [customerId, setCustomerId] = useState("");
   const [salespersonId, setSalespersonId] = useState("");
   const [orderDate, setOrderDate] = useState<string | null>(new Date().toISOString().slice(0, 10));
@@ -137,7 +144,13 @@ export function CreateOrderDialog({ open, onClose, customerOptions, employeeOpti
   const [promotionLoading, setPromotionLoading] = useState(false);
 
   const totals = useMemo(
-    () => computeTotals(items, Number(vatRate || 0), Number(shippingFee || 0), Number(otherCharges || 0)),
+    () =>
+      computeTotals(
+        items,
+        Number(vatRate || 0),
+        Number(shippingFee || 0),
+        Number(otherCharges || 0),
+      ),
     [items, vatRate, shippingFee, otherCharges],
   );
 
@@ -217,22 +230,34 @@ export function CreateOrderDialog({ open, onClose, customerOptions, employeeOpti
     setPromotionLoading(true);
     fetch(`/api/customers/${customerId}/promotion-budget`)
       .then((r) => r.json())
-      .then((d) => { if (!cancelled) setPromotionAvailable(Number(d?.promotionBudget ?? 0)); })
-      .catch(() => { if (!cancelled) setPromotionAvailable(0); })
-      .finally(() => { if (!cancelled) setPromotionLoading(false); });
-    return () => { cancelled = true; };
+      .then((d) => {
+        if (!cancelled) setPromotionAvailable(Number(d?.promotionBudget ?? 0));
+      })
+      .catch(() => {
+        if (!cancelled) setPromotionAvailable(0);
+      })
+      .finally(() => {
+        if (!cancelled) setPromotionLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [customerId]);
 
-  const canSubmit = customerId && items.length > 0 && items.every((i) => {
-    if (!i.productId || i.qty <= 0) return false;
-    const p = productOptions.find((x) => x.id === i.productId);
-    if (!p) return false;
-    // allow oversell? If not, enforce qty <= stockOnHand
-    return i.qty <= (p.stockOnHand ?? 0) || true; // keep always true for now; UI highlights if exceeded
-  }) && (!usePromotion || (
-    promotionAmount !== "" && Number(promotionAmount) > 0 &&
-    (promotionAvailable === null || Number(promotionAmount) <= Number(promotionAvailable))
-  ));
+  const canSubmit =
+    customerId &&
+    items.length > 0 &&
+    items.every((i) => {
+      if (!i.productId || i.qty <= 0) return false;
+      const p = productOptions.find((x) => x.id === i.productId);
+      if (!p) return false;
+      // allow oversell? If not, enforce qty <= stockOnHand
+      return i.qty <= (p.stockOnHand ?? 0) || true; // keep always true for now; UI highlights if exceeded
+    }) &&
+    (!usePromotion ||
+      (promotionAmount !== "" &&
+        Number(promotionAmount) > 0 &&
+        (promotionAvailable === null || Number(promotionAmount) <= Number(promotionAvailable))));
 
   const handleSubmit = async () => {
     if (!canSubmit || isSubmitting) return;
@@ -303,53 +328,75 @@ export function CreateOrderDialog({ open, onClose, customerOptions, employeeOpti
           )}
 
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-            <TextField
-              select
-              label="ลูกค้า"
-              value={customerId}
-              onChange={(e) => setCustomerId(e.target.value)}
+            <Autocomplete
+              options={customerOptions}
+              getOptionLabel={(option) => option.label}
+              value={customerOptions.find((c) => c.id === customerId) || null}
+              onChange={(_, newValue) => {
+                setCustomerId(newValue ? newValue.id : "");
+              }}
               fullWidth
-              required
-            >
-              {customerOptions.map((c) => (
-                <MenuItem key={c.id} value={c.id}>
-                  {c.label}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              select
-              label="พนักงานขาย"
-              value={salespersonId}
-              onChange={(e) => setSalespersonId(e.target.value)}
+              renderInput={(params) => <TextField {...params} label="ลูกค้า" required />}
+            />
+            <Autocomplete
+              options={employeeOptions}
+              getOptionLabel={(option) => option.label}
+              value={employeeOptions.find((e) => e.id === salespersonId) || null}
+              onChange={(_, newValue) => {
+                setSalespersonId(newValue ? newValue.id : "");
+              }}
               fullWidth
-            >
-              <MenuItem value="">ไม่ระบุ</MenuItem>
-              {employeeOptions.map((e) => (
-                <MenuItem key={e.id} value={e.id}>
-                  {e.label}
-                </MenuItem>
-              ))}
-            </TextField>
+              renderInput={(params) => <TextField {...params} label="พนักงานขาย" />}
+            />
           </Stack>
 
           {/* Promotion usage controls (above payment condition) */}
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="center">
             <FormControlLabel
-              control={<Checkbox checked={usePromotion} onChange={(e) => { const checked = e.target.checked; setUsePromotion(checked); if (!checked) setPromotionAmount(""); }} />}
+              control={
+                <Checkbox
+                  checked={usePromotion}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setUsePromotion(checked);
+                    if (!checked) setPromotionAmount("");
+                  }}
+                />
+              }
               label="ใช้วงเงินส่งเสริมการขาย"
             />
-            <Box sx={{ color: 'text.secondary', fontSize: 14, minWidth: 200 }}>
-              คงเหลือ: {promotionLoading ? '...' : (promotionAvailable ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท
+            <Box sx={{ color: "text.secondary", fontSize: 14, minWidth: 200 }}>
+              คงเหลือ:{" "}
+              {promotionLoading
+                ? "..."
+                : (promotionAvailable ?? 0).toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}{" "}
+              บาท
             </Box>
             <TextField
               label="ใช้วงเงิน (บาท)"
               type="number"
               value={promotionAmount}
-              onChange={(e) => setPromotionAmount(e.target.value === "" ? "" : Number(e.target.value))}
+              onChange={(e) =>
+                setPromotionAmount(e.target.value === "" ? "" : Number(e.target.value))
+              }
               disabled={!usePromotion}
-              error={usePromotion && typeof promotionAmount === 'number' && promotionAvailable !== null && Number(promotionAmount) > Number(promotionAvailable)}
-              helperText={usePromotion && typeof promotionAmount === 'number' && promotionAvailable !== null && Number(promotionAmount) > Number(promotionAvailable) ? 'เกินวงเงินคงเหลือ' : undefined}
+              error={
+                usePromotion &&
+                typeof promotionAmount === "number" &&
+                promotionAvailable !== null &&
+                Number(promotionAmount) > Number(promotionAvailable)
+              }
+              helperText={
+                usePromotion &&
+                typeof promotionAmount === "number" &&
+                promotionAvailable !== null &&
+                Number(promotionAmount) > Number(promotionAvailable)
+                  ? "เกินวงเงินคงเหลือ"
+                  : undefined
+              }
               sx={{ flex: 1 }}
             />
           </Stack>
@@ -379,14 +426,14 @@ export function CreateOrderDialog({ open, onClose, customerOptions, employeeOpti
               <DatePicker
                 label="วันที่สั่งซื้อ"
                 value={orderDate ? new Date(orderDate) : null}
-                views={['year', 'month', 'day']}
+                views={["year", "month", "day"]}
                 onChange={(v) => setOrderDate(v ? v.toISOString().slice(0, 10) : null)}
                 slotProps={{ textField: { fullWidth: true } }}
               />
               <DatePicker
                 label="ครบกำหนดชำระ"
                 value={dueDate ? new Date(dueDate) : null}
-                views={['year', 'month', 'day']}
+                views={["year", "month", "day"]}
                 onChange={(v) => setDueDate(v ? v.toISOString().slice(0, 10) : null)}
                 slotProps={{ textField: { fullWidth: true } }}
               />
@@ -395,7 +442,7 @@ export function CreateOrderDialog({ open, onClose, customerOptions, employeeOpti
               <DatePicker
                 label="วันที่จัดส่ง"
                 value={shippingDate ? new Date(shippingDate) : null}
-                views={['year', 'month', 'day']}
+                views={["year", "month", "day"]}
                 onChange={(v) => setShippingDate(v ? v.toISOString().slice(0, 10) : null)}
                 slotProps={{ textField: { fullWidth: true } }}
               />
@@ -407,11 +454,18 @@ export function CreateOrderDialog({ open, onClose, customerOptions, employeeOpti
               label="เครดิต (วัน)"
               type="number"
               value={creditTermDays}
-              onChange={(e) => setCreditTermDays(e.target.value === "" ? "" : Number(e.target.value))}
+              onChange={(e) =>
+                setCreditTermDays(e.target.value === "" ? "" : Number(e.target.value))
+              }
               fullWidth
               disabled={paymentCondition !== "POSTPAID"}
             />
-            <TextField label="สกุลเงิน" value={currency} onChange={(e) => setCurrency(e.target.value)} fullWidth />
+            <TextField
+              label="สกุลเงิน"
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value)}
+              fullWidth
+            />
           </Stack>
 
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
@@ -425,23 +479,51 @@ export function CreateOrderDialog({ open, onClose, customerOptions, employeeOpti
               <MenuItem value="1">รวม</MenuItem>
               <MenuItem value="0">ไม่รวม</MenuItem>
             </TextField>
-            <TextField label="VAT (%)" type="number" value={vatRate} onChange={(e) => setVatRate(Number(e.target.value || 0))} fullWidth />
+            <TextField
+              label="VAT (%)"
+              type="number"
+              value={vatRate}
+              onChange={(e) => setVatRate(Number(e.target.value || 0))}
+              fullWidth
+            />
           </Stack>
 
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-            <TextField label="ที่อยู่วางบิล (Bill To)" value={billTo} onChange={(e) => setBillTo(e.target.value)} fullWidth />
-            <TextField label="ที่อยู่จัดส่ง (Ship To)" value={shipTo} onChange={(e) => setShipTo(e.target.value)} fullWidth />
+            <TextField
+              label="ที่อยู่วางบิล (Bill To)"
+              value={billTo}
+              onChange={(e) => setBillTo(e.target.value)}
+              fullWidth
+            />
+            <TextField
+              label="ที่อยู่จัดส่ง (Ship To)"
+              value={shipTo}
+              onChange={(e) => setShipTo(e.target.value)}
+              fullWidth
+            />
           </Stack>
 
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-            <TextField select label="สถานะเอกสาร" value={workflowStatus} onChange={(e) => applyWorkflowMapping(e.target.value)} fullWidth>
+            <TextField
+              select
+              label="สถานะเอกสาร"
+              value={workflowStatus}
+              onChange={(e) => applyWorkflowMapping(e.target.value)}
+              fullWidth
+            >
               {STATUS_OPTIONS.map((s) => (
                 <MenuItem key={s.value} value={s.value}>
                   {s.label}
                 </MenuItem>
               ))}
             </TextField>
-            <TextField select label="สถานะชำระเงิน" value={paymentStatus} onChange={(e) => setPaymentStatus(e.target.value)} fullWidth>
+            <TextField
+              select
+              label="สถานะชำระเงิน"
+              value={paymentStatus}
+              onChange={(e) => setPaymentStatus(e.target.value)}
+              fullWidth
+            >
               {PAYMENT_STATUS_OPTIONS.map((s) => (
                 <MenuItem key={s.value} value={s.value}>
                   {s.label}
@@ -461,8 +543,14 @@ export function CreateOrderDialog({ open, onClose, customerOptions, employeeOpti
                     <Autocomplete
                       options={productOptions}
                       getOptionLabel={(o) => `${o.productCode} - ${o.nameTH}`}
-                      filterOptions={(opts, state) => opts.filter(o => `${o.productCode} ${o.nameTH}`.toLowerCase().includes((state.inputValue||"").toLowerCase()))}
-                      value={productOptions.find(p => p.id === it.productId) || null}
+                      filterOptions={(opts, state) =>
+                        opts.filter((o) =>
+                          `${o.productCode} ${o.nameTH}`
+                            .toLowerCase()
+                            .includes((state.inputValue || "").toLowerCase()),
+                        )
+                      }
+                      value={productOptions.find((p) => p.id === it.productId) || null}
                       onChange={(_, val) => {
                         const next = [...items];
                         if (val) {
@@ -472,7 +560,7 @@ export function CreateOrderDialog({ open, onClose, customerOptions, employeeOpti
                             productCodeSnapshot: val.productCode,
                             nameSnapshot: val.nameTH,
                             unit: val.unit || undefined,
-                            unitPrice: typeof val.price === 'number' ? val.price : 0,
+                            unitPrice: typeof val.price === "number" ? val.price : 0,
                           };
                         } else {
                           next[idx] = { ...next[idx], productId: undefined };
@@ -487,24 +575,49 @@ export function CreateOrderDialog({ open, onClose, customerOptions, employeeOpti
                     <TextField
                       label="หน่วย"
                       value={it.unit || ""}
-                      onChange={(e) => { const v = e.target.value; const next = [...items]; next[idx] = { ...next[idx], unit: v }; setItems(next); }}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        const next = [...items];
+                        next[idx] = { ...next[idx], unit: v };
+                        setItems(next);
+                      }}
                       sx={{ width: { xs: "100%", sm: 120 } }}
                     />
                     <TextField
                       label="จำนวน"
                       type="number"
                       value={it.qty}
-                      onChange={(e) => { const v = Number(e.target.value || 0); const next = [...items]; next[idx] = { ...next[idx], qty: v }; setItems(next); }}
+                      onChange={(e) => {
+                        const v = Number(e.target.value || 0);
+                        const next = [...items];
+                        next[idx] = { ...next[idx], qty: v };
+                        setItems(next);
+                      }}
                       sx={{ width: { xs: "100%", sm: 120 } }}
                       required
-                      error={Boolean(it.productId) && (it.qty > ((productOptions.find(p => p.id === it.productId)?.stockOnHand) ?? 0))}
-                      helperText={Boolean(it.productId) && (it.qty > ((productOptions.find(p => p.id === it.productId)?.stockOnHand) ?? 0)) ? 'จำนวนมากกว่าคงเหลือ' : undefined}
+                      error={
+                        Boolean(it.productId) &&
+                        it.qty >
+                          (productOptions.find((p) => p.id === it.productId)?.stockOnHand ?? 0)
+                      }
+                      helperText={
+                        Boolean(it.productId) &&
+                        it.qty >
+                          (productOptions.find((p) => p.id === it.productId)?.stockOnHand ?? 0)
+                          ? "จำนวนมากกว่าคงเหลือ"
+                          : undefined
+                      }
                     />
                     <TextField
                       label="ราคาต่อหน่วย"
                       type="number"
                       value={it.unitPrice}
-                      onChange={(e) => { const v = Number(e.target.value || 0); const next = [...items]; next[idx] = { ...next[idx], unitPrice: v }; setItems(next); }}
+                      onChange={(e) => {
+                        const v = Number(e.target.value || 0);
+                        const next = [...items];
+                        next[idx] = { ...next[idx], unitPrice: v };
+                        setItems(next);
+                      }}
                       sx={{ width: { xs: "100%", sm: 160 } }}
                       required
                     />
@@ -512,56 +625,111 @@ export function CreateOrderDialog({ open, onClose, customerOptions, employeeOpti
                       label="ส่วนลด %"
                       type="number"
                       value={it.discountPercent ?? 0}
-                      onChange={(e) => { const v = Number(e.target.value || 0); const next = [...items]; next[idx] = { ...next[idx], discountPercent: v }; setItems(next); }}
+                      onChange={(e) => {
+                        const v = Number(e.target.value || 0);
+                        const next = [...items];
+                        next[idx] = { ...next[idx], discountPercent: v };
+                        setItems(next);
+                      }}
                       sx={{ width: { xs: "100%", sm: 120 } }}
                     />
                     <TextField
                       label="ส่วนลด (บาท)"
                       type="number"
                       value={it.discountAmount ?? 0}
-                      onChange={(e) => { const v = Number(e.target.value || 0); const next = [...items]; next[idx] = { ...next[idx], discountAmount: v }; setItems(next); }}
+                      onChange={(e) => {
+                        const v = Number(e.target.value || 0);
+                        const next = [...items];
+                        next[idx] = { ...next[idx], discountAmount: v };
+                        setItems(next);
+                      }}
                       sx={{ width: { xs: "100%", sm: 140 } }}
                     />
                     {it.productId && (
-                      <Box sx={{ minWidth: 120, color: 'text.secondary', fontSize: 12 }}>
-                        คงเหลือ: {productOptions.find(p => p.id === it.productId)?.stockOnHand ?? 0}
+                      <Box sx={{ minWidth: 120, color: "text.secondary", fontSize: 12 }}>
+                        คงเหลือ:{" "}
+                        {productOptions.find((p) => p.id === it.productId)?.stockOnHand ?? 0}
                       </Box>
                     )}
-                    <IconButton color="error" aria-label="remove" onClick={() => setItems((prev) => prev.filter((_, i) => i !== idx))}>
+                    <IconButton
+                      color="error"
+                      aria-label="remove"
+                      onClick={() => setItems((prev) => prev.filter((_, i) => i !== idx))}
+                    >
                       <DeleteOutlineIcon />
                     </IconButton>
                   </Stack>
                 </Paper>
               ))}
-              <Button startIcon={<AddIcon />} onClick={() => setItems((prev) => [...prev, { ...DEFAULT_ITEM }])}>
+              <Button
+                startIcon={<AddIcon />}
+                onClick={() => setItems((prev) => [...prev, { ...DEFAULT_ITEM }])}
+              >
                 เพิ่มรายการสินค้า
               </Button>
             </Stack>
           </Box>
 
-          
-
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-            <TextField label="ค่าขนส่ง" type="number" value={shippingFee} onChange={(e) => setShippingFee(e.target.value === "" ? "" : Number(e.target.value))} fullWidth />
-            <TextField label="ค่าใช้จ่ายอื่น" type="number" value={otherCharges} onChange={(e) => setOtherCharges(e.target.value === "" ? "" : Number(e.target.value))} fullWidth />
+            <TextField
+              label="ค่าขนส่ง"
+              type="number"
+              value={shippingFee}
+              onChange={(e) => setShippingFee(e.target.value === "" ? "" : Number(e.target.value))}
+              fullWidth
+            />
+            <TextField
+              label="ค่าใช้จ่ายอื่น"
+              type="number"
+              value={otherCharges}
+              onChange={(e) => setOtherCharges(e.target.value === "" ? "" : Number(e.target.value))}
+              fullWidth
+            />
           </Stack>
 
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-            <TextField label="เลขที่ PO ลูกค้า" value={poNumber} onChange={(e) => setPoNumber(e.target.value)} fullWidth />
-            <TextField label="หมายเหตุ" value={note} onChange={(e) => setNote(e.target.value)} fullWidth />
+            <TextField
+              label="เลขที่ PO ลูกค้า"
+              value={poNumber}
+              onChange={(e) => setPoNumber(e.target.value)}
+              fullWidth
+            />
+            <TextField
+              label="หมายเหตุ"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              fullWidth
+            />
           </Stack>
 
           <Divider />
 
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-            <TextField label="ยอดก่อนภาษี" value={totals.subTotal.toFixed(2)} InputProps={{ readOnly: true }} fullWidth />
-            <TextField label="ภาษีมูลค่าเพิ่ม" value={totals.taxAmount.toFixed(2)} InputProps={{ readOnly: true }} fullWidth />
-            <TextField label="ยอดรวมสุทธิ" value={totals.grandTotal.toFixed(2)} InputProps={{ readOnly: true }} fullWidth />
+            <TextField
+              label="ยอดก่อนภาษี"
+              value={totals.subTotal.toFixed(2)}
+              InputProps={{ readOnly: true }}
+              fullWidth
+            />
+            <TextField
+              label="ภาษีมูลค่าเพิ่ม"
+              value={totals.taxAmount.toFixed(2)}
+              InputProps={{ readOnly: true }}
+              fullWidth
+            />
+            <TextField
+              label="ยอดรวมสุทธิ"
+              value={totals.grandTotal.toFixed(2)}
+              InputProps={{ readOnly: true }}
+              fullWidth
+            />
           </Stack>
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} color="inherit">ปิด</Button>
+        <Button onClick={onClose} color="inherit">
+          ปิด
+        </Button>
         <Button onClick={handleSubmit} variant="contained" disabled={!canSubmit || isSubmitting}>
           บันทึกใบสั่งขาย
         </Button>
