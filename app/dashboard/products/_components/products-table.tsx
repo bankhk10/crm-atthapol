@@ -24,7 +24,7 @@ import {
   TablePagination,
   Tooltip,
 } from "@mui/material";
- 
+
 import { useSession } from "next-auth/react";
 import { hasPermission } from "@/lib/permissions";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
@@ -77,17 +77,9 @@ const visuallyHidden = {
   whiteSpace: "nowrap" as const,
 };
 
-const numericKeys = new Set<SortableKeys>([
-  "stockOnHand",
-  "stockAvailable",
-  "stockReserved",
-]);
+const numericKeys = new Set<SortableKeys>(["stockOnHand", "stockAvailable", "stockReserved"]);
 
-function descendingComparator(
-  a: ProductListItem,
-  b: ProductListItem,
-  orderBy: SortableKeys
-) {
+function descendingComparator(a: ProductListItem, b: ProductListItem, orderBy: SortableKeys) {
   const av = a[orderBy];
   const bv = b[orderBy];
   if (numericKeys.has(orderBy)) {
@@ -105,10 +97,8 @@ function descendingComparator(
 
 function getComparator(order: Order, orderBy: SortableKeys) {
   return order === "asc"
-    ? (a: ProductListItem, b: ProductListItem) =>
-        descendingComparator(a, b, orderBy)
-    : (a: ProductListItem, b: ProductListItem) =>
-        -descendingComparator(a, b, orderBy);
+    ? (a: ProductListItem, b: ProductListItem) => descendingComparator(a, b, orderBy)
+    : (a: ProductListItem, b: ProductListItem) => -descendingComparator(a, b, orderBy);
 }
 
 function EnhancedTableHead({
@@ -122,10 +112,9 @@ function EnhancedTableHead({
   onRequestSort: (e: React.MouseEvent<unknown>, p: SortableKeys) => void;
   showActions: boolean;
 }) {
-  const createSortHandler =
-    (property: SortableKeys) => (event: React.MouseEvent<unknown>) => {
-      onRequestSort(event, property);
-    };
+  const createSortHandler = (property: SortableKeys) => (event: React.MouseEvent<unknown>) => {
+    onRequestSort(event, property);
+  };
   return (
     <TableHead
       sx={{
@@ -145,7 +134,13 @@ function EnhancedTableHead({
         {headCells.map((headCell) => (
           <TableCell
             key={headCell.id}
-            align={["brand", "stockOnHand", "stockAvailable", "stockReserved", "status"].includes(headCell.id) ? "center" : "left"}
+            align={
+              ["brand", "stockOnHand", "stockAvailable", "stockReserved", "status"].includes(
+                headCell.id,
+              )
+                ? "center"
+                : "left"
+            }
             sx={{
               width: headCell.width,
               display: ["brand", "expDate"].includes(headCell.id)
@@ -166,9 +161,7 @@ function EnhancedTableHead({
                 {headCell.label}
                 {orderBy === headCell.id && (
                   <Box component="span" sx={visuallyHidden}>
-                    {order === "desc"
-                      ? "sorted descending"
-                      : "sorted ascending"}
+                    {order === "desc" ? "sorted descending" : "sorted ascending"}
                   </Box>
                 )}
               </TableSortLabel>
@@ -189,10 +182,8 @@ function EnhancedTableHead({
 
 export function ProductsTable({ products, query }: Props) {
   const { data: session } = useSession();
-  
-  const [deleteTarget, setDeleteTarget] = useState<ProductListItem | null>(
-    null
-  );
+
+  const [deleteTarget, setDeleteTarget] = useState<ProductListItem | null>(null);
 
   const [order, setOrder] = useState<Order>("asc");
   const [orderBy, setOrderBy] = useState<SortableKeys>("createdAt");
@@ -214,14 +205,11 @@ export function ProductsTable({ products, query }: Props) {
       ]
         .join(" ")
         .toLowerCase()
-        .includes(q)
+        .includes(q),
     );
   }, [products, query]);
 
-  const handleRequestSort = (
-    _: React.MouseEvent<unknown>,
-    property: SortableKeys
-  ) => {
+  const handleRequestSort = (_: React.MouseEvent<unknown>, property: SortableKeys) => {
     const isAsc = orderBy === property && order === "asc";
     setOrder(isAsc ? "desc" : "asc");
     setOrderBy(property);
@@ -232,32 +220,21 @@ export function ProductsTable({ products, query }: Props) {
       [...filtered]
         .sort(getComparator(order, orderBy))
         .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
-    [filtered, order, orderBy, page, rowsPerPage]
+    [filtered, order, orderBy, page, rowsPerPage],
   );
 
   const fmtDate = (iso?: string | null) => {
     if (!iso) return "-";
     const d = new Date(iso);
-    return `${String(d.getDate()).padStart(2, "0")}/${String(
-      d.getMonth() + 1
-    ).padStart(2, "0")}/${d.getFullYear()}`;
+    return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(
+      2,
+      "0",
+    )}/${d.getFullYear()}`;
   };
 
-  const canViewAll = hasPermission(
-    session?.user?.permissions,
-    "products",
-    "view"
-  );
-  const canEditAll = hasPermission(
-    session?.user?.permissions,
-    "products",
-    "edit"
-  );
-  const canDeleteAll = hasPermission(
-    session?.user?.permissions,
-    "products",
-    "delete"
-  );
+  const canViewAll = hasPermission(session?.user?.permissions, "products", "view");
+  const canEditAll = hasPermission(session?.user?.permissions, "products", "edit");
+  const canDeleteAll = hasPermission(session?.user?.permissions, "products", "delete");
   const showActions = canViewAll || canEditAll || canDeleteAll;
 
   return (
@@ -271,22 +248,37 @@ export function ProductsTable({ products, query }: Props) {
       }}
     >
       {/* Mobile cards layout (match sales/orders) */}
-      <Stack spacing={1.25} sx={{ p: 1.5, display: { xs: 'block', md: 'none' } }}>
+      <Stack spacing={1.25} sx={{ p: 1.5, display: { xs: "block", md: "none" } }}>
         {visibleRows.map((p) => (
           <Paper key={p.id} variant="outlined" sx={{ p: 1.25, borderRadius: 2 }}>
             <Stack spacing={1}>
               <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Typography fontWeight={700}>{p.nameTH}</Typography>
+                {/* <Typography fontWeight={700}>{p.nameTH}</Typography> */}
+                <Tooltip title={p.nameTH}>
+                  <Typography
+                    fontWeight={700}
+                    noWrap
+                    sx={{
+                      maxWidth: 200, // ปรับขนาดตาม layout ของคุณ
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      display: "block",
+                    }}
+                  >
+                    {p.nameTH.length > 20 ? p.nameTH.slice(0, 20) + "..." : p.nameTH}
+                  </Typography>
+                </Tooltip>
                 <Chip
                   size="small"
                   label={
                     p.status === "ACTIVE"
                       ? "ใช้งานอยู่"
                       : p.status === "INACTIVE"
-                      ? "ไม่ใช้งาน"
-                      : p.status === "EXPIRED"
-                      ? "หมดอายุ"
-                      : "ใกล้หมดอายุ"
+                        ? "ไม่ใช้งาน"
+                        : p.status === "EXPIRED"
+                          ? "หมดอายุ"
+                          : "ใกล้หมดอายุ"
                   }
                   sx={{
                     fontWeight: 600,
@@ -296,18 +288,18 @@ export function ProductsTable({ products, query }: Props) {
                       p.status === "ACTIVE"
                         ? "#fff"
                         : p.status === "INACTIVE"
-                        ? "#424242"
-                        : p.status === "EXPIRED"
-                        ? "#fff"
-                        : "#000",
+                          ? "#424242"
+                          : p.status === "EXPIRED"
+                            ? "#fff"
+                            : "#000",
                     bgcolor:
                       p.status === "ACTIVE"
                         ? "#22C55E"
                         : p.status === "INACTIVE"
-                        ? "#E0E0E0"
-                        : p.status === "EXPIRED"
-                        ? "#EF4444"
-                        : "#FACC15",
+                          ? "#E0E0E0"
+                          : p.status === "EXPIRED"
+                            ? "#EF4444"
+                            : "#FACC15",
                   }}
                 />
               </Stack>
@@ -316,7 +308,10 @@ export function ProductsTable({ products, query }: Props) {
               </Typography>
               <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
                 <Chip size="small" label={`จำนวน: ${p.stockOnHand}`} />
-                <Chip size="small" label={`พร้อมขาย: ${p.stockAvailable ?? Math.max(0, (p.stockOnHand ?? 0) - (p.stockReserved ?? 0))}`} />
+                <Chip
+                  size="small"
+                  label={`พร้อมขาย: ${p.stockAvailable ?? Math.max(0, (p.stockOnHand ?? 0) - (p.stockReserved ?? 0))}`}
+                />
                 <Chip size="small" label={`จอง: ${p.stockReserved}`} />
               </Stack>
               {showActions && (
@@ -327,7 +322,11 @@ export function ProductsTable({ products, query }: Props) {
                     </IconButton>
                   </Tooltip>
                   <Tooltip title="แก้ไข" arrow>
-                    <IconButton component={Link} href={`/dashboard/products/${p.id}/edit`} size="small">
+                    <IconButton
+                      component={Link}
+                      href={`/dashboard/products/${p.id}/edit`}
+                      size="small"
+                    >
                       <EditOutlinedIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
@@ -342,14 +341,16 @@ export function ProductsTable({ products, query }: Props) {
           </Paper>
         ))}
         {visibleRows.length === 0 && (
-          <Typography color="text.secondary" align="center">ไม่พบข้อมูลสินค้า</Typography>
+          <Typography color="text.secondary" align="center">
+            ไม่พบข้อมูลสินค้า
+          </Typography>
         )}
       </Stack>
 
       {/* Desktop table layout */}
       <TableContainer
         sx={{
-          display: { xs: 'none', md: 'block' },
+          display: { xs: "none", md: "block" },
           borderTopLeftRadius: 12,
           borderTopRightRadius: 12,
           "&::-webkit-scrollbar": { width: 8 },
@@ -359,10 +360,7 @@ export function ProductsTable({ products, query }: Props) {
           },
         }}
       >
-        <Table
-          aria-labelledby="tableTitle"
-          sx={{ minWidth: 900, tableLayout: "fixed" }}
-        >
+        <Table aria-labelledby="tableTitle" sx={{ minWidth: 900, tableLayout: "fixed" }}>
           <EnhancedTableHead
             order={order}
             orderBy={orderBy}
@@ -420,8 +418,17 @@ export function ProductsTable({ products, query }: Props) {
                   </Tooltip>
                 </TableCell>
                 <TableCell sx={{ width: 90 }} align="center">
-                  <Tooltip title={String(p.stockAvailable ?? Math.max(0, (p.stockOnHand ?? 0) - (p.stockReserved ?? 0)))} arrow>
-                    <span>{p.stockAvailable ?? Math.max(0, (p.stockOnHand ?? 0) - (p.stockReserved ?? 0))}</span>
+                  <Tooltip
+                    title={String(
+                      p.stockAvailable ??
+                        Math.max(0, (p.stockOnHand ?? 0) - (p.stockReserved ?? 0)),
+                    )}
+                    arrow
+                  >
+                    <span>
+                      {p.stockAvailable ??
+                        Math.max(0, (p.stockOnHand ?? 0) - (p.stockReserved ?? 0))}
+                    </span>
                   </Tooltip>
                 </TableCell>
                 <TableCell sx={{ width: 90 }} align="center">
@@ -438,10 +445,10 @@ export function ProductsTable({ products, query }: Props) {
                         p.status === "ACTIVE"
                           ? "ใช้งานอยู่"
                           : p.status === "INACTIVE"
-                          ? "ไม่ใช้งาน"
-                          : p.status === "EXPIRED"
-                          ? "หมดอายุ"
-                          : "ใกล้หมดอายุ"
+                            ? "ไม่ใช้งาน"
+                            : p.status === "EXPIRED"
+                              ? "หมดอายุ"
+                              : "ใกล้หมดอายุ"
                       }
                       sx={{
                         fontWeight: 600,
@@ -452,29 +459,25 @@ export function ProductsTable({ products, query }: Props) {
                           p.status === "ACTIVE"
                             ? "#fff"
                             : p.status === "INACTIVE"
-                            ? "#424242"
-                            : p.status === "EXPIRED"
-                            ? "#fff"
-                            : "#000",
+                              ? "#424242"
+                              : p.status === "EXPIRED"
+                                ? "#fff"
+                                : "#000",
                         bgcolor:
                           p.status === "ACTIVE"
                             ? "#22C55E"
                             : p.status === "INACTIVE"
-                            ? "#E0E0E0"
-                            : p.status === "EXPIRED"
-                            ? "#EF4444"
-                            : "#FACC15",
+                              ? "#E0E0E0"
+                              : p.status === "EXPIRED"
+                                ? "#EF4444"
+                                : "#FACC15",
                       }}
                     />
                   </Tooltip>
                 </TableCell>
                 {showActions && (
                   <TableCell align="center" sx={{ width: 120 }}>
-                    <Stack
-                      direction="row"
-                      justifyContent="center"
-                      spacing={0.5}
-                    >
+                    <Stack direction="row" justifyContent="center" spacing={0.5}>
                       <Tooltip title="ดูรายละเอียด" arrow>
                         <IconButton
                           component={Link}
@@ -494,10 +497,7 @@ export function ProductsTable({ products, query }: Props) {
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="ลบ" arrow>
-                        <IconButton
-                          size="small"
-                          onClick={() => setDeleteTarget(p)}
-                        >
+                        <IconButton size="small" onClick={() => setDeleteTarget(p)}>
                           <DeleteOutlineIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
@@ -508,10 +508,7 @@ export function ProductsTable({ products, query }: Props) {
             ))}
             {visibleRows.length === 0 && (
               <TableRow>
-                <TableCell
-                  colSpan={headCells.length + (showActions ? 1 : 0)}
-                  align="center"
-                >
+                <TableCell colSpan={headCells.length + (showActions ? 1 : 0)} align="center">
                   <Typography color="text.secondary" fontFamily="Prompt">
                     ไม่พบข้อมูลสินค้า
                   </Typography>
@@ -535,15 +532,11 @@ export function ProductsTable({ products, query }: Props) {
         }}
       />
 
-      <Dialog
-        open={Boolean(deleteTarget)}
-        onClose={() => setDeleteTarget(null)}
-      >
+      <Dialog open={Boolean(deleteTarget)} onClose={() => setDeleteTarget(null)}>
         <DialogTitle fontFamily="Prompt">ลบสินค้า</DialogTitle>
         <DialogContent>
           <DialogContentText fontFamily="Prompt">
-            ยืนยันการลบ {deleteTarget?.productCode ?? "สินค้า"}?
-            การกระทำนี้ไม่สามารถย้อนกลับได้
+            ยืนยันการลบ {deleteTarget?.productCode ?? "สินค้า"}? การกระทำนี้ไม่สามารถย้อนกลับได้
           </DialogContentText>
         </DialogContent>
         <DialogActions>
