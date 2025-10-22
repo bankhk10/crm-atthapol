@@ -61,18 +61,18 @@ type Item = {
   nameSnapshot: string;
   unit?: string;
   qty: number;
-  unitPrice: number;
+  unitPrice: number | "";
   discountPercent?: number;
-  discountAmount?: number;
+  discountAmount?: number | "";
 };
 
 const DEFAULT_ITEM: Item = {
   nameSnapshot: "",
   unit: "",
   qty: 1,
-  unitPrice: 0,
+  unitPrice: "",
   discountPercent: 0,
-  discountAmount: 0,
+  discountAmount: "",
 };
 
 // Workflow status options requested for the create order page (UI layer)
@@ -101,9 +101,9 @@ function computeTotals(items: Item[], vatRate: number, shippingFee: number, othe
   let discountTotal = 0;
   let taxAmount = 0;
   for (const it of items) {
-    const base = it.qty * it.unitPrice;
-    const discA = Math.max(0, it.discountAmount ?? 0);
-    const discP = Math.max(0, Math.min(100, it.discountPercent ?? 0));
+    const base = Number(it.qty) * Number(it.unitPrice);
+    const discA = Math.max(0, Number(it.discountAmount ?? 0));
+    const discP = Math.max(0, Math.min(100, Number(it.discountPercent ?? 0)));
     const discFromPct = base * (discP / 100);
     const disc = Math.min(base, discA + discFromPct);
     const taxable = Math.max(0, base - disc);
@@ -111,7 +111,7 @@ function computeTotals(items: Item[], vatRate: number, shippingFee: number, othe
     discountTotal += disc;
     taxAmount += taxable * (vatRate / 100);
   }
-  const grandTotal = subTotal + taxAmount + (shippingFee || 0) + (otherCharges || 0);
+  const grandTotal = subTotal + taxAmount + Number(shippingFee || 0) + Number(otherCharges || 0);
   return { subTotal, discountTotal, taxAmount, grandTotal };
 }
 
