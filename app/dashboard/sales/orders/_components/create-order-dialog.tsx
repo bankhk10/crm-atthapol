@@ -826,23 +826,50 @@ export function CreateOrderDialog({
               label="ค่าขนส่ง"
               type="number"
               value={shippingFee}
-              onChange={(e) => setShippingFee(e.target.value === "" ? "" : Number(e.target.value))}
+              onFocus={(e) => {
+                if (Number(e.target.value) === 0) setShippingFee("");
+              }}
+              onChange={(e) => {
+                const val = e.target.value.replace(/^0+(?=\d)/, ""); // ตัด 0 นำหน้าออก
+                setShippingFee(val === "" ? "" : Number(val));
+              }}
+              onBlur={(e) => {
+                if (e.target.value === "") setShippingFee(0); // ถ้าไม่กรอกอะไรเลย ให้กลับเป็น 0
+              }}
               fullWidth
             />
+
             <TextField
               label="ค่าใช้จ่ายอื่น"
               type="number"
               value={otherCharges}
-              onChange={(e) => setOtherCharges(e.target.value === "" ? "" : Number(e.target.value))}
+              onFocus={(e) => {
+                if (Number(e.target.value) === 0) setOtherCharges("");
+              }}
+              onChange={(e) => {
+                const val = e.target.value.replace(/^0+(?=\d)/, ""); // ลบ 0 นำหน้า
+                setOtherCharges(val === "" ? "" : Number(val));
+              }}
+              onBlur={(e) => {
+                if (e.target.value === "") setOtherCharges(0);
+              }}
               fullWidth
             />
+
             <TextField
               label="ส่วนลดทั้งออเดอร์ (บาท)"
               type="number"
               value={orderDiscount}
-              onChange={(e) =>
-                setOrderDiscount(e.target.value === "" ? "" : Math.max(0, Number(e.target.value)))
-              }
+              onFocus={(e) => {
+                if (Number(e.target.value) === 0) setOrderDiscount("");
+              }}
+              onChange={(e) => {
+                const val = e.target.value.replace(/^0+(?=\d)/, "");
+                setOrderDiscount(val === "" ? "" : Math.max(0, Number(val)));
+              }}
+              onBlur={(e) => {
+                if (e.target.value === "") setOrderDiscount(0);
+              }}
               fullWidth
             />
           </Stack>
