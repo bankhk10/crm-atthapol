@@ -543,34 +543,7 @@ export function CreateOrderDialog({
               fullWidth
               disabled={paymentCondition !== "POSTPAID"}
             />
-            {/* <TextField
-              label="สกุลเงิน"
-              value={currency}
-              onChange={(e) => setCurrency(e.target.value)}
-              fullWidth
-            /> */}
           </Stack>
-
-          {/* <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-            <TextField
-              select
-              label="รวม VAT"
-              value={vatIncluded ? "1" : "0"}
-              onChange={(e) => setVatIncluded(e.target.value === "1")}
-              fullWidth
-            >
-              <MenuItem value="1">รวม</MenuItem>
-              <MenuItem value="0">ไม่รวม</MenuItem>
-            </TextField>
-            <TextField
-              label="VAT (%)"
-              type="number"
-              value={vatRate}
-              onChange={(e) => setVatRate(Number(e.target.value || 0))}
-              fullWidth
-            />
-          </Stack> */}
-
           {/* Billing Address */}
           <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
             <Typography variant="h6" fontWeight={960}>
@@ -723,17 +696,6 @@ export function CreateOrderDialog({
                       )}
                       sx={{ minWidth: 300, flex: 1 }}
                     />
-                    {/* <TextField
-                      label="หน่วย"
-                      value={it.unit || ""}
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        const next = [...items];
-                        next[idx] = { ...next[idx], unit: v };
-                        setItems(next);
-                      }}
-                      sx={{ width: { xs: "100%", sm: 120 } }}
-                    /> */}
                     <TextField
                       label="ราคาต่อหน่วย"
                       type="number"
@@ -752,11 +714,28 @@ export function CreateOrderDialog({
                       label="จำนวน"
                       type="number"
                       value={it.qty}
+                      onFocus={(e) => {
+                        if (Number(e.target.value) === 0) {
+                          const next = [...items];
+                          next[idx] = { ...next[idx], qty: "" as unknown as number };
+                          setItems(next);
+                        }
+                      }}
                       onChange={(e) => {
-                        const v = Number(e.target.value || 0);
+                        const val = e.target.value.replace(/^0+(?=\d)/, ""); // ลบ 0 นำหน้า
                         const next = [...items];
-                        next[idx] = { ...next[idx], qty: v };
+                        next[idx] = {
+                          ...next[idx],
+                          qty: val === "" ? ("" as unknown as number) : Number(val),
+                        };
                         setItems(next);
+                      }}
+                      onBlur={(e) => {
+                        if (e.target.value === "") {
+                          const next = [...items];
+                          next[idx] = { ...next[idx], qty: 0 };
+                          setItems(next);
+                        }
                       }}
                       sx={{ width: { xs: "100%", sm: 120 } }}
                       required
@@ -774,18 +753,6 @@ export function CreateOrderDialog({
                       }
                     />
 
-                    {/* <TextField
-                      label="ส่วนลด %"
-                      type="number"
-                      value={it.discountPercent ?? 0}
-                      onChange={(e) => {
-                        const v = Number(e.target.value || 0);
-                        const next = [...items];
-                        next[idx] = { ...next[idx], discountPercent: v };
-                        setItems(next);
-                      }}
-                      sx={{ width: { xs: "100%", sm: 120 } }}
-                    /> */}
                     <TextField
                       label="ส่วนลด (บาท)"
                       type="number"
