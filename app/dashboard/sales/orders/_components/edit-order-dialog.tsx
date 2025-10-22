@@ -171,6 +171,9 @@ export function EditOrderDialog({ // คงชื่อฟังก์ชัน�
   const [promotionAvailable, setPromotionAvailable] = useState<number | null>(null);
   const [promotionLoading, setPromotionLoading] = useState(false);
   const [orderDiscount, setOrderDiscount] = useState<number | "">(0);
+  // เก็บยอดที่เอกสารนี้ใช้จริงตอนโหลด เพื่อใช้ตรวจสอบส่วนต่างกับวงเงินคงเหลือลูกค้า
+  const [initialPromotionSpent, setInitialPromotionSpent] = useState<number>(0);
+  const [initialCustomerId, setInitialCustomerId] = useState<string>("");
 
   const totals = useMemo(
     () =>
@@ -203,6 +206,7 @@ export function EditOrderDialog({ // คงชื่อฟังก์ชัน�
         if (!res.ok) throw new Error("โหลดข้อมูลไม่สำเร็จ");
         const so = await res.json();
         setCustomerId(so.customerId);
+        setInitialCustomerId(so.customerId);
         setSalespersonId(so.salespersonId || "");
         setOrderDate(so.orderDate ? new Date(so.orderDate).toISOString().slice(0, 10) : null);
         setDueDate(so.dueDate ? new Date(so.dueDate).toISOString().slice(0, 10) : null);
@@ -280,6 +284,7 @@ export function EditOrderDialog({ // คงชื่อฟังก์ชัน�
         setOrderDiscount(Number(so.orderDiscount || 0));
         // ฝั่ง backend เก็บยอดใช้โปรโมชันไว้ในฟิลด์ promotionSpent ของใบสั่งขาย
         const promoSpent = Number(so.promotionSpent ?? 0);
+        setInitialPromotionSpent(isNaN(promoSpent) ? 0 : promoSpent);
         setUsePromotion(promoSpent > 0);
         setPromotionAmount(promoSpent > 0 ? promoSpent : "");
 
@@ -328,6 +333,18 @@ export function EditOrderDialog({ // คงชื่อฟังก์ชัน�
   }, [customerId]);
 
   // อัปเดต canSubmit ให้รวม logic promotion
+  // ตรวจสอบการใช้วงเงินส่งเสริมการขาย: ให้เทียบเฉพาะ "ส่วนต่าง" กับวงเงินคงเหลือ
+  const requestedPromo = usePromotion ? Number(promotionAmount || 0) : 0;
+  const baseSpentForDelta = customerId === initialCustomerId ? Number(initialPromotionSpent || 0) : 0;
+  const promoDelta = requestedPromo - baseSpentForDelta;
+  const promotionOk =
+    !usePromotion ||
+    (requestedPromo > 0 && (
+      promoDelta <= 0 ||
+      promotionAvailable === null ||
+      promoDelta <= Number(promotionAvailable)
+    ));
+
   const canSubmit =
     customerId &&
     items.length > 0 &&
@@ -336,11 +353,7 @@ export function EditOrderDialog({ // คงชื่อฟังก์ชัน�
       const p = productOptions.find((x) => x.id === i.productId);
       if (!p) return false;
       return i.qty <= (p.stockOnHand ?? 0) || true; 
-    }) &&
-    (!usePromotion ||
-      (promotionAmount !== "" &&
-        Number(promotionAmount) > 0 &&
-        (promotionAvailable === null || Number(promotionAmount) <= Number(promotionAvailable))));
+    }) && promotionOk;
 
   // คงไว้: handleSubmit (แต่ส่ง PUT และ payload ที่อัปเดต)
   const handleSubmit = async () => {
@@ -558,6 +571,25 @@ export function EditOrderDialog({ // คงชื่อฟังก์ชัน�
                     maximumFractionDigits: 2,
                   })}{" "}
               บาท
+              {usePromotion && typeof promotionAmount === "number" && (
+                <>
+                  {" "}| ใช้ในเอกสารนี้:{" "}
+                  {requestedPromo.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท
+                </>
+              )}
+              {usePromotion && typeof promotionAmount === "number" && (
+                promoDelta > 0 ? (
+                  <>
+                    {" "}| ใช้เพิ่ม:{" "}
+                    {promoDelta.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท
+                  </>
+                ) : promoDelta < 0 ? (
+                  <>
+                    {" "}| จะคืน:{" "}
+                    {Math.abs(promoDelta).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท
+                  </>
+                ) : null
+              )}
             </Box>
             <TextField
               label="ใช้วงเงิน (บาท)"
@@ -571,14 +603,14 @@ export function EditOrderDialog({ // คงชื่อฟังก์ชัน�
                 usePromotion &&
                 typeof promotionAmount === "number" &&
                 promotionAvailable !== null &&
-                Number(promotionAmount) > Number(promotionAvailable)
+                promoDelta > Number(promotionAvailable)
               }
               helperText={
                 usePromotion &&
                 typeof promotionAmount === "number" &&
                 promotionAvailable !== null &&
-                Number(promotionAmount) > Number(promotionAvailable)
-                  ? "เกินวงเงินคงเหลือ"
+                promoDelta > Number(promotionAvailable)
+                  ? "ต้องใช้เพิ่มเกินวงเงินคงเหลือ"
                   : undefined
               }
               sx={{ flex: 1 }}
