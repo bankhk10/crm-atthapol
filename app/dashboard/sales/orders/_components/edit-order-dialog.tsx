@@ -119,7 +119,8 @@ function computeTotals(items: Item[], vatRate: number, shippingFee: number, othe
   return { subTotal, discountTotal, taxAmount, grandTotal };
 }
 
-export function EditOrderDialog({ // คงชื่อฟังก์ชันและ Props
+export function EditOrderDialog({
+  // คงชื่อฟังก์ชันและ Props
   open,
   orderId,
   onClose,
@@ -159,6 +160,8 @@ export function EditOrderDialog({ // คงชื่อฟังก์ชัน�
   const [paymentStatus, setPaymentStatus] = useState("UNPAID");
   // UI workflow status, mapped to backend fields
   const [workflowStatus, setWorkflowStatus] = useState<string>("DRAFT");
+  // เก็บสถานะเริ่มต้นจากเซิร์ฟเวอร์ เพื่อใช้ล็อกเฉพาะกรณีเอกสารถูกส่งของแล้วจริง
+  const [initialServerStatus, setInitialServerStatus] = useState<string>("DRAFT");
   const [shippingFee, setShippingFee] = useState<number | "">(0);
   const [otherCharges, setOtherCharges] = useState<number | "">(0);
   const [poNumber, setPoNumber] = useState("");
@@ -171,6 +174,10 @@ export function EditOrderDialog({ // คงชื่อฟังก์ชัน�
   const [promotionAvailable, setPromotionAvailable] = useState<number | null>(null);
   const [promotionLoading, setPromotionLoading] = useState(false);
   const [orderDiscount, setOrderDiscount] = useState<number | "">(0);
+  // เหตุผลการปฏิเสธ (บังคับกรอกเมื่อเลือกสถานะปฏิเสธ)
+  const [rejectReason, setRejectReason] = useState<string>("");
+  // เหตุผลการยกเลิก (แสดงผล)
+  const [cancelReason, setCancelReason] = useState<string>("");
   // เก็บยอดที่เอกสารนี้ใช้จริงตอนโหลด เพื่อใช้ตรวจสอบส่วนต่างกับวงเงินคงเหลือลูกค้า
   const [initialPromotionSpent, setInitialPromotionSpent] = useState<number>(0);
   const [initialCustomerId, setInitialCustomerId] = useState<string>("");
@@ -193,7 +200,8 @@ export function EditOrderDialog({ // คงชื่อฟังก์ชัน�
     return net;
   }, [totals, orderDiscount]);
 
-  const isLocked = workflowStatus === "COMPLETED" || status === "SHIPPED";
+  // ล็อกเฉพาะเมื่อสถานะเดิมจากระบบคือ SHIPPED (แก้ไขไม่ได้)
+  const isLocked = initialServerStatus === "SHIPPED";
 
   // คงไว้: useEffect สำหรับโหลดข้อมูล (ไม่ reset form ตอนเปิด)
   useEffect(() => {
@@ -242,7 +250,9 @@ export function EditOrderDialog({ // คงชื่อฟังก์ชัน�
             const mProv = s.match(/จ\.?\s*([^\s\d]+)/);
             if (mProv) out.province = mProv[1];
             const cutIdx = (() => {
-              const idxs = [s.indexOf("ต."), s.indexOf("อ."), s.indexOf("จ.")].filter((i) => i >= 0);
+              const idxs = [s.indexOf("ต."), s.indexOf("อ."), s.indexOf("จ.")].filter(
+                (i) => i >= 0,
+              );
               return idxs.length ? Math.min(...(idxs as number[])) : -1;
             })();
             if (cutIdx > 0) out.street = s.slice(0, cutIdx).trim();
@@ -262,6 +272,7 @@ export function EditOrderDialog({ // คงชื่อฟังก์ชัน�
         setShipSubdistrict(sh.subdistrict);
         setShipPostalCode(sh.postalCode);
         setStatus(so.status || "DRAFT");
+        setInitialServerStatus(so.status || "DRAFT");
         setPaymentStatus(so.paymentStatus || "UNPAID");
         setWorkflowStatus(
           (() => {
@@ -280,7 +291,9 @@ export function EditOrderDialog({ // คงชื่อฟังก์ชัน�
         setOtherCharges(Number(so.otherCharges || 0));
         setPoNumber(so.poNumber || "");
         setNote(so.note || "");
-        
+        setCancelReason((so as any).cancelReason || "");
+        setRejectReason((so as any).rejectReason || "");
+
         // อัปเดตการโหลด state เพิ่มเติม
         setOrderDiscount(Number(so.orderDiscount || 0));
         // ฝั่ง backend เก็บยอดใช้โปรโมชันไว้ในฟิลด์ promotionSpent ของใบสั่งขาย
@@ -296,9 +309,13 @@ export function EditOrderDialog({ // คงชื่อฟังก์ชัน�
           nameSnapshot: it.nameSnapshot || "",
           unit: it.unit || "",
           qty: Number(it.qty || 0),
-          unitPrice: it.unitPrice === null || it.unitPrice === undefined ? "" : Number(it.unitPrice),
+          unitPrice:
+            it.unitPrice === null || it.unitPrice === undefined ? "" : Number(it.unitPrice),
           discountPercent: Number(it.discountPercent || 0),
-          discountAmount: it.discountAmount === null || it.discountAmount === undefined ? "" : Number(it.discountAmount),
+          discountAmount:
+            it.discountAmount === null || it.discountAmount === undefined
+              ? ""
+              : Number(it.discountAmount),
         }));
         setItems(mapped.length ? mapped : [{ ...DEFAULT_ITEM }]);
       } catch (e: any) {
@@ -336,15 +353,16 @@ export function EditOrderDialog({ // คงชื่อฟังก์ชัน�
   // อัปเดต canSubmit ให้รวม logic promotion
   // ตรวจสอบการใช้วงเงินส่งเสริมการขาย: ให้เทียบเฉพาะ "ส่วนต่าง" กับวงเงินคงเหลือ
   const requestedPromo = usePromotion ? Number(promotionAmount || 0) : 0;
-  const baseSpentForDelta = customerId === initialCustomerId ? Number(initialPromotionSpent || 0) : 0;
+  const baseSpentForDelta =
+    customerId === initialCustomerId ? Number(initialPromotionSpent || 0) : 0;
   const promoDelta = requestedPromo - baseSpentForDelta;
   const promotionOk =
     !usePromotion ||
-    (requestedPromo > 0 && (
-      promoDelta <= 0 ||
-      promotionAvailable === null ||
-      promoDelta <= Number(promotionAvailable)
-    ));
+    (requestedPromo > 0 &&
+      (promoDelta <= 0 || promotionAvailable === null || promoDelta <= Number(promotionAvailable)));
+
+  // ต้องกรอกเหตุผลเมื่อเลือกปฏิเสธ
+  const rejectOk = workflowStatus !== "REJECTED" || (rejectReason || "").trim().length > 0;
 
   const canSubmit =
     customerId &&
@@ -353,8 +371,10 @@ export function EditOrderDialog({ // คงชื่อฟังก์ชัน�
       if (!i.productId || i.qty <= 0) return false;
       const p = productOptions.find((x) => x.id === i.productId);
       if (!p) return false;
-      return i.qty <= (p.stockOnHand ?? 0) || true; 
-    }) && promotionOk;
+      return i.qty <= (p.stockOnHand ?? 0) || true;
+    }) &&
+    promotionOk &&
+    rejectOk;
 
   // คงไว้: handleSubmit (แต่ส่ง PUT และ payload ที่อัปเดต)
   const handleSubmit = async () => {
@@ -432,7 +452,16 @@ export function EditOrderDialog({ // คงชื่อฟังก์ชัน�
         promotionAmount: promotionAmount === "" ? undefined : Number(promotionAmount), // เพิ่ม
         poNumber: poNumber || undefined,
         note: note || undefined,
-        items: items.map((it) => ({ // อัปเดตการ map items
+        rejectReason:
+          workflowStatus === "REJECTED" && (rejectReason || "").trim()
+            ? (rejectReason || "").trim()
+            : undefined,
+        cancelReason:
+          (workflowStatus === "CANCELLED" && (cancelReason || "").trim()) || (cancelReason || "").trim()
+            ? (cancelReason || "").trim()
+            : undefined,
+        items: items.map((it) => ({
+          // อัปเดตการ map items
           productId: it.productId,
           productCodeSnapshot: it.productCodeSnapshot,
           nameSnapshot: it.nameSnapshot,
@@ -547,6 +576,18 @@ export function EditOrderDialog({ // คงชื่อฟังก์ชัน�
               renderInput={(params) => <TextField {...params} label="พนักงานขาย" />}
             />
           </Stack>
+          {/* แสดงเหตุผลการยกเลิก ถ้ามี หรือเมื่อเลือกสถานะยกเลิก */}
+          {(workflowStatus === "CANCELLED" || (cancelReason || "").trim().length > 0) && (
+            <TextField
+              label="เหตุผลการยกเลิก"
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              fullWidth
+              multiline
+              minRows={2}
+              InputProps={{ readOnly: workflowStatus !== "CANCELLED" }}
+            />
+          )}
 
           {/* เพิ่ม: Promotion usage controls (เหมือน create) */}
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="center">
@@ -574,23 +615,38 @@ export function EditOrderDialog({ // คงชื่อฟังก์ชัน�
               บาท
               {usePromotion && typeof promotionAmount === "number" && (
                 <>
-                  {" "}| ใช้ในเอกสารนี้:{" "}
-                  {requestedPromo.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท
+                  {" "}
+                  | ใช้ในเอกสารนี้:{" "}
+                  {requestedPromo.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}{" "}
+                  บาท
                 </>
               )}
-              {usePromotion && typeof promotionAmount === "number" && (
-                promoDelta > 0 ? (
+              {usePromotion &&
+                typeof promotionAmount === "number" &&
+                (promoDelta > 0 ? (
                   <>
-                    {" "}| ใช้เพิ่ม:{" "}
-                    {promoDelta.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท
+                    {" "}
+                    | ใช้เพิ่ม:{" "}
+                    {promoDelta.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}{" "}
+                    บาท
                   </>
                 ) : promoDelta < 0 ? (
                   <>
-                    {" "}| จะคืน:{" "}
-                    {Math.abs(promoDelta).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท
+                    {" "}
+                    | จะคืน:{" "}
+                    {Math.abs(promoDelta).toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}{" "}
+                    บาท
                   </>
-                ) : null
-              )}
+                ) : null)}
             </Box>
             <TextField
               label="ใช้วงเงิน (บาท)"
@@ -797,6 +853,25 @@ export function EditOrderDialog({ // คงชื่อฟังก์ชัน�
               ))}
             </TextField>
           </Stack>
+          {/* แสดงเหตุผลการปฏิเสธเสมอเมื่อมีค่า และบังคับกรอกเมื่อเลือกปฏิเสธ */}
+          {(workflowStatus === "REJECTED" || (rejectReason || "").trim().length > 0) && (
+            <TextField
+              label="เหตุผลการปฏิเสธ"
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              required={workflowStatus === "REJECTED"}
+              error={workflowStatus === "REJECTED" && (rejectReason || "").trim().length === 0}
+              helperText={
+                workflowStatus === "REJECTED" && (rejectReason || "").trim().length === 0
+                  ? "กรุณากรอกเหตุผลในการปฏิเสธ"
+                  : undefined
+              }
+              fullWidth
+              multiline
+              minRows={2}
+              InputProps={{ readOnly: workflowStatus !== "REJECTED" }}
+            />
+          )}
 
           {/* คงไว้: Header รายการสินค้า */}
           <Box

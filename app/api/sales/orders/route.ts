@@ -42,6 +42,7 @@ const CreateOrderSchema = z.object({
   promotionAmount: z.number().min(0).optional(),
   poNumber: z.string().optional(),
   note: z.string().optional(),
+  rejectReason: z.string().optional(),
   items: z.array(OrderItemSchema).min(1),
 }).superRefine((val, ctx) => {
   if (val.usePromotion) {
@@ -293,6 +294,7 @@ export async function POST(req: NextRequest) {
           promotionSpent: promoUsed || 0,
           poNumber: data.poNumber,
           note: data.note,
+          rejectReason: (data as any).rejectReason,
               subTotal: totals.subTotal,
               discountTotal: totals.discountTotal,
               taxAmount: totals.taxAmount,

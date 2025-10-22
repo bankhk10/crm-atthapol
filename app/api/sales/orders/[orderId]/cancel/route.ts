@@ -22,9 +22,16 @@ async function releaseReservations(tx: any, saleOrderId: string) {
   }
 }
 
-export async function POST(_req: NextRequest, context: { params: Promise<{ orderId: string }> }) {
+export async function POST(req: NextRequest, context: { params: Promise<{ orderId: string }> }) {
   const { orderId } = await context.params;
   try {
+    let cancelReason: string | undefined = undefined;
+    try {
+      const json = await req.json();
+      const reason = (json?.reason || json?.cancelReason || "").trim();
+      if (reason) cancelReason = reason;
+    } catch {}
+
     const result = await prisma.$transaction(async (tx) => {
       const order = await tx.saleOrder.findUnique({ where: { id: orderId } });
       if (!order || (order as any).deletedAt) {
@@ -57,7 +64,7 @@ export async function POST(_req: NextRequest, context: { params: Promise<{ order
 
       const updated = await tx.saleOrder.update({
         where: { id: orderId },
-        data: { status: "CANCELLED" as any },
+        data: { status: "CANCELLED" as any, cancelReason },
         include: { items: true, reservations: true },
       });
       return updated;

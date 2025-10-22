@@ -82,6 +82,20 @@ export default async function SalesOrderDetailPage({ params }: { params: Promise
         </Stack>
       </Stack>
 
+      {(so as any).rejectReason || (so as any).cancelReason ? (
+        <Paper variant="outlined" sx={{ p: 2 }}>
+          <Typography fontWeight={700} mb={1}>เหตุผล</Typography>
+          <Stack spacing={0.5}>
+            {(so as any).rejectReason && (
+              <div>เหตุผลการปฏิเสธ: {(so as any).rejectReason}</div>
+            )}
+            {(so as any).cancelReason && (
+              <div>เหตุผลการยกเลิก: {(so as any).cancelReason}</div>
+            )}
+          </Stack>
+        </Paper>
+      ) : null}
+
       <Paper variant="outlined" sx={{ p: 2 }}>
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           <Box flex={1}>
