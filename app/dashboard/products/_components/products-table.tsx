@@ -24,8 +24,7 @@ import {
   TablePagination,
   Tooltip,
 } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
-import useMediaQuery from "@mui/material/useMediaQuery";
+ 
 import { useSession } from "next-auth/react";
 import { hasPermission } from "@/lib/permissions";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
@@ -190,8 +189,7 @@ function EnhancedTableHead({
 
 export function ProductsTable({ products, query }: Props) {
   const { data: session } = useSession();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  
   const [deleteTarget, setDeleteTarget] = useState<ProductListItem | null>(
     null
   );
@@ -272,84 +270,86 @@ export function ProductsTable({ products, query }: Props) {
         fontFamily: "Prompt, sans-serif",
       }}
     >
-      {isMobile ? (
-        <Stack spacing={1.25} sx={{ p: 1.5 }}>
-          {visibleRows.map((p) => (
-            <Paper key={p.id} variant="outlined" sx={{ p: 1.25, borderRadius: 2 }}>
-              <Stack spacing={1}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                  <Typography fontWeight={700}>{p.nameTH}</Typography>
-                  <Chip
-                    size="small"
-                    label={
+      {/* Mobile cards layout (match sales/orders) */}
+      <Stack spacing={1.25} sx={{ p: 1.5, display: { xs: 'block', md: 'none' } }}>
+        {visibleRows.map((p) => (
+          <Paper key={p.id} variant="outlined" sx={{ p: 1.25, borderRadius: 2 }}>
+            <Stack spacing={1}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Typography fontWeight={700}>{p.nameTH}</Typography>
+                <Chip
+                  size="small"
+                  label={
+                    p.status === "ACTIVE"
+                      ? "ใช้งานอยู่"
+                      : p.status === "INACTIVE"
+                      ? "ไม่ใช้งาน"
+                      : p.status === "EXPIRED"
+                      ? "หมดอายุ"
+                      : "ใกล้หมดอายุ"
+                  }
+                  sx={{
+                    fontWeight: 600,
+                    px: 1.2,
+                    borderRadius: "9999px",
+                    color:
                       p.status === "ACTIVE"
-                        ? "ใช้งานอยู่"
+                        ? "#fff"
                         : p.status === "INACTIVE"
-                        ? "ไม่ใช้งาน"
+                        ? "#424242"
                         : p.status === "EXPIRED"
-                        ? "หมดอายุ"
-                        : "ใกล้หมดอายุ"
-                    }
-                    sx={{
-                      fontWeight: 600,
-                      px: 1.2,
-                      borderRadius: "9999px",
-                      color:
-                        p.status === "ACTIVE"
-                          ? "#fff"
-                          : p.status === "INACTIVE"
-                          ? "#424242"
-                          : p.status === "EXPIRED"
-                          ? "#fff"
-                          : "#000",
-                      bgcolor:
-                        p.status === "ACTIVE"
-                          ? "#22C55E"
-                          : p.status === "INACTIVE"
-                          ? "#E0E0E0"
-                          : p.status === "EXPIRED"
-                          ? "#EF4444"
-                          : "#FACC15",
-                    }}
-                  />
-                </Stack>
-                <Typography variant="body2" color="text.secondary">
-                  รหัส: {p.productCode} {p.brand ? `• แบรนด์: ${p.brand}` : ""}
-                </Typography>
-                <Stack direction="row" spacing={1}>
-                  <Chip size="small" label={`จำนวน: ${p.stockOnHand}`} />
-                  <Chip size="small" label={`พร้อมขาย: ${p.stockAvailable ?? Math.max(0, (p.stockOnHand ?? 0) - (p.stockReserved ?? 0))}`} />
-                  <Chip size="small" label={`จอง: ${p.stockReserved}`} />
-                </Stack>
-                {showActions && (
-                  <Stack direction="row" spacing={0.5} justifyContent="flex-end">
-                    <Tooltip title="ดูรายละเอียด" arrow>
-                      <IconButton component={Link} href={`/dashboard/products/${p.id}`} size="small">
-                        <VisibilityOutlinedIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="แก้ไข" arrow>
-                      <IconButton component={Link} href={`/dashboard/products/${p.id}/edit`} size="small">
-                        <EditOutlinedIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="ลบ" arrow>
-                      <IconButton size="small" onClick={() => setDeleteTarget(p)}>
-                        <DeleteOutlineIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </Stack>
-                )}
+                        ? "#fff"
+                        : "#000",
+                    bgcolor:
+                      p.status === "ACTIVE"
+                        ? "#22C55E"
+                        : p.status === "INACTIVE"
+                        ? "#E0E0E0"
+                        : p.status === "EXPIRED"
+                        ? "#EF4444"
+                        : "#FACC15",
+                  }}
+                />
               </Stack>
-            </Paper>
-          ))}
-          {visibleRows.length === 0 && (
-            <Typography color="text.secondary" align="center">ไม่พบข้อมูลสินค้า</Typography>
-          )}
-        </Stack>
-      ) : (
+              <Typography variant="body2" color="text.secondary">
+                รหัส: {p.productCode} {p.brand ? `• แบรนด์: ${p.brand}` : ""}
+              </Typography>
+              <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                <Chip size="small" label={`จำนวน: ${p.stockOnHand}`} />
+                <Chip size="small" label={`พร้อมขาย: ${p.stockAvailable ?? Math.max(0, (p.stockOnHand ?? 0) - (p.stockReserved ?? 0))}`} />
+                <Chip size="small" label={`จอง: ${p.stockReserved}`} />
+              </Stack>
+              {showActions && (
+                <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                  <Tooltip title="ดูรายละเอียด" arrow>
+                    <IconButton component={Link} href={`/dashboard/products/${p.id}`} size="small">
+                      <VisibilityOutlinedIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="แก้ไข" arrow>
+                    <IconButton component={Link} href={`/dashboard/products/${p.id}/edit`} size="small">
+                      <EditOutlinedIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="ลบ" arrow>
+                    <IconButton size="small" onClick={() => setDeleteTarget(p)}>
+                      <DeleteOutlineIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </Stack>
+              )}
+            </Stack>
+          </Paper>
+        ))}
+        {visibleRows.length === 0 && (
+          <Typography color="text.secondary" align="center">ไม่พบข้อมูลสินค้า</Typography>
+        )}
+      </Stack>
+
+      {/* Desktop table layout */}
       <TableContainer
         sx={{
+          display: { xs: 'none', md: 'block' },
           borderTopLeftRadius: 12,
           borderTopRightRadius: 12,
           "&::-webkit-scrollbar": { width: 8 },
@@ -521,7 +521,6 @@ export function ProductsTable({ products, query }: Props) {
           </TableBody>
         </Table>
       </TableContainer>
-      )}
 
       <TablePagination
         rowsPerPageOptions={[5, 10, 25]}
