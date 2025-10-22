@@ -735,6 +735,20 @@ export function CreateOrderDialog({
                       sx={{ width: { xs: "100%", sm: 120 } }}
                     /> */}
                     <TextField
+                      label="ราคาต่อหน่วย"
+                      type="number"
+                      value={it.unitPrice}
+                      onChange={(e) => {
+                        const v = Number(e.target.value || 0);
+                        const next = [...items];
+                        next[idx] = { ...next[idx], unitPrice: v };
+                        setItems(next);
+                      }}
+                      sx={{ width: { xs: "100%", sm: 150 } }}
+                      required
+                      disabled
+                    />
+                    <TextField
                       label="จำนวน"
                       type="number"
                       value={it.qty}
@@ -759,19 +773,7 @@ export function CreateOrderDialog({
                           : undefined
                       }
                     />
-                    <TextField
-                      label="ราคาต่อหน่วย"
-                      type="number"
-                      value={it.unitPrice}
-                      onChange={(e) => {
-                        const v = Number(e.target.value || 0);
-                        const next = [...items];
-                        next[idx] = { ...next[idx], unitPrice: v };
-                        setItems(next);
-                      }}
-                      sx={{ width: { xs: "100%", sm: 160 } }}
-                      required
-                    />
+
                     {/* <TextField
                       label="ส่วนลด %"
                       type="number"
