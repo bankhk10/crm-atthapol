@@ -663,121 +663,157 @@ export function CreateOrderDialog({
             <Stack spacing={1.5}>
               {items.map((it, idx) => (
                 <Paper key={idx} variant="outlined" sx={{ p: 1.5 }}>
-                  <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} alignItems="center">
-                    <Autocomplete
-                      options={productOptions}
-                      getOptionLabel={(o) => `${o.productCode} - ${o.nameTH}`}
-                      filterOptions={(opts, state) =>
-                        opts.filter((o) =>
-                          `${o.productCode} ${o.nameTH}`
-                            .toLowerCase()
-                            .includes((state.inputValue || "").toLowerCase()),
-                        )
-                      }
-                      value={productOptions.find((p) => p.id === it.productId) || null}
-                      onChange={(_, val) => {
-                        const next = [...items];
-                        if (val) {
+                  <Stack
+                    direction={{ xs: "column", md: "row" }}
+                    spacing={{ xs: 1.5, md: 2 }}
+                    alignItems={{ xs: "stretch", md: "center" }}
+                    justifyContent="space-between"
+                    flexWrap="wrap"
+                  >
+                    {/* ฝั่งซ้าย (สินค้า + ราคา + จำนวน + ส่วนลด) */}
+                    <Stack
+                      direction={{ xs: "column", md: "row" }}
+                      spacing={{ xs: 1.5, md: 1.5 }}
+                      alignItems={{ xs: "stretch", md: "center" }}
+                      sx={{ flex: 1, minWidth: 0 }}
+                    >
+                      <Autocomplete
+                        options={productOptions}
+                        getOptionLabel={(o) => `${o.productCode} - ${o.nameTH}`}
+                        filterOptions={(opts, state) =>
+                          opts.filter((o) =>
+                            `${o.productCode} ${o.nameTH}`
+                              .toLowerCase()
+                              .includes((state.inputValue || "").toLowerCase()),
+                          )
+                        }
+                        value={productOptions.find((p) => p.id === it.productId) || null}
+                        onChange={(_, val) => {
+                          const next = [...items];
+                          if (val) {
+                            next[idx] = {
+                              ...next[idx],
+                              productId: val.id,
+                              productCodeSnapshot: val.productCode,
+                              nameSnapshot: val.nameTH,
+                              unit: val.unit || undefined,
+                              unitPrice: typeof val.price === "number" ? val.price : 0,
+                            };
+                          } else {
+                            next[idx] = { ...next[idx], productId: undefined };
+                          }
+                          setItems(next);
+                        }}
+                        renderInput={(params) => (
+                          <TextField {...params} label="สินค้า" required fullWidth />
+                        )}
+                        sx={{ flex: 1, minWidth: 260 }}
+                      />
+
+                      <TextField
+                        label="ราคาต่อหน่วย"
+                        type="number"
+                        value={it.unitPrice}
+                        onChange={(e) => {
+                          const v = Number(e.target.value || 0);
+                          const next = [...items];
+                          next[idx] = { ...next[idx], unitPrice: v };
+                          setItems(next);
+                        }}
+                        sx={{ width: { xs: "100%", md: 130 } }}
+                        required
+                        disabled
+                      />
+
+                      <TextField
+                        label="จำนวน"
+                        type="number"
+                        value={it.qty}
+                        onFocus={(e) => {
+                          if (Number(e.target.value) === 0) {
+                            const next = [...items];
+                            next[idx] = { ...next[idx], qty: "" as unknown as number };
+                            setItems(next);
+                          }
+                        }}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/^0+(?=\d)/, "");
+                          const next = [...items];
                           next[idx] = {
                             ...next[idx],
-                            productId: val.id,
-                            productCodeSnapshot: val.productCode,
-                            nameSnapshot: val.nameTH,
-                            unit: val.unit || undefined,
-                            unitPrice: typeof val.price === "number" ? val.price : 0,
+                            qty: val === "" ? ("" as unknown as number) : Number(val),
                           };
-                        } else {
-                          next[idx] = { ...next[idx], productId: undefined };
-                        }
-                        setItems(next);
-                      }}
-                      renderInput={(params) => (
-                        <TextField {...params} label="สินค้า" required fullWidth />
-                      )}
-                      sx={{ minWidth: 300, flex: 1 }}
-                    />
-                    <TextField
-                      label="ราคาต่อหน่วย"
-                      type="number"
-                      value={it.unitPrice}
-                      onChange={(e) => {
-                        const v = Number(e.target.value || 0);
-                        const next = [...items];
-                        next[idx] = { ...next[idx], unitPrice: v };
-                        setItems(next);
-                      }}
-                      sx={{ width: { xs: "100%", sm: 150 } }}
-                      required
-                      disabled
-                    />
-                    <TextField
-                      label="จำนวน"
-                      type="number"
-                      value={it.qty}
-                      onFocus={(e) => {
-                        if (Number(e.target.value) === 0) {
-                          const next = [...items];
-                          next[idx] = { ...next[idx], qty: "" as unknown as number };
                           setItems(next);
+                        }}
+                        onBlur={(e) => {
+                          if (e.target.value === "") {
+                            const next = [...items];
+                            next[idx] = { ...next[idx], qty: 0 };
+                            setItems(next);
+                          }
+                        }}
+                        sx={{ width: { xs: "100%", md: 110 } }}
+                        required
+                        error={
+                          Boolean(it.productId) &&
+                          it.qty >
+                            (productOptions.find((p) => p.id === it.productId)?.stockOnHand ?? 0)
                         }
-                      }}
-                      onChange={(e) => {
-                        const val = e.target.value.replace(/^0+(?=\d)/, ""); // ลบ 0 นำหน้า
-                        const next = [...items];
-                        next[idx] = {
-                          ...next[idx],
-                          qty: val === "" ? ("" as unknown as number) : Number(val),
-                        };
-                        setItems(next);
-                      }}
-                      onBlur={(e) => {
-                        if (e.target.value === "") {
-                          const next = [...items];
-                          next[idx] = { ...next[idx], qty: 0 };
-                          setItems(next);
+                        helperText={
+                          Boolean(it.productId) &&
+                          it.qty >
+                            (productOptions.find((p) => p.id === it.productId)?.stockOnHand ?? 0)
+                            ? "จำนวนมากกว่าคงเหลือ"
+                            : undefined
                         }
-                      }}
-                      sx={{ width: { xs: "100%", sm: 120 } }}
-                      required
-                      error={
-                        Boolean(it.productId) &&
-                        it.qty >
-                          (productOptions.find((p) => p.id === it.productId)?.stockOnHand ?? 0)
-                      }
-                      helperText={
-                        Boolean(it.productId) &&
-                        it.qty >
-                          (productOptions.find((p) => p.id === it.productId)?.stockOnHand ?? 0)
-                          ? "จำนวนมากกว่าคงเหลือ"
-                          : undefined
-                      }
-                    />
+                      />
 
-                    <TextField
-                      label="ส่วนลด (บาท)"
-                      type="number"
-                      value={it.discountAmount ?? 0}
-                      onChange={(e) => {
-                        const v = Number(e.target.value || 0);
-                        const next = [...items];
-                        next[idx] = { ...next[idx], discountAmount: v };
-                        setItems(next);
+                      <TextField
+                        label="ส่วนลด (บาท)"
+                        type="number"
+                        value={it.discountAmount ?? 0}
+                        onChange={(e) => {
+                          const v = Number(e.target.value || 0);
+                          const next = [...items];
+                          next[idx] = { ...next[idx], discountAmount: v };
+                          setItems(next);
+                        }}
+                        sx={{ width: { xs: "100%", md: 130 } }}
+                      />
+                    </Stack>
+
+                    {/* ฝั่งขวา (คงเหลือ + ลบ) */}
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      alignItems="center"
+                      justifyContent={{ xs: "flex-end", md: "flex-end" }}
+                      sx={{
+                        mt: { xs: 1, md: 0 },
+                        width: { xs: "100%", md: "auto" },
                       }}
-                      sx={{ width: { xs: "100%", sm: 140 } }}
-                    />
-                    {it.productId && (
-                      <Box sx={{ minWidth: 120, color: "text.secondary", fontSize: 12 }}>
-                        คงเหลือ:{" "}
-                        {productOptions.find((p) => p.id === it.productId)?.stockOnHand ?? 0}
-                      </Box>
-                    )}
-                    <IconButton
-                      color="error"
-                      aria-label="remove"
-                      onClick={() => setItems((prev) => prev.filter((_, i) => i !== idx))}
                     >
-                      <DeleteOutlineIcon />
-                    </IconButton>
+                      {it.productId && (
+                        <Box
+                          sx={{
+                            minWidth: 50,
+                            color: "text.secondary",
+                            fontSize: 12,
+                            textAlign: "right",
+                          }}
+                        >
+                          คงเหลือ:{" "}
+                          {productOptions.find((p) => p.id === it.productId)?.stockOnHand ?? 0}
+                        </Box>
+                      )}
+                      <IconButton
+                        color="error"
+                        aria-label="remove"
+                        onClick={() => setItems((prev) => prev.filter((_, i) => i !== idx))}
+                      >
+                        <DeleteOutlineIcon />
+                      </IconButton>
+                    </Stack>
                   </Stack>
                 </Paper>
               ))}
