@@ -101,3 +101,10 @@ npx prisma db push
 Notes:
 - All numbers and series are mock values and can be replaced with real data later.
 - Layout uses responsive CSS grid via `Box` for compatibility.
+
+
+<!-- Test prod -->
+รัน build: npm run build
+รัน production server: npm run start
+เปิดใช้งานที่: http://localhost:3000
+ถ้าต้องการเปิดกลับในอนาคต ลบหรือแก้ next.config.mjs ให้เอา ignoreDuringBuilds ออก

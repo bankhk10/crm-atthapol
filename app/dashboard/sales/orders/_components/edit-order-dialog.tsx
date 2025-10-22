@@ -221,16 +221,17 @@ export function EditOrderDialog({ // คงชื่อฟังก์ชัน�
         setBillTo(so.billTo || "");
         setShipTo(so.shipTo || "");
 
-        const parseAddress = (txt: string | null | undefined) => {
-          const s = String(txt || "").trim();
-          if (!s) return { street: "" } as const;
-          const out: {
-            street: string;
-            province?: string;
-            district?: string;
-            subdistrict?: string;
-            postalCode?: string;
-          } = { street: s };
+        type ParsedAddress = {
+          street: string;
+          province?: string;
+          district?: string;
+          subdistrict?: string;
+          postalCode?: string;
+        };
+        const parseAddress = (txt: string | null | undefined): ParsedAddress => {
+          const s = String(txt ?? "").trim();
+          if (!s) return { street: "" };
+          const out: ParsedAddress = { street: s };
           try {
             const mZip = s.match(/(\d{5})(?!.*\d)/);
             if (mZip) out.postalCode = mZip[1];
