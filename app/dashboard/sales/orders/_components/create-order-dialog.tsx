@@ -502,6 +502,17 @@ export function CreateOrderDialog({
               <MenuItem value="PREPAID">โอนเงินก่อนแล้วค่อยส่งของ</MenuItem>
               <MenuItem value="POSTPAID">ส่งของก่อนแล้วค่อยโอนเงิน</MenuItem>
             </TextField>
+
+            <TextField
+              label="เครดิต (วัน)"
+              type="number"
+              value={creditTermDays}
+              onChange={(e) =>
+                setCreditTermDays(e.target.value === "" ? "" : Number(e.target.value))
+              }
+              fullWidth
+              disabled={paymentCondition !== "POSTPAID"}
+            />
           </Stack>
 
           <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={th}>
@@ -522,6 +533,12 @@ export function CreateOrderDialog({
               />
             </Stack>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              <TextField
+                label="เลขที่ PO ลูกค้า"
+                value={poNumber}
+                onChange={(e) => setPoNumber(e.target.value)}
+                fullWidth
+              />
               <DatePicker
                 label="วันที่จัดส่ง"
                 value={shippingDate ? new Date(shippingDate) : null}
@@ -532,18 +549,6 @@ export function CreateOrderDialog({
             </Stack>
           </LocalizationProvider>
 
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-            <TextField
-              label="เครดิต (วัน)"
-              type="number"
-              value={creditTermDays}
-              onChange={(e) =>
-                setCreditTermDays(e.target.value === "" ? "" : Number(e.target.value))
-              }
-              fullWidth
-              disabled={paymentCondition !== "POSTPAID"}
-            />
-          </Stack>
           {/* Billing Address */}
           <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
             <Typography variant="h6" fontWeight={960}>
@@ -656,10 +661,23 @@ export function CreateOrderDialog({
             </TextField>
           </Stack>
 
-          <Box>
-            <Typography fontWeight={700} mb={1}>
+          <Box
+            sx={{
+              backgroundColor: "#d9d9dbff",
+              borderRadius: 2,
+              px: 2,
+              py: 2,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <Typography variant="h6" fontWeight={960}>
               รายการสินค้า
             </Typography>
+          </Box>
+
+          <Box>
             <Stack spacing={1.5}>
               {items.map((it, idx) => (
                 <Paper key={idx} variant="outlined" sx={{ p: 1.5 }}>
@@ -881,19 +899,12 @@ export function CreateOrderDialog({
 
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
-              label="เลขที่ PO ลูกค้า"
-              value={poNumber}
-              onChange={(e) => setPoNumber(e.target.value)}
-              fullWidth
-            />
-            <TextField
               label="หมายเหตุ"
               value={note}
               onChange={(e) => setNote(e.target.value)}
               fullWidth
             />
           </Stack>
-
           <Divider />
 
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
