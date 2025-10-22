@@ -16,11 +16,11 @@ import {
   Stack,
   TextField,
   Typography,
-  Checkbox,
-  FormControlLabel,
+  Checkbox, // เพิ่ม
+  FormControlLabel, // เพิ่ม
 } from "@mui/material";
 import Autocomplete from "@mui/material/Autocomplete";
-import AddIcon from "@mui/icons-material/Add";
+import AddIcon from "@mui/icons-material/Add"; // เพิ่ม
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
@@ -48,14 +48,15 @@ export type ProductOption = {
 
 type Props = {
   open: boolean;
-  orderId: string;
+  orderId: string; // คงไว้
   onClose: () => void;
   customerOptions: Option[];
   employeeOptions: Option[];
   productOptions: ProductOption[];
-  onUpdated?: (order: any) => void;
+  onUpdated?: () => void; // คงไว้
 };
 
+// ใช้ Item type จาก create-order-dialog
 type Item = {
   productId?: string;
   productCodeSnapshot?: string;
@@ -67,6 +68,7 @@ type Item = {
   discountAmount?: number | "";
 };
 
+// ใช้ DEFAULT_ITEM จาก create-order-dialog
 const DEFAULT_ITEM: Item = {
   nameSnapshot: "",
   unit: "",
@@ -76,8 +78,7 @@ const DEFAULT_ITEM: Item = {
   discountAmount: "",
 };
 
-// Workflow status options requested for the create order page (UI layer)
-// These map to existing backend enums on change/submit.
+// Workflow status options (UI layer) same as create-order
 const STATUS_OPTIONS = [
   { value: "DRAFT", label: "ร่าง" },
   { value: "PENDING_APPROVAL", label: "รออนุมัติ" },
@@ -90,6 +91,7 @@ const STATUS_OPTIONS = [
   { value: "CANCELLED", label: "ยกเลิก" },
 ];
 
+// เพิ่ม PAYMENT_STATUS_OPTIONS
 const PAYMENT_STATUS_OPTIONS = [
   { value: "UNPAID", label: "ยังไม่ชำระ" },
   { value: "PARTIAL", label: "บางส่วน" },
@@ -97,6 +99,7 @@ const PAYMENT_STATUS_OPTIONS = [
   { value: "OVERDUE", label: "เกินกำหนด" },
 ];
 
+// ใช้ computeTotals จาก create-order-dialog
 function computeTotals(items: Item[], vatRate: number, shippingFee: number, otherCharges: number) {
   let subTotal = 0;
   let discountTotal = 0;
@@ -116,7 +119,7 @@ function computeTotals(items: Item[], vatRate: number, shippingFee: number, othe
   return { subTotal, discountTotal, taxAmount, grandTotal };
 }
 
-export function EditOrderDialog({
+export function EditOrderDialog({ // คงชื่อฟังก์ชันและ Props
   open,
   orderId,
   onClose,
@@ -125,10 +128,13 @@ export function EditOrderDialog({
   productOptions,
   onUpdated,
 }: Props) {
-  void orderId;
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setSubmitting] = useState(false);
+
   const [customerId, setCustomerId] = useState("");
   const [salespersonId, setSalespersonId] = useState("");
-  const [orderDate, setOrderDate] = useState<string | null>(new Date().toISOString().slice(0, 10));
+  const [orderDate, setOrderDate] = useState<string | null>(null);
   const [dueDate, setDueDate] = useState<string | null>(null);
   const [shippingDate, setShippingDate] = useState<string | null>(null);
   const [creditTermDays, setCreditTermDays] = useState<number | "">("");
@@ -138,30 +144,28 @@ export function EditOrderDialog({
   const [vatRate, setVatRate] = useState<number>(7);
   const [billTo, setBillTo] = useState("");
   const [shipTo, setShipTo] = useState("");
-  // Billing address structured fields
+  // Structured address fields for UI
   const [billAddressLine, setBillAddressLine] = useState("");
   const [billProvince, setBillProvince] = useState<string | undefined>(undefined);
   const [billDistrict, setBillDistrict] = useState<string | undefined>(undefined);
   const [billSubdistrict, setBillSubdistrict] = useState<string | undefined>(undefined);
   const [billPostalCode, setBillPostalCode] = useState<string | undefined>(undefined);
-  // Shipping address structured fields
   const [shipAddressLine, setShipAddressLine] = useState("");
   const [shipProvince, setShipProvince] = useState<string | undefined>(undefined);
   const [shipDistrict, setShipDistrict] = useState<string | undefined>(undefined);
   const [shipSubdistrict, setShipSubdistrict] = useState<string | undefined>(undefined);
   const [shipPostalCode, setShipPostalCode] = useState<string | undefined>(undefined);
-  // Internal fields persisted to backend
   const [status, setStatus] = useState("DRAFT");
   const [paymentStatus, setPaymentStatus] = useState("UNPAID");
-  // UI workflow status (maps to internal status + paymentStatus)
+  // UI workflow status, mapped to backend fields
   const [workflowStatus, setWorkflowStatus] = useState<string>("DRAFT");
   const [shippingFee, setShippingFee] = useState<number | "">(0);
   const [otherCharges, setOtherCharges] = useState<number | "">(0);
   const [poNumber, setPoNumber] = useState("");
   const [note, setNote] = useState("");
   const [items, setItems] = useState<Item[]>([{ ...DEFAULT_ITEM }]);
-  const [isSubmitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
+  // เพิ่ม State จาก create-order-dialog
   const [usePromotion, setUsePromotion] = useState(false);
   const [promotionAmount, setPromotionAmount] = useState<number | "">("");
   const [promotionAvailable, setPromotionAvailable] = useState<number | null>(null);
@@ -178,90 +182,128 @@ export function EditOrderDialog({
       ),
     [items, vatRate, shippingFee, otherCharges],
   );
+
+  // เพิ่ม netGrandTotal useMemo
   const netGrandTotal = useMemo(() => {
     const od = Number(orderDiscount || 0);
     const net = Math.max(0, (totals?.grandTotal ?? 0) - (isNaN(od) ? 0 : od));
     return net;
   }, [totals, orderDiscount]);
 
-  const reset = () => {
-    setCustomerId("");
-    setSalespersonId("");
-    setOrderDate(new Date().toISOString().slice(0, 10));
-    setDueDate(null);
-    setShippingDate(null);
-    setCreditTermDays("");
-    setCurrency("THB");
-    setVatIncluded(true);
-    setVatRate(7);
-    setBillTo("");
-    setShipTo("");
-    setBillAddressLine("");
-    setBillProvince(undefined);
-    setBillDistrict(undefined);
-    setBillSubdistrict(undefined);
-    setBillPostalCode(undefined);
-    setShipAddressLine("");
-    setShipProvince(undefined);
-    setShipDistrict(undefined);
-    setShipSubdistrict(undefined);
-    setShipPostalCode(undefined);
-    setWorkflowStatus("DRAFT");
-    setStatus("DRAFT");
-    setPaymentStatus("UNPAID");
-    setPaymentCondition("PREPAID");
-    setShippingFee(0);
-    setOtherCharges(0);
-    setOrderDiscount(0);
-    setPoNumber("");
-    setNote("");
-    setItems([{ ...DEFAULT_ITEM }]);
-    setError(null);
-    setUsePromotion(false);
-    setPromotionAmount("");
-    setPromotionAvailable(null);
-    setPromotionLoading(false);
-  };
+  const isLocked = workflowStatus === "COMPLETED" || status === "SHIPPED";
 
-  // Map UI workflow status to backend status/paymentStatus
-  const applyWorkflowMapping = (wf: string) => {
-    setWorkflowStatus(wf);
-    switch (wf) {
-      case "DRAFT":
-        setStatus("DRAFT");
-        // keep payment as chosen or default
-        break;
-      case "PENDING_APPROVAL":
-        setStatus("CONFIRMED");
-        break;
-      case "APPROVED":
-        setStatus("APPROVED");
-        break;
-      case "REJECTED":
-        setStatus("CANCELLED");
-        break;
-      case "AWAITING_STOCK":
-        setStatus("CONFIRMED");
-        break;
-      case "READY_TO_SHIP":
-        setStatus("APPROVED");
-        break;
-      case "IN_TRANSIT":
-        setStatus("SHIPPED");
-        break;
-      case "COMPLETED":
-        setStatus("SHIPPED");
-        setPaymentStatus("PAID");
-        break;
-      case "CANCELLED":
-        setStatus("CANCELLED");
-        break;
-      default:
-        break;
-    }
-  };
+  // คงไว้: useEffect สำหรับโหลดข้อมูล (ไม่ reset form ตอนเปิด)
+  useEffect(() => {
+    if (!open || !orderId) return;
+    (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(`/api/sales/orders/${orderId}`);
+        if (!res.ok) throw new Error("โหลดข้อมูลไม่สำเร็จ");
+        const so = await res.json();
+        setCustomerId(so.customerId);
+        setSalespersonId(so.salespersonId || "");
+        setOrderDate(so.orderDate ? new Date(so.orderDate).toISOString().slice(0, 10) : null);
+        setDueDate(so.dueDate ? new Date(so.dueDate).toISOString().slice(0, 10) : null);
+        setShippingDate(
+          so.shippingDate ? new Date(so.shippingDate).toISOString().slice(0, 10) : null,
+        );
+        setCreditTermDays(typeof so.creditTermDays === "number" ? so.creditTermDays : "");
+        setPaymentCondition((so.paymentCondition as any) === "POSTPAID" ? "POSTPAID" : "PREPAID");
+        setCurrency(so.currency || "THB");
+        setVatIncluded(Boolean(so.vatIncluded));
+        setVatRate(Number(so.vatRate || 0));
+        setBillTo(so.billTo || "");
+        setShipTo(so.shipTo || "");
 
-  // Load promotion budget when customer changes
+        const parseAddress = (txt: string | null | undefined) => {
+          const s = String(txt || "").trim();
+          if (!s) return { street: "" } as const;
+          const out: {
+            street: string;
+            province?: string;
+            district?: string;
+            subdistrict?: string;
+            postalCode?: string;
+          } = { street: s };
+          try {
+            const mZip = s.match(/(\d{5})(?!.*\d)/);
+            if (mZip) out.postalCode = mZip[1];
+            const mSub = s.match(/ต\.?\s*([^\s]+)/);
+            if (mSub) out.subdistrict = mSub[1];
+            const mDist = s.match(/อ\.?\s*([^\s]+)/);
+            if (mDist) out.district = mDist[1];
+            const mProv = s.match(/จ\.?\s*([^\s\d]+)/);
+            if (mProv) out.province = mProv[1];
+            const cutIdx = (() => {
+              const idxs = [s.indexOf("ต."), s.indexOf("อ."), s.indexOf("จ.")].filter((i) => i >= 0);
+              return idxs.length ? Math.min(...(idxs as number[])) : -1;
+            })();
+            if (cutIdx > 0) out.street = s.slice(0, cutIdx).trim();
+          } catch {}
+          return out;
+        };
+        const b = parseAddress(so.billTo);
+        setBillAddressLine(b.street || "");
+        setBillProvince(b.province);
+        setBillDistrict(b.district);
+        setBillSubdistrict(b.subdistrict);
+        setBillPostalCode(b.postalCode);
+        const sh = parseAddress(so.shipTo);
+        setShipAddressLine(sh.street || "");
+        setShipProvince(sh.province);
+        setShipDistrict(sh.district);
+        setShipSubdistrict(sh.subdistrict);
+        setShipPostalCode(sh.postalCode);
+        setStatus(so.status || "DRAFT");
+        setPaymentStatus(so.paymentStatus || "UNPAID");
+        setWorkflowStatus(
+          (() => {
+            const st = (so.status || "DRAFT") as string;
+            const ps = (so.paymentStatus || "UNPAID") as string;
+            if (st === "DRAFT") return "DRAFT";
+            if (st === "CANCELLED") return "CANCELLED";
+            if (st === "INVOICED") return "READY_TO_SHIP";
+            if (st === "SHIPPED") return ps === "PAID" ? "COMPLETED" : "IN_TRANSIT";
+            if (st === "APPROVED") return "APPROVED";
+            if (st === "CONFIRMED") return "PENDING_APPROVAL";
+            return "DRAFT";
+          })(),
+        );
+        setShippingFee(Number(so.shippingFee || 0));
+        setOtherCharges(Number(so.otherCharges || 0));
+        setPoNumber(so.poNumber || "");
+        setNote(so.note || "");
+        
+        // อัปเดตการโหลด state เพิ่มเติม
+        setOrderDiscount(Number(so.orderDiscount || 0));
+        // ฝั่ง backend เก็บยอดใช้โปรโมชันไว้ในฟิลด์ promotionSpent ของใบสั่งขาย
+        const promoSpent = Number(so.promotionSpent ?? 0);
+        setUsePromotion(promoSpent > 0);
+        setPromotionAmount(promoSpent > 0 ? promoSpent : "");
+
+        // อัปเดตการ map items ให้ตรงกับ Item type ใหม่
+        const mapped: Item[] = (so.items || []).map((it: any) => ({
+          productId: it.productId || undefined,
+          productCodeSnapshot: it.productCodeSnapshot || undefined,
+          nameSnapshot: it.nameSnapshot || "",
+          unit: it.unit || "",
+          qty: Number(it.qty || 0),
+          unitPrice: it.unitPrice === null || it.unitPrice === undefined ? "" : Number(it.unitPrice),
+          discountPercent: Number(it.discountPercent || 0),
+          discountAmount: it.discountAmount === null || it.discountAmount === undefined ? "" : Number(it.discountAmount),
+        }));
+        setItems(mapped.length ? mapped : [{ ...DEFAULT_ITEM }]);
+      } catch (e: any) {
+        setError(e?.message || "โหลดข้อมูลไม่สำเร็จ");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [open, orderId]);
+
+  // เพิ่ม: useEffect สำหรับโหลด Promotion Budget
   useEffect(() => {
     if (!customerId) {
       setPromotionAvailable(null);
@@ -285,6 +327,7 @@ export function EditOrderDialog({
     };
   }, [customerId]);
 
+  // อัปเดต canSubmit ให้รวม logic promotion
   const canSubmit =
     customerId &&
     items.length > 0 &&
@@ -292,20 +335,30 @@ export function EditOrderDialog({
       if (!i.productId || i.qty <= 0) return false;
       const p = productOptions.find((x) => x.id === i.productId);
       if (!p) return false;
-      // allow oversell? If not, enforce qty <= stockOnHand
-      return i.qty <= (p.stockOnHand ?? 0) || true; // keep always true for now; UI highlights if exceeded
+      return i.qty <= (p.stockOnHand ?? 0) || true; 
     }) &&
     (!usePromotion ||
       (promotionAmount !== "" &&
         Number(promotionAmount) > 0 &&
         (promotionAvailable === null || Number(promotionAmount) <= Number(promotionAvailable))));
 
+  // คงไว้: handleSubmit (แต่ส่ง PUT และ payload ที่อัปเดต)
   const handleSubmit = async () => {
     if (!canSubmit || isSubmitting) return;
     setSubmitting(true);
     setError(null);
     try {
-      // Build formatted addresses
+      // helper: refresh promotion budget after save to reflect new remaining immediately
+      const refreshPromotionBudget = async () => {
+        try {
+          if (!customerId) return;
+          const r = await fetch(`/api/customers/${customerId}/promotion-budget`);
+          const d = await r.json().catch(() => ({}));
+          if (r.ok && typeof d?.promotionBudget !== "undefined") {
+            setPromotionAvailable(Number(d.promotionBudget ?? 0));
+          }
+        } catch {}
+      };
       const buildAddress = (
         line: string,
         province?: string,
@@ -324,6 +377,7 @@ export function EditOrderDialog({
         return parts.join(" ");
       };
 
+      // อัปเดต payload ให้ตรงกับ create
       const payload: any = {
         customerId,
         salespersonId: salespersonId || undefined,
@@ -360,11 +414,11 @@ export function EditOrderDialog({
         shippingFee: Number(shippingFee || 0),
         otherCharges: Number(otherCharges || 0),
         orderDiscount: orderDiscount === "" ? 0 : Number(orderDiscount || 0),
-        usePromotion,
-        promotionAmount: promotionAmount === "" ? undefined : Number(promotionAmount),
+        usePromotion, // เพิ่ม
+        promotionAmount: promotionAmount === "" ? undefined : Number(promotionAmount), // เพิ่ม
         poNumber: poNumber || undefined,
         note: note || undefined,
-        items: items.map((it) => ({
+        items: items.map((it) => ({ // อัปเดตการ map items
           productId: it.productId,
           productCodeSnapshot: it.productCodeSnapshot,
           nameSnapshot: it.nameSnapshot,
@@ -375,30 +429,74 @@ export function EditOrderDialog({
           discountAmount: Number(it.discountAmount || 0),
         })),
       };
-      const res = await fetch("/api/sales/orders", {
-        method: "POST",
+      // คงไว้: ส่ง PUT ไปยัง orderId
+      const res = await fetch(`/api/sales/orders/${orderId}`, {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data?.error || "บันทึกใบสั่งขายไม่สำเร็จ");
+        throw new Error(data?.error || "บันทึกไม่สำเร็จ");
       }
-      const created = await res.json();
-      onUpdated?.(created);
-      reset();
+      // refresh remaining promotion budget so UI shows new value immediately
+      await refreshPromotionBudget();
+      onUpdated?.(); // คงไว้
       onClose();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "เกิดข้อผิดพลาด");
+    } catch (e: any) {
+      setError(e?.message || "บันทึกไม่สำเร็จ");
     } finally {
       setSubmitting(false);
     }
   };
 
+  // คงไว้: applyWorkflowMapping
+  const applyWorkflowMapping = (wf: string) => {
+    setWorkflowStatus(wf);
+    switch (wf) {
+      case "DRAFT":
+        setStatus("DRAFT");
+        break;
+      case "PENDING_APPROVAL":
+        setStatus("CONFIRMED");
+        break;
+      case "APPROVED":
+        setStatus("APPROVED");
+        break;
+      case "REJECTED":
+        setStatus("CANCELLED");
+        break;
+      case "AWAITING_STOCK":
+        setStatus("CONFIRMED");
+        break;
+      case "READY_TO_SHIP":
+        setStatus("APPROVED");
+        break;
+      case "IN_TRANSIT":
+        setStatus("SHIPPED");
+        break;
+      case "COMPLETED":
+        setStatus("SHIPPED");
+        setPaymentStatus("PAID");
+        break;
+      case "CANCELLED":
+        setStatus("CANCELLED");
+        break;
+      default:
+        break;
+    }
+  };
+
+  // === เริ่มส่วน JSX ที่ปรับปรุง ===
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>สร้างใบสั่งขาย</DialogTitle>
+      <DialogTitle>แก้ไขใบสั่งขาย</DialogTitle> {/* คงข้อความ "แก้ไข" */}
       <DialogContent dividers>
+        {isLocked && ( // คงไว้: Alert isLocked
+          <Alert severity="info" sx={{ mb: 2 }}>
+            เอกสารถูกทำเครื่องหมายว่า "สำเร็จ" จึงไม่สามารถแก้ไขได้
+          </Alert>
+        )}
         <Stack spacing={2}>
           {error && (
             <Alert severity="error" onClose={() => setError(null)}>
@@ -436,7 +534,7 @@ export function EditOrderDialog({
             />
           </Stack>
 
-          {/* Promotion usage controls (above payment condition) */}
+          {/* เพิ่ม: Promotion usage controls (เหมือน create) */}
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="center">
             <FormControlLabel
               control={
@@ -487,6 +585,7 @@ export function EditOrderDialog({
             />
           </Stack>
 
+          {/* เปลี่ยน: Layout Payment Condition / Credit Term (เหมือน create) */}
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
               select
@@ -518,6 +617,7 @@ export function EditOrderDialog({
             />
           </Stack>
 
+          {/* เปลี่ยน: Layout Date Pickers (เหมือน create) */}
           <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={th}>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <DatePicker
@@ -552,7 +652,7 @@ export function EditOrderDialog({
             </Stack>
           </LocalizationProvider>
 
-          {/* Billing Address */}
+          {/* คงไว้: Billing Address */}
           <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
             <Typography variant="h6" fontWeight={960}>
               ที่อยู่วางบิล
@@ -582,7 +682,7 @@ export function EditOrderDialog({
             />
           </Box>
 
-          {/* Shipping Address */}
+          {/* คงไว้: Shipping Address */}
           <Box
             sx={{
               backgroundColor: "#d9d9dbff",
@@ -635,6 +735,7 @@ export function EditOrderDialog({
             />
           </Box>
 
+          {/* เปลี่ยน: Status/Payment Status (ใช้ options array) */}
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
               select
@@ -664,6 +765,7 @@ export function EditOrderDialog({
             </TextField>
           </Stack>
 
+          {/* คงไว้: Header รายการสินค้า */}
           <Box
             sx={{
               backgroundColor: "#d9d9dbff",
@@ -680,6 +782,7 @@ export function EditOrderDialog({
             </Typography>
           </Box>
 
+          {/* เปลี่ยน: Layout รายการสินค้า (เหมือน create) */}
           <Box>
             <Stack spacing={1.5}>
               {items.map((it, idx) => (
@@ -736,14 +839,14 @@ export function EditOrderDialog({
                         type="number"
                         value={it.unitPrice}
                         onChange={(e) => {
-                          const v = Number(e.target.value || 0);
+                          const v = e.target.value === "" ? "" : Number(e.target.value);
                           const next = [...items];
                           next[idx] = { ...next[idx], unitPrice: v };
                           setItems(next);
                         }}
                         sx={{ width: { xs: "100%", md: 130 } }}
                         required
-                        disabled
+                        disabled // เหมือน create
                       />
 
                       <TextField
@@ -792,9 +895,9 @@ export function EditOrderDialog({
                       <TextField
                         label="ส่วนลด (บาท)"
                         type="number"
-                        value={it.discountAmount ?? 0}
+                        value={it.discountAmount} // ใช้ discountAmount (ที่รับ "" ได้)
                         onChange={(e) => {
-                          const v = Number(e.target.value || 0);
+                          const v = e.target.value === "" ? "" : Number(e.target.value);
                           const next = [...items];
                           next[idx] = { ...next[idx], discountAmount: v };
                           setItems(next);
@@ -847,6 +950,7 @@ export function EditOrderDialog({
             </Stack>
           </Box>
 
+          {/* เปลี่ยน: Stack ค่าขนส่ง/อื่นๆ (เพิ่ม handlers onFocus/Blur) */}
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
               label="ค่าขนส่ง"
@@ -856,11 +960,11 @@ export function EditOrderDialog({
                 if (Number(e.target.value) === 0) setShippingFee("");
               }}
               onChange={(e) => {
-                const val = e.target.value.replace(/^0+(?=\d)/, ""); // ตัด 0 นำหน้าออก
+                const val = e.target.value.replace(/^0+(?=\d)/, "");
                 setShippingFee(val === "" ? "" : Number(val));
               }}
               onBlur={(e) => {
-                if (e.target.value === "") setShippingFee(0); // ถ้าไม่กรอกอะไรเลย ให้กลับเป็น 0
+                if (e.target.value === "") setShippingFee(0);
               }}
               fullWidth
             />
@@ -873,7 +977,7 @@ export function EditOrderDialog({
                 if (Number(e.target.value) === 0) setOtherCharges("");
               }}
               onChange={(e) => {
-                const val = e.target.value.replace(/^0+(?=\d)/, ""); // ลบ 0 นำหน้า
+                const val = e.target.value.replace(/^0+(?=\d)/, "");
                 setOtherCharges(val === "" ? "" : Number(val));
               }}
               onBlur={(e) => {
@@ -900,6 +1004,7 @@ export function EditOrderDialog({
             />
           </Stack>
 
+          {/* เปลี่ยน: Stack หมายเหตุ (แยกจาก PO) */}
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
               label="หมายเหตุ"
@@ -910,6 +1015,7 @@ export function EditOrderDialog({
           </Stack>
           <Divider />
 
+          {/* เปลี่ยน: Stack Totals (ใช้ netGrandTotal) */}
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
               label="ยอดก่อนภาษี"
@@ -936,8 +1042,12 @@ export function EditOrderDialog({
         <Button onClick={onClose} color="inherit">
           ปิด
         </Button>
-        <Button onClick={handleSubmit} variant="contained" disabled={!canSubmit || isSubmitting}>
-          บันทึกใบสั่งขาย
+        <Button
+          onClick={handleSubmit}
+          variant="contained"
+          disabled={isLocked || !canSubmit || isSubmitting} // คง isLocked
+        >
+          บันทึกการแก้ไข {/* คงข้อความ "บันทึกการแก้ไข" */}
         </Button>
       </DialogActions>
     </Dialog>
