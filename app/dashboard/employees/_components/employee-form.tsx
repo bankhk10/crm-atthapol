@@ -196,7 +196,6 @@ export function EmployeeForm({
         </Stack>
 
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-          {/* <Box flex={1}> */}
           <TextField
             label="รหัสพนักงาน"
             value={values.employeeCode ?? ""}
@@ -205,14 +204,21 @@ export function EmployeeForm({
             placeholder="เช่น EMP-0001"
             fullWidth
           />
-          {/* </Box> */}
           <TextField
             label="เบอร์โทรศัพท์"
             value={values.phone}
-            onChange={handleChange("phone")}
+            onChange={(e) => {
+              const numericValue = e.target.value.replace(/\D/g, "");
+              setValues((prev) => ({ ...prev, phone: numericValue }));
+            }}
             required
             fullWidth
             placeholder="0xx-xxx-xxxx"
+            inputProps={{
+              inputMode: "numeric",
+              pattern: "[0-9]*",
+              maxLength: 10,
+            }}
           />
         </Stack>
 
@@ -258,12 +264,18 @@ export function EmployeeForm({
 
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           <TextField
+            select
             label="ตำแหน่งงาน"
-            value={values.position}
+            value={values.position ?? ""}
             onChange={handleChange("position")}
             required
             fullWidth
-          />
+          >
+            <MenuItem value="ผู้บริหารระดับสูง">ผู้บริหารระดับสูง</MenuItem>
+            <MenuItem value="ผู้จัดการ">ผู้จัดการ</MenuItem>
+            <MenuItem value="หัวหน้างาน">หัวหน้างาน</MenuItem>
+            <MenuItem value="พนักงานปฏิบัติการ">พนักงานปฏิบัติการ</MenuItem>
+          </TextField>
 
           <TextField
             select
@@ -314,18 +326,35 @@ export function EmployeeForm({
         </Stack>
 
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          {/* สังกัดบริษัท */}
           <TextField
+            select
             label="สังกัดบริษัท"
             value={values.company ?? ""}
             onChange={handleChange("company")}
+            required
             fullWidth
-          />
+          >
+            <MenuItem value="บริษัท A">บริษัท A</MenuItem>
+            <MenuItem value="บริษัท B">บริษัท B</MenuItem>
+            <MenuItem value="บริษัท C">บริษัท C</MenuItem>
+          </TextField>
+
+          {/* เขตที่รับผิดชอบ */}
           <TextField
+            select
             label="เขตที่รับผิดชอบ"
             value={values.responsibilityArea ?? ""}
             onChange={handleChange("responsibilityArea")}
+            required
             fullWidth
-          />
+          >
+            <MenuItem value="ภาคเหนือ">ภาคเหนือ</MenuItem>
+            <MenuItem value="ภาคตะวันออกเฉียงเหนือ">ภาคตะวันออกเฉียงเหนือ</MenuItem>
+            <MenuItem value="ภาคตะวันตก">ภาคตะวันตก</MenuItem>
+            <MenuItem value="ภาคกลาง">ภาคกลาง</MenuItem>
+            <MenuItem value="ภาคใต้">ภาคใต้</MenuItem>
+          </TextField>
         </Stack>
 
         <TextField
@@ -556,7 +585,7 @@ export function EmployeeForm({
           >
             ยกเลิก
           </Button>
-          <Button type="submit" variant="contained" disabled={isSubmitting} >
+          <Button type="submit" variant="contained" disabled={isSubmitting}>
             บันทึก
           </Button>
         </Stack>
