@@ -57,36 +57,10 @@ export default async function CustomerDetailPage({
         py: 4,
       }}
     >
-      <Stack spacing={3} sx={{ width: "100%", maxWidth: 1200 }}>
-        <ActionButtons resource="customers" />
-
+      {/* <Stack spacing={3} sx={{ width: "100%", maxWidth: 1200 }}> */}
         <Paper sx={{ p: { xs: 2, sm: 3 } }}>
           <Grid container spacing={3}>
-            <Grid size={{ xs: 12, md: 4 }}>
-              <Stack spacing={1.5} alignItems={{ xs: "flex-start", md: "center" }}>
-                <Typography variant="h5" fontWeight={800}>
-                  {customer.name}
-                </Typography>
-                <Chip
-                  label={typeLabel(customer.type)}
-                  color={
-                    customer.type === "FARMER"
-                      ? "success"
-                      : customer.type === "SUBDEALER"
-                      ? "secondary"
-                      : customer.type === "BROKER"
-                      ? "info"
-                      : "primary"
-                  }
-                  variant="outlined"
-                />
-                <Typography color="text.secondary" variant="body2">
-                  สร้างเมื่อ {new Date(customer.createdAt).toLocaleDateString("th-TH")}
-                </Typography>
-              </Stack>
-            </Grid>
-
-            <Grid size={{ xs: 12, md: 8 }}>
+            {/* <Grid size={{ xs: 12, md: 8 }}> */}
               <Stack spacing={2}>
                 <Section title="ข้อมูลลูกค้า">
                   <Info label="คำนำหน้า" value={customer.prefix ?? "-"} />
@@ -165,10 +139,10 @@ export default async function CustomerDetailPage({
                   </Section>
                 )}
               </Stack>
-            </Grid>
+            {/* </Grid> */}
           </Grid>
         </Paper>
-      </Stack>
+      {/* </Stack> */}
     </Box>
   );
 }
