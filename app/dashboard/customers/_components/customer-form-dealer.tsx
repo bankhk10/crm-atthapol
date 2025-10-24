@@ -277,6 +277,30 @@ export default function DealerFormSection({
       </Stack>
 
       <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+        <Autocomplete
+          options={employeeOptions}
+          getOptionLabel={(option) => option.label}
+          value={
+            employeeOptions.find((opt) => opt.id === (values.responsibleEmployeeId ?? "")) ?? null
+          }
+          onChange={(_e, option) =>
+            setValues((prev) => ({
+              ...prev,
+              responsibleEmployeeId: option ? option.id : null,
+            }))
+          }
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="พนักงานที่รับผิดชอบ"
+              placeholder="ค้นหาชื่อพนักงาน"
+              fullWidth
+            />
+          )}
+          isOptionEqualToValue={(opt, val) => opt.id === val.id}
+          fullWidth
+        />
+
         <TextField
           label="คะแนนความสัมพันธ์"
           select
@@ -308,8 +332,7 @@ export default function DealerFormSection({
         />
       </Stack>
 
-      {/* Optional: show responsible employee when options provided (kept to parent in current layout) */}
-      {employeeOptions && employeeOptions.length === 0 ? null : <></>}
+      
     </Stack>
   );
 }

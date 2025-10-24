@@ -17,6 +17,7 @@ type SubDealerFormSectionProps = {
   fieldErrors: Record<string, string>;
   handleChange: (field: keyof CustomerFormValues) => (e: any) => void;
   dealerOptions?: { id: string; label: string }[];
+  employeeOptions?: { id: string; label: string }[];
 };
 
 export default function SubDealerFormSection({
@@ -25,6 +26,7 @@ export default function SubDealerFormSection({
   fieldErrors,
   handleChange,
   dealerOptions = [],
+  employeeOptions = [],
 }: SubDealerFormSectionProps) {
   const fillRandom = () => {
     const randInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
@@ -331,6 +333,23 @@ export default function SubDealerFormSection({
       </Stack>
 
       <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+        <Autocomplete
+          options={employeeOptions}
+          getOptionLabel={(option) => option.label}
+          value={employeeOptions.find((opt) => opt.id === (values.responsibleEmployeeId ?? "")) ?? null}
+          onChange={(_e, option) =>
+            setValues((prev) => ({
+              ...prev,
+              responsibleEmployeeId: option ? option.id : null,
+            }))
+          }
+          renderInput={(params) => (
+            <TextField {...params} label="พนักงานที่รับผิดชอบ" placeholder="ค้นหาชื่อพนักงาน" fullWidth />
+          )}
+          isOptionEqualToValue={(opt, val) => opt.id === val.id}
+          fullWidth
+        />
+
         <TextField
           select
           label="คะแนนความสัมพันธ์"

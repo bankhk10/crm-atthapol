@@ -141,6 +141,7 @@ export function CustomerForm({
             setValues={setValues}
             fieldErrors={fieldErrors}
             handleChange={(field) => handleChange(field as any)}
+            employeeOptions={employeeOptions}
           />
         )}
         {values.type === "SUBDEALER" && (
@@ -150,6 +151,7 @@ export function CustomerForm({
             fieldErrors={fieldErrors}
             handleChange={(field) => handleChange(field as any)}
             dealerOptions={dealerOptions}
+            employeeOptions={employeeOptions}
           />
         )}
         {values.type === "FARMER" && (
@@ -202,29 +204,31 @@ export function CustomerForm({
           />
         </Box>
 
-        {/* ส่วนกลาง: พนักงานที่รับผิดชอบ */}
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-          <Autocomplete
-            options={employeeOptions}
-            getOptionLabel={(option) => option.label}
-            value={
-              employeeOptions.find((opt) => opt.id === (values.responsibleEmployeeId ?? "")) ?? null
-            }
-            onChange={(_e, option) =>
-              setValues((prev) => ({ ...prev, responsibleEmployeeId: option ? option.id : null }))
-            }
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="พนักงานที่รับผิดชอบ"
-                placeholder="ค้นหาชื่อพนักงาน"
-                fullWidth
-              />
-            )}
-            isOptionEqualToValue={(opt, val) => opt.id === val.id}
-            fullWidth
-          />
-        </Stack>
+        {/* ส่วนกลาง: พนักงานที่รับผิดชอบ (เฉพาะ FARMER/BROKER) */}
+        {(values.type === "FARMER" || values.type === "BROKER") && (
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <Autocomplete
+              options={employeeOptions}
+              getOptionLabel={(option) => option.label}
+              value={
+                employeeOptions.find((opt) => opt.id === (values.responsibleEmployeeId ?? "")) ?? null
+              }
+              onChange={(_e, option) =>
+                setValues((prev) => ({ ...prev, responsibleEmployeeId: option ? option.id : null }))
+              }
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="พนักงานที่รับผิดชอบ"
+                  placeholder="ค้นหาชื่อพนักงาน"
+                  fullWidth
+                />
+              )}
+              isOptionEqualToValue={(opt, val) => opt.id === val.id}
+              fullWidth
+            />
+          </Stack>
+        )}
 
         {/* ปุ่มบันทึก/ยกเลิก */}
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="flex-end">
