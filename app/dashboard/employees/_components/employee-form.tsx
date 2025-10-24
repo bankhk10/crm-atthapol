@@ -293,8 +293,7 @@ export function EmployeeForm({
           </TextField>
         </Stack>
 
-        {/* removed legacy combined name field — using firstName and lastName separately */}
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+        {/* <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           <TextField
             select
             label="เพศ"
@@ -323,7 +322,7 @@ export function EmployeeForm({
               }}
             />
           </LocalizationProvider>
-        </Stack>
+        </Stack> */}
 
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           {/* สังกัดบริษัท */}
