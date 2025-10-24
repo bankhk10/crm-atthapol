@@ -244,13 +244,13 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
     }
   };
 
-  function workflowChipSx(wf: string) {
-    if (wf === "COMPLETED") return { color: "#fff", bgcolor: "#22C55E" } as const;
-    if (wf === "CANCELLED") return { color: "#fff", bgcolor: "#EF4444" } as const;
-    if (wf === "IN_TRANSIT" || wf === "READY_TO_SHIP" || wf === "AWAITING_STOCK")
-      return { color: "#000", bgcolor: "#FACC15" } as const;
-    return { color: "#424242", bgcolor: "#E0E0E0" } as const;
-  }
+function workflowChipSx(wf: string) {
+  if (wf === "COMPLETED") return { color: "#fff", bgcolor: "#22C55E" } as const;
+  if (wf === "CANCELLED" || wf === "REJECTED") return { color: "#fff", bgcolor: "#EF4444" } as const;
+  if (wf === "IN_TRANSIT" || wf === "READY_TO_SHIP" || wf === "AWAITING_STOCK")
+    return { color: "#000", bgcolor: "#FACC15" } as const;
+  return { color: "#424242", bgcolor: "#E0E0E0" } as const;
+}
 
   // Client-side sorting (current page only)
   function descendingComparator(a: OrderItem, b: OrderItem, key: SortableKeys) {
@@ -452,7 +452,8 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
       {/* Mobile cards layout */}
       <Stack spacing={1.25} sx={{ p: 1.5, display: { xs: "block", md: "none" } }}>
         {sortedItems.map((o) => {
-          const wf = workflowFromBackend(o.status, o.paymentStatus);
+          const rawWf = workflowFromBackend(o.status, o.paymentStatus);
+          const wf = o.status === "CANCELLED" && (o as any)?.rejectReason ? "REJECTED" : rawWf;
           const wfLabel = WORKFLOW_STATUS_OPTIONS.find((x) => x.value === wf)?.label || o.status;
           return (
             <Paper key={o.id} variant="outlined" sx={{ p: 1.25, borderRadius: 2 }}>

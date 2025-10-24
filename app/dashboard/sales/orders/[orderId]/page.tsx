@@ -73,7 +73,8 @@ export default async function SalesOrderDetailPage({ params }: { params: Promise
         <Typography variant="h4" fontWeight={700}>ใบสั่งขาย #{so.soNumber}</Typography>
         <Stack direction="row" spacing={1}>
           {(() => {
-            const wf = workflowFromBackend(String(so.status || ""), String(so.paymentStatus || ""));
+            const baseWf = workflowFromBackend(String(so.status || ""), String(so.paymentStatus || ""));
+            const wf = so.status === "CANCELLED" && (so as any)?.rejectReason ? "REJECTED" : baseWf;
             const label = WORKFLOW_STATUS_OPTIONS.find((x) => x.value === wf)?.label || String(so.status);
             const isCancelled = wf === "CANCELLED" || wf === "REJECTED";
             return <Chip label={label} color={isCancelled ? "default" : "primary"} variant={isCancelled ? "outlined" : "filled"} />;

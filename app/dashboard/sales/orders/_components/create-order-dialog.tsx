@@ -929,14 +929,21 @@ export function CreateOrderDialog({
           </Stack>
         </Stack>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} color="inherit">
-          ปิด
-        </Button>
-        <Button onClick={handleSubmit} variant="contained" disabled={!canSubmit || isSubmitting}>
-          บันทึกใบสั่งขาย
-        </Button>
-      </DialogActions>
+    <DialogActions
+  sx={{
+    justifyContent: "center",
+    py: 2, 
+  }}
+>
+  {/* ปุ่มรอง: ใช้สีเทา (secondary) จะไม่แย่งซีน */}
+  <Button onClick={onClose} color="secondary" variant="contained">
+    ปิด
+  </Button>
+  {/* ปุ่มหลัก: ใช้สีเขียว (success) สื่อถึงการบันทึก */}
+  <Button onClick={handleSubmit} color="success" variant="contained" disabled={!canSubmit || isSubmitting}>
+    บันทึก
+  </Button>
+</DialogActions>
     </Dialog>
   );
 }
