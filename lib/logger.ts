@@ -1,19 +1,19 @@
 import pino from "pino";
 
-// Pretty print logs in dev, JSON in production
-const isProd = process.env.NODE_ENV === "production";
+// Ensure a single logger instance in dev to avoid accumulating
+// process 'exit' listeners across Next.js HMR reloads.
+type GlobalLoggerStore = { logger?: pino.Logger };
+const globalForLogger = global as unknown as GlobalLoggerStore;
 
-let logger: pino.Logger;
-
-if (isProd) {
-  logger = pino({
-    level: process.env.LOG_LEVEL || "info",
-  });
-} else {
-  // Use pino-pretty as a direct stream in dev to avoid worker_threads
-  // transports that Next.js bundles into vendor chunks.
-  // This keeps pretty output without spawning a worker.
-  // Import is inside the dev branch to keep it server-only.
+function createLogger(): pino.Logger {
+  const isProd = process.env.NODE_ENV === "production";
+  if (isProd) {
+    return pino({
+      level: process.env.LOG_LEVEL || "info",
+    });
+  }
+  // In development, use pino-pretty directly as the destination stream
+  // to avoid worker_threads transports that can add process exit listeners.
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const pretty = require("pino-pretty");
   const stream = pretty({
@@ -21,13 +21,13 @@ if (isProd) {
     translateTime: "SYS:standard",
     singleLine: true,
   });
-  logger = pino(
-    {
-      level: process.env.LOG_LEVEL || "debug",
-    },
-    stream,
-  );
+  return pino({ level: process.env.LOG_LEVEL || "debug" }, stream);
 }
 
-export { logger };
+export const logger: pino.Logger = globalForLogger.logger ?? createLogger();
+
+if (process.env.NODE_ENV !== "production") {
+  globalForLogger.logger = logger;
+}
+
 export default logger;
