@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { Stack } from "@mui/material";
 
-import { CustomerForm } from "./customer-form";
+import CustomerFormByType from "./customer-form-by-type";
 import type { CustomerFormValues, CustomerType } from "../types";
 import { createCustomer } from "../actions";
 
@@ -66,7 +66,11 @@ const defaultInitialValues: CustomerFormValues = {
   brandsUsed: "",
 };
 
-export function CustomerCreateClient({ employeeOptions, dealerOptions, defaultType = "DEALER" }: CustomerCreateClientProps) {
+export function CustomerCreateClient({
+  employeeOptions,
+  dealerOptions,
+  defaultType = "DEALER",
+}: CustomerCreateClientProps) {
   const router = useRouter();
 
   const initialValues: CustomerFormValues = {
@@ -76,14 +80,13 @@ export function CustomerCreateClient({ employeeOptions, dealerOptions, defaultTy
 
   return (
     <Stack spacing={3}>
-      <CustomerForm
+      <CustomerFormByType
         title="เพิ่ม"
         description=""
         initialValues={initialValues}
         submitLabel="เพิ่มลูกค้า"
         employeeOptions={employeeOptions}
         dealerOptions={dealerOptions}
-        hideTypeSelect
         onSubmit={async (values) => {
           await createCustomer(values);
           router.push("/dashboard/customers");

@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { Stack } from "@mui/material";
 
-import { CustomerForm } from "./customer-form";
+import CustomerFormByType from "./customer-form-by-type";
 import type { CustomerFormValues } from "../types";
 import { updateCustomer } from "../actions";
 
@@ -14,12 +14,17 @@ type CustomerEditClientProps = {
   dealerOptions: { id: string; label: string }[];
 };
 
-export function CustomerEditClient({ customerId, initialValues, employeeOptions, dealerOptions }: CustomerEditClientProps) {
+export function CustomerEditClient({
+  customerId,
+  initialValues,
+  employeeOptions,
+  dealerOptions,
+}: CustomerEditClientProps) {
   const router = useRouter();
 
   return (
     <Stack spacing={3}>
-      <CustomerForm
+      <CustomerFormByType
         title="แก้ไขข้อมูลลูกค้า"
         description=""
         initialValues={initialValues}
@@ -35,4 +40,3 @@ export function CustomerEditClient({ customerId, initialValues, employeeOptions,
     </Stack>
   );
 }
-
