@@ -1,7 +1,8 @@
 "use client";
 
 import type { Dispatch, SetStateAction } from "react";
-import { Box, Stack, TextField, Typography, MenuItem } from "@mui/material";
+import { Box, Stack, TextField, Typography, MenuItem, Button } from "@mui/material";
+import CasinoIcon from "@mui/icons-material/Casino";
 import Autocomplete from "@mui/material/Autocomplete";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
@@ -25,8 +26,84 @@ export default function DealerFormSection({
   handleChange,
   employeeOptions = [],
 }: DealerFormSectionProps) {
+  const fillRandom = () => {
+    const randInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
+    const choice = <T,>(arr: T[]) => arr[randInt(0, arr.length - 1)];
+    const pad = (n: number, len: number) => String(n).padStart(len, "0");
+
+    const companyPrefixes = ["บจก.", "หจก.", "บริษัท", "ห้างหุ้นส่วนจำกัด"];
+    const companyBodies = ["สยามเทรดดิ้ง", "เกษตรรุ่งเรือง", "ไทยการเกษตร", "ดีลเลอร์เซ็นเตอร์", "เอสเคซัพพลาย"];
+    const firstNames = ["สมชาย", "วิชัย", "กิตติ", "อรทัย", "วาสนา", "ชลธิชา", "ปิยพงษ์", "สุรีย์พร", "นพดล", "ชุติมา"];
+    const lastNames = ["ใจดี", "มีสุข", "วงศ์ไทย", "เกษมสุข", "ทวีทรัพย์", "สวัสดิ์", "ศรีทอง", "สุขสันต์", "รุ่งโรจน์", "รุ่งเรือง"];
+    const streets = ["สุขุมวิท", "เพชรเกษม", "พหลโยธิน", "งามวงศ์วาน", "ลาดพร้าว", "รามคำแหง", "ศรีนครินทร์", "เจริญกรุง"]; 
+
+    const companyName = `${choice(companyPrefixes)} ${choice(companyBodies)}`;
+    const taxId = Array.from({ length: 13 }, () => String(randInt(0, 9))).join("");
+    const phone = `0${pad(randInt(800000000, 999999999), 9)}`;
+    const contactPhone = `0${pad(randInt(600000000, 899999999), 9)}`;
+
+    const firstName = choice(firstNames);
+    const lastName = choice(lastNames);
+    const emailLocal = `${firstName}${lastName}`.toLowerCase();
+    const email = `${emailLocal}${randInt(1, 99)}@example.com`;
+    const contactEmail = `${emailLocal}.${randInt(1, 999)}@mail.com`;
+
+    const lat = (Math.random() * (20.5 - 5.6) + 5.6).toFixed(6);
+    const lng = (Math.random() * (105.7 - 97.3) + 97.3).toFixed(6);
+
+    const prefixes = ["นาย", "นาง", "นางสาว"];
+    const prefix = choice(prefixes);
+
+    const year = randInt(1965, 2000);
+    const month = randInt(1, 12);
+    const day = randInt(1, 28);
+    const birthDate = `${year}-${pad(month, 2)}-${pad(day, 2)}`;
+
+    const creditLimit = String(randInt(50000, 500000));
+    const promotionBudget = String(randInt(0, 50000));
+    const relationshipScore = randInt(1, 5);
+    const businessNotes = "ข้อมูลทดสอบ สร้างโดยการสุ่ม";
+
+    const address = `เลขที่ ${randInt(1, 199)}/ ${randInt(1, 20)} ซอย${choice(streets)} ถนน${choice(streets)}`;
+    const province = "กรุงเทพมหานคร";
+    const district = "บางกะปิ";
+    const subdistrict = "หัวหมาก";
+    const postalCode = "10240";
+
+    setValues((prev) => ({
+      ...prev,
+      type: "DEALER",
+      companyName,
+      taxId,
+      phone,
+      email,
+      latitude: lat,
+      longitude: lng,
+      prefix,
+      firstName,
+      lastName,
+      birthDate,
+      contactPhone,
+      contactEmail,
+      creditLimit,
+      promotionBudget,
+      relationshipScore,
+      businessNotes,
+      address,
+      province,
+      district,
+      subdistrict,
+      postalCode,
+    }));
+  };
+
   return (
     <Stack spacing={3}>
+      <Stack direction="row" justifyContent="flex-end">
+        <Button type="button" variant="outlined" color="secondary" startIcon={<CasinoIcon />} onClick={fillRandom}>
+          กรอกแบบสุ่ม
+        </Button>
+      </Stack>
       <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
         <Typography variant="h6" fontWeight={960}>
           ข้อมูลบริษัท

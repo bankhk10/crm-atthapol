@@ -1,7 +1,8 @@
-"use client";
+﻿"use client";
 
 import type { Dispatch, SetStateAction } from "react";
-import { Box, Stack, TextField, Typography, MenuItem } from "@mui/material";
+import { Box, Stack, TextField, Typography, MenuItem, Button } from "@mui/material";
+import CasinoIcon from "@mui/icons-material/Casino";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -22,8 +23,80 @@ export default function BrokerFormSection({
   fieldErrors,
   handleChange,
 }: BrokerFormSectionProps) {
+  const fillRandom = () => {
+    const randInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
+    const choice = <T,>(arr: T[]) => arr[randInt(0, arr.length - 1)];
+    const pad = (n: number, len: number) => String(n).padStart(len, "0");
+
+    const firstNames = ["สมชาย", "วิชัย", "กิตติ", "อรทัย", "วาสนา", "ชลธิชา", "ปิยพงษ์", "สุรีย์พร", "นพดล", "ชุติมา"];
+    const lastNames = ["ใจดี", "มีสุข", "วงศ์ไทย", "เกษมสุข", "ทวีทรัพย์", "สวัสดิ์", "ศรีทอง", "สุขสันต์", "รุ่งโรจน์", "รุ่งเรือง"];
+    const prefixes = ["นาย", "นาง", "นางสาว"];
+    const streets = ["สุขุมวิท", "เพชรเกษม", "พหลโยธิน", "งามวงศ์วาน", "ลาดพร้าว", "รามคำแหง", "ศรีนครินทร์", "เจริญกรุง"];
+
+    const prefix = choice(prefixes);
+    const firstName = choice(firstNames);
+    const lastName = choice(lastNames);
+    const contactPhone = `0${String(randInt(600000000, 999999999))}`;
+    const contactEmail = `${firstName.toLowerCase()}.${lastName.toLowerCase()}@mail.com`;
+
+    const year = randInt(1965, 2000);
+    const month = randInt(1, 12);
+    const day = randInt(1, 28);
+    const birthDate = `${year}-${pad(month, 2)}-${pad(day, 2)}`;
+
+    const farmSize = String(randInt(0, 300));
+    const plantingCyclesPerYear = String(randInt(1, 5));
+    const creditTermForFarmers = String(randInt(15, 120));
+    const currentCropVolume = `${randInt(10, 500)} ตัน/ปี`;
+    const farmerNetworkCount = String(randInt(10, 500));
+    const plotCount = String(randInt(5, 100));
+    const agriChemValuePerCycle = String(randInt(10000, 300000));
+    const agriChemQtyPerCycle = String(randInt(100, 10000));
+    const regularStore = ["ร้านเกษตรรุ่งเรือง", "ไทยการเกษตร", "กรีนฟีลด์", "ฟาร์มพลัส"][randInt(0,3)];
+    const serviceTypes = ["ให้คำปรึกษา", "จัดหาสินค้า", "รับซื้อผลผลิต", "บริการฉีดพ่น"][randInt(0,3)];
+    const brandsUsed = ["ยารักษ์พืช", "ไทยกรีน", "เกษตรโปร", "อีโคฟาร์ม"][randInt(0,3)];
+
+    const address = `เลขที่ ${randInt(1, 199)}/ ${randInt(1, 20)} ซอย${streets[randInt(0,streets.length-1)]} ถนน${streets[randInt(0,streets.length-1)]}`;
+    const province = ["นครราชสีมา", "บุรีรัมย์", "สุรินทร์", "เชียงใหม่", "เชียงราย"][randInt(0,4)];
+    const district = "เมือง";
+    const subdistrict = "ในเมือง";
+    const postalCode = String(randInt(10000, 96150));
+
+    setValues((prev) => ({
+      ...prev,
+      type: "BROKER",
+      prefix,
+      firstName,
+      lastName,
+      contactPhone,
+      contactEmail,
+      birthDate,
+      farmSize,
+      plantingCyclesPerYear,
+      creditTermForFarmers,
+      currentCropVolume,
+      farmerNetworkCount,
+      plotCount,
+      agriChemValuePerCycle,
+      agriChemQtyPerCycle,
+      regularStore,
+      serviceTypes,
+      brandsUsed,
+      address,
+      province,
+      district,
+      subdistrict,
+      postalCode,
+    }));
+  };
+
   return (
     <Stack spacing={3}>
+      <Stack direction="row" justifyContent="flex-end">
+        <Button type="button" variant="outlined" color="secondary" startIcon={<CasinoIcon />} onClick={fillRandom}>
+          กรอกแบบสุ่ม
+        </Button>
+      </Stack>
       <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
         <Typography variant="h6" fontWeight={960}>
           ข้อมูลบุคคล

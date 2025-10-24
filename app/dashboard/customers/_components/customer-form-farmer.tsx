@@ -1,7 +1,8 @@
 "use client";
 
 import type { Dispatch, SetStateAction } from "react";
-import { Box, Stack, TextField, Typography, MenuItem, Paper } from "@mui/material";
+import { Box, Stack, TextField, Typography, MenuItem, Paper, Button } from "@mui/material";
+import CasinoIcon from "@mui/icons-material/Casino";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -22,8 +23,80 @@ export default function FarmerFormSection({
   fieldErrors,
   handleChange,
 }: FarmerFormSectionProps) {
+  const fillRandom = () => {
+    const randInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
+    const choice = <T,>(arr: T[]) => arr[randInt(0, arr.length - 1)];
+    const pad = (n: number, len: number) => String(n).padStart(len, "0");
+
+    const firstNames = ["สมชาย", "วิชัย", "กิตติ", "อรทัย", "วาสนา", "ชลธิชา", "ปิยพงษ์", "สุรีย์พร", "นพดล", "ชุติมา"];
+    const lastNames = ["ใจดี", "มีสุข", "วงศ์ไทย", "เกษมสุข", "ทวีทรัพย์", "สวัสดิ์", "ศรีทอง", "สุขสันต์", "รุ่งโรจน์", "รุ่งเรือง"];
+    const prefixes = ["นาย", "นาง", "นางสาว"];
+    const cropKinds = ["ข้าว", "มันสำปะหลัง", "ยางพารา", "อ้อย", "ข้าวโพด", "ผักสวนครัว"];
+    const soilTypes = ["ดินร่วน", "ดินเหนียว", "ดินทราย"];
+    const waterSources = ["ชลประทาน", "สระน้ำ", "บ่อบาดาล", "แม่น้ำ"];
+    const streets = ["สุขุมวิท", "เพชรเกษม", "พหลโยธิน", "งามวงศ์วาน", "ลาดพร้าว", "รามคำแหง", "ศรีนครินทร์", "เจริญกรุง"]; 
+
+    const prefix = choice(prefixes);
+    const firstName = choice(firstNames);
+    const lastName = choice(lastNames);
+    const contactPhone = `0${String(randInt(600000000, 999999999))}`;
+    const contactEmail = `${firstName.toLowerCase()}.${lastName.toLowerCase()}@mail.com`;
+
+    const year = randInt(1965, 2003);
+    const month = randInt(1, 12);
+    const day = randInt(1, 28);
+    const birthDate = `${year}-${pad(month, 2)}-${pad(day, 2)}`;
+
+    const farmName = `ฟาร์ม${choice(["รุ่งเรือง", "พอเพียง", "สุขสันต์", "เขียวสดใส"])}`;
+    const farmSize = String(randInt(5, 200));
+    const cropType = choice(cropKinds);
+
+    const genPlot = () => ({
+      latitude: (Math.random() * (20.5 - 5.6) + 5.6).toFixed(6),
+      longitude: (Math.random() * (105.7 - 97.3) + 97.3).toFixed(6),
+      planting_area: String(randInt(1, 50)),
+      crop_type: choice(cropKinds),
+      crop_variety: choice(["พันธุ์ดี", "ไฮบริด", "ท้องถิ่น"]),
+      soil_type: choice(soilTypes),
+      water_source: choice(waterSources),
+      machinery_used: [],
+    });
+    const farmPlots = [genPlot(), genPlot()];
+
+    const address = `เลขที่ ${randInt(1, 199)}/ ${randInt(1, 20)} ซอย${choice(streets)} ถนน${choice(streets)}`;
+    const province = choice(["นครราชสีมา", "บุรีรัมย์", "สุรินทร์", "เชียงใหม่", "เชียงราย"]);
+    const district = "เมือง";
+    const subdistrict = "ในเมือง";
+    const postalCode = String(randInt(10000, 96150));
+
+    setValues((prev) => ({
+      ...prev,
+      type: "FARMER",
+      prefix,
+      firstName,
+      lastName,
+      contactPhone,
+      contactEmail,
+      birthDate,
+      farmName,
+      farmSize,
+      cropType,
+      farmPlots,
+      address,
+      province,
+      district,
+      subdistrict,
+      postalCode,
+    }));
+  };
+
   return (
     <Stack spacing={3}>
+      <Stack direction="row" justifyContent="flex-end">
+        <Button type="button" variant="outlined" color="secondary" startIcon={<CasinoIcon />} onClick={fillRandom}>
+          กรอกแบบสุ่ม
+        </Button>
+      </Stack>
       <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
         <Typography variant="h6" fontWeight={960}>
           ข้อมูลบุคคล
