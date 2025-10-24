@@ -435,8 +435,13 @@ model DealerDetail {
   status          PartnerStatus @default(ACTIVE)
   contactName     String?
   contactPhone    String?
+  contactEmail    String?
   creditLimit     Float?
   promotionBudget Float?
+  // New: store geolocation and notes for Dealer
+  latitude        Float?
+  longitude       Float?
+  businessNotes   String?
 
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 

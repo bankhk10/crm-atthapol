@@ -246,6 +246,16 @@ export async function createCustomer(rawValues: CustomerFormValues) {
                 ? values.contactPerson
                 : [values.prefix, values.firstName, values.lastName].filter(Boolean).join(" "),
             contactPhone: values.contactPhone,
+            contactEmail: values.contactEmail ?? undefined,
+            latitude:
+              values.latitude !== undefined && values.latitude !== null && String(values.latitude) !== ""
+                ? Number(values.latitude)
+                : undefined,
+            longitude:
+              values.longitude !== undefined && values.longitude !== null && String(values.longitude) !== ""
+                ? Number(values.longitude)
+                : undefined,
+            businessNotes: values.businessNotes ?? undefined,
             creditLimit:
               values.creditLimit !== undefined && values.creditLimit !== null && String(values.creditLimit) !== ""
                 ? Number(values.creditLimit)
@@ -386,6 +396,16 @@ export async function updateCustomer(customerId: string, rawValues: CustomerForm
                 ? values.contactPerson
                 : [values.prefix, values.firstName, values.lastName].filter(Boolean).join(" "),
             contactPhone: values.contactPhone,
+            contactEmail: values.contactEmail ?? undefined,
+            latitude:
+              values.latitude !== undefined && values.latitude !== null && String(values.latitude) !== ""
+                ? Number(values.latitude)
+                : undefined,
+            longitude:
+              values.longitude !== undefined && values.longitude !== null && String(values.longitude) !== ""
+                ? Number(values.longitude)
+                : undefined,
+            businessNotes: values.businessNotes ?? undefined,
             creditLimit:
               values.creditLimit !== undefined && values.creditLimit !== null && String(values.creditLimit) !== ""
                 ? Number(values.creditLimit)
@@ -402,6 +422,16 @@ export async function updateCustomer(customerId: string, rawValues: CustomerForm
                 ? values.contactPerson
                 : [values.prefix, values.firstName, values.lastName].filter(Boolean).join(" "),
             contactPhone: values.contactPhone,
+            contactEmail: values.contactEmail ?? undefined,
+            latitude:
+              values.latitude !== undefined && values.latitude !== null && String(values.latitude) !== ""
+                ? Number(values.latitude)
+                : undefined,
+            longitude:
+              values.longitude !== undefined && values.longitude !== null && String(values.longitude) !== ""
+                ? Number(values.longitude)
+                : undefined,
+            businessNotes: values.businessNotes ?? undefined,
             creditLimit:
               values.creditLimit !== undefined && values.creditLimit !== null && String(values.creditLimit) !== ""
                 ? Number(values.creditLimit)

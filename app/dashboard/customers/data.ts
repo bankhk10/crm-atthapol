@@ -123,8 +123,18 @@ export async function getCustomer(customerId: string) {
     district: c.district ?? null,
     subdistrict: c.subdistrict ?? null,
     postalCode: c.postalCode ?? null,
-    latitude: c.customerType === "FARMER" ? c.farmerDetail?.latitude ?? null : null,
-    longitude: c.customerType === "FARMER" ? c.farmerDetail?.longitude ?? null : null,
+    latitude:
+      c.customerType === "FARMER"
+        ? c.farmerDetail?.latitude ?? null
+        : c.customerType === "DEALER"
+        ? (c as any).dealerDetail?.latitude ?? null
+        : null,
+    longitude:
+      c.customerType === "FARMER"
+        ? c.farmerDetail?.longitude ?? null
+        : c.customerType === "DEALER"
+        ? (c as any).dealerDetail?.longitude ?? null
+        : null,
     code: null as any,
     responsibleEmployeeId: c.responsibleEmployeeId ?? null,
     createdAt: c.createdAt,
@@ -136,14 +146,14 @@ export async function getCustomer(customerId: string) {
       companyName: c.companyName ?? base.name,
       contactPerson: c.dealerDetail?.contactName ?? base.name,
       contactPhone: c.dealerDetail?.contactPhone ?? null,
-      contactEmail: null,
+      contactEmail: (c as any).dealerDetail?.contactEmail ?? null,
       creditLimit: c.dealerDetail?.creditLimit ?? null,
       promotionBudget: (c as any)?.dealerDetail?.promotionBudget ?? null,
       relationshipScore: (c as any)?.relationshipScore ?? null,
       averageMonthlyPurchase: null,
       mainProducts: null,
       brandsSold: null,
-      businessNotes: null,
+      businessNotes: (c as any)?.dealerDetail?.businessNotes ?? null,
     } as any;
   }
 

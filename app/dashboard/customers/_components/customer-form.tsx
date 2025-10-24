@@ -45,17 +45,7 @@ export function CustomerForm({
     setFieldErrors({});
   }, [initialValues]);
 
-  // Sync company phone/email with personal for Farmer/Broker (hidden company section)
-  useEffect(() => {
-    if (values.type === "FARMER" || values.type === "BROKER") {
-      setValues((prev) => ({
-        ...prev,
-        phone: prev.contactPhone ?? prev.phone,
-        email: prev.contactEmail ?? prev.email,
-      }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [values.type, values.contactPhone, values.contactEmail]);
+  // Keep company email (values.email) and personal email (values.contactEmail) separate — do not auto-sync.
 
   const handleChange =
     <Field extends keyof CustomerFormValues>(field: Field) =>

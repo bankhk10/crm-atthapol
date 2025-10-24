@@ -49,10 +49,11 @@ export default async function CustomerEditPage({ params }: { params: Promise<{ c
       (customer.type === "FARMER" || customer.type === "BROKER")
         ? (customer.phone ?? "")
         : ((customer as any).contactPhone ?? ""),
+    // Autofill personal email for DEALER/SUBDEALER from company email when missing
     contactEmail:
       (customer.type === "FARMER" || customer.type === "BROKER")
         ? (customer.email ?? "")
-        : ((customer as any).contactEmail ?? ""),
+        : (((customer as any).contactEmail ?? null) ?? (customer.email ?? "")),
     creditLimit: (customer as any).creditLimit ?? "",
     promotionBudget: (customer as any).promotionBudget ?? "",
     parentDealer: (customer as any).parentDealer ?? "",
