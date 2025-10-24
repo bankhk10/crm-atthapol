@@ -17,7 +17,6 @@ import { blue, red } from "@mui/material/colors";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
 
-
 type CustomerFormProps = {
   title: string;
   description?: string;
@@ -271,7 +270,7 @@ export function CustomerForm({
               px: 3,
             }}
           >
-            {submitLabel || "บันทึก"}
+            บันทึก
           </Button>
         </Stack>
       </Stack>
