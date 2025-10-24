@@ -101,7 +101,8 @@ async function generateSoNumberTx(tx: any) {
     update: { current: { increment: 1 } },
     select: { current: true },
   });
-  const seq = String(row.current).padStart(4, "0");
+  // Pad the running number to 6 digits (e.g., SO-202501-000123)
+  const seq = String(row.current).padStart(6, "0");
   return `${prefix}${seq}`;
 }
 
