@@ -40,7 +40,8 @@ export default function FarmerFormSection({
     const firstName = choice(firstNames);
     const lastName = choice(lastNames);
     const contactPhone = `0${String(randInt(600000000, 999999999))}`;
-    const contactEmail = `${firstName.toLowerCase()}.${lastName.toLowerCase()}@mail.com`;
+    const asciiId = (len: number) => Array.from({ length: len }, () => String.fromCharCode(97 + randInt(0, 25))).join("");
+    const contactEmail = `${asciiId(6)}.${asciiId(4)}@mail.com`;
 
     const year = randInt(1965, 2003);
     const month = randInt(1, 12);

@@ -44,9 +44,10 @@ export default function DealerFormSection({
 
     const firstName = choice(firstNames);
     const lastName = choice(lastNames);
-    const emailLocal = `${firstName}${lastName}`.toLowerCase();
-    const email = `${emailLocal}${randInt(1, 99)}@example.com`;
-    const contactEmail = `${emailLocal}.${randInt(1, 999)}@mail.com`;
+    const asciiId = (len: number) => Array.from({ length: len }, () => String.fromCharCode(97 + randInt(0, 25))).join("");
+    const emailLocal = `${asciiId(6)}${randInt(1, 99)}`;
+    const email = `${emailLocal}@example.com`;
+    const contactEmail = `${asciiId(5)}.${asciiId(4)}@mail.com`;
 
     const lat = (Math.random() * (20.5 - 5.6) + 5.6).toFixed(6);
     const lng = (Math.random() * (105.7 - 97.3) + 97.3).toFixed(6);
