@@ -454,6 +454,7 @@ function workflowChipSx(wf: string) {
         {sortedItems.map((o) => {
           const rawWf = workflowFromBackend(o.status, o.paymentStatus);
           const wf = o.status === "CANCELLED" && (o as any)?.rejectReason ? "REJECTED" : rawWf;
+          const isTerminal = wf === "COMPLETED" || wf === "CANCELLED";
           const wfLabel = WORKFLOW_STATUS_OPTIONS.find((x) => x.value === wf)?.label || o.status;
           return (
             <Paper key={o.id} variant="outlined" sx={{ p: 1.25, borderRadius: 2 }}>
@@ -497,7 +498,7 @@ function workflowChipSx(wf: string) {
                         </IconButton>
                       </Tooltip>
                     )}
-                    {canEdit && (
+                    {!isTerminal && canEdit && (
                       <Tooltip
                         title={wf === "COMPLETED" ? "แก้ไขไม่ได้ (เสร็จสิ้น)" : "แก้ไข"}
                         arrow
@@ -513,7 +514,7 @@ function workflowChipSx(wf: string) {
                         </span>
                       </Tooltip>
                     )}
-                    {canCancel && (
+                    {!isTerminal && canCancel && (
                       <Tooltip title={o.status === "CANCELLED" ? "ถูกยกเลิกแล้ว" : "ยกเลิก"} arrow>
                         <span>
                           <IconButton
@@ -526,7 +527,7 @@ function workflowChipSx(wf: string) {
                         </span>
                       </Tooltip>
                     )}
-                    {canDelete && (
+                    {!isTerminal && canDelete && (
                       <Tooltip title="ลบ" arrow>
                         <span>
                           <IconButton
@@ -570,7 +571,10 @@ function workflowChipSx(wf: string) {
             showActions={canView || canEdit || canCancel || canDelete}
           />
           <TableBody>
-            {sortedItems.map((o, idx) => (
+            {sortedItems.map((o, idx) => {
+              const wf = workflowFromBackend(o.status, o.paymentStatus);
+              const isTerminal = wf === "COMPLETED" || wf === "CANCELLED";
+              return (
               <TableRow
                 key={o.id}
                 hover
@@ -687,7 +691,7 @@ function workflowChipSx(wf: string) {
                           </IconButton>
                         </Tooltip>
                       )}
-                      {canEdit && (
+                      {!isTerminal && canEdit && (
                         <Tooltip
                           title={
                             workflowFromBackend(o.status, o.paymentStatus) === "COMPLETED"
@@ -710,7 +714,7 @@ function workflowChipSx(wf: string) {
                           </span>
                         </Tooltip>
                       )}
-                      {canCancel && (
+                      {!isTerminal && canCancel && (
                         <Tooltip
                           title={o.status === "CANCELLED" ? "ถูกยกเลิกแล้ว" : "ยกเลิก"}
                           arrow
@@ -727,7 +731,7 @@ function workflowChipSx(wf: string) {
                           </span>
                         </Tooltip>
                       )}
-                      {canDelete && (
+                      {!isTerminal && canDelete && (
                         <Tooltip title="ลบ" arrow>
                           <span>
                             <IconButton
@@ -745,7 +749,7 @@ function workflowChipSx(wf: string) {
                   </TableCell>
                 )}
               </TableRow>
-            ))}
+            );})}
             {sortedItems.length === 0 && (
               <TableRow>
                 <TableCell
