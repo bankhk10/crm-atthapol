@@ -242,10 +242,10 @@ export function CustomerForm({
             variant="contained"
             startIcon={<CloseIcon />}
             sx={{
-              bgcolor: red[500],
+              bgcolor: red[600],
               color: "white",
               "&:hover": {
-                bgcolor: red[600],
+                bgcolor: red[700],
               },
               fontWeight: 800,
               px: 3,
@@ -261,10 +261,10 @@ export function CustomerForm({
             disabled={isSubmitting}
             startIcon={<CheckIcon />}
             sx={{
-              bgcolor: blue[500],
+              bgcolor: blue[600],
               color: "white",
               "&:hover": {
-                bgcolor: blue[600],
+                bgcolor: blue[700],
               },
               fontWeight: 800,
               px: 3,
