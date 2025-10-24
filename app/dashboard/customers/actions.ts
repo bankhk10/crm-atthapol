@@ -268,7 +268,30 @@ export async function createCustomer(rawValues: CustomerFormValues) {
         });
       } else if (values.type === "SUBDEALER") {
         await (tx as any).subDealerDetail.create({
-          data: { customerId: created.id, dealerId: values.dealerId ?? undefined },
+          data: {
+            customerId: created.id,
+            dealerId: values.dealerId ?? undefined,
+            contactPhone: values.contactPhone ?? undefined,
+            contactEmail: values.contactEmail ?? undefined,
+            latitude:
+              values.latitude !== undefined && values.latitude !== null && String(values.latitude) !== ""
+                ? Number(values.latitude)
+                : undefined,
+            longitude:
+              values.longitude !== undefined && values.longitude !== null && String(values.longitude) !== ""
+                ? Number(values.longitude)
+                : undefined,
+            competitor: values.competitor ?? undefined,
+            cropsInArea: values.cropsInArea ?? undefined,
+            averageMonthlyPurchase:
+              values.averageMonthlyPurchase !== undefined && values.averageMonthlyPurchase !== null && String(values.averageMonthlyPurchase) !== ""
+                ? Number(values.averageMonthlyPurchase)
+                : undefined,
+            mainProducts: values.mainProducts ?? undefined,
+            brandsSold: values.brandsSold ?? undefined,
+            areaType: values.areaType ?? undefined,
+            businessNotes: values.businessNotes ?? undefined,
+          },
         });
       } else if (values.type === "FARMER") {
         const plots = values.farmPlots ?? [];
@@ -445,8 +468,53 @@ export async function updateCustomer(customerId: string, rawValues: CustomerForm
       } else if (values.type === "SUBDEALER") {
         await (tx as any).subDealerDetail.upsert({
           where: { customerId: customerId },
-          update: { dealerId: values.dealerId ?? undefined },
-          create: { customerId, dealerId: values.dealerId ?? undefined },
+          update: {
+            dealerId: values.dealerId ?? undefined,
+            contactPhone: values.contactPhone ?? undefined,
+            contactEmail: values.contactEmail ?? undefined,
+            latitude:
+              values.latitude !== undefined && values.latitude !== null && String(values.latitude) !== ""
+                ? Number(values.latitude)
+                : undefined,
+            longitude:
+              values.longitude !== undefined && values.longitude !== null && String(values.longitude) !== ""
+                ? Number(values.longitude)
+                : undefined,
+            competitor: values.competitor ?? undefined,
+            cropsInArea: values.cropsInArea ?? undefined,
+            averageMonthlyPurchase:
+              values.averageMonthlyPurchase !== undefined && values.averageMonthlyPurchase !== null && String(values.averageMonthlyPurchase) !== ""
+                ? Number(values.averageMonthlyPurchase)
+                : undefined,
+            mainProducts: values.mainProducts ?? undefined,
+            brandsSold: values.brandsSold ?? undefined,
+            areaType: values.areaType ?? undefined,
+            businessNotes: values.businessNotes ?? undefined,
+          },
+          create: {
+            customerId,
+            dealerId: values.dealerId ?? undefined,
+            contactPhone: values.contactPhone ?? undefined,
+            contactEmail: values.contactEmail ?? undefined,
+            latitude:
+              values.latitude !== undefined && values.latitude !== null && String(values.latitude) !== ""
+                ? Number(values.latitude)
+                : undefined,
+            longitude:
+              values.longitude !== undefined && values.longitude !== null && String(values.longitude) !== ""
+                ? Number(values.longitude)
+                : undefined,
+            competitor: values.competitor ?? undefined,
+            cropsInArea: values.cropsInArea ?? undefined,
+            averageMonthlyPurchase:
+              values.averageMonthlyPurchase !== undefined && values.averageMonthlyPurchase !== null && String(values.averageMonthlyPurchase) !== ""
+                ? Number(values.averageMonthlyPurchase)
+                : undefined,
+            mainProducts: values.mainProducts ?? undefined,
+            brandsSold: values.brandsSold ?? undefined,
+            areaType: values.areaType ?? undefined,
+            businessNotes: values.businessNotes ?? undefined,
+          },
         });
       } else if (values.type === "FARMER") {
         const plots = values.farmPlots ?? [];

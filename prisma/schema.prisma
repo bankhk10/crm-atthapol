@@ -458,6 +458,20 @@ model SubDealerDetail {
   customerId String        @unique
   dealerId   String?
   status     PartnerStatus @default(ACTIVE)
+  // Contacts
+  contactPhone String?
+  contactEmail String?
+  // Geo
+  latitude   Float?
+  longitude  Float?
+  // Business info
+  competitor              String?
+  cropsInArea             String?
+  averageMonthlyPurchase  Float?
+  mainProducts            String?
+  brandsSold              String?
+  areaType                String?
+  businessNotes           String?
 
   customer Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
   dealer   DealerDetail? @relation(fields: [dealerId], references: [id])

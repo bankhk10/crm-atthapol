@@ -128,12 +128,16 @@ export async function getCustomer(customerId: string) {
         ? c.farmerDetail?.latitude ?? null
         : c.customerType === "DEALER"
         ? (c as any).dealerDetail?.latitude ?? null
+        : c.customerType === "SUB_DEALER"
+        ? (c as any).subDealerDetail?.latitude ?? null
         : null,
     longitude:
       c.customerType === "FARMER"
         ? c.farmerDetail?.longitude ?? null
         : c.customerType === "DEALER"
         ? (c as any).dealerDetail?.longitude ?? null
+        : c.customerType === "SUB_DEALER"
+        ? (c as any).subDealerDetail?.longitude ?? null
         : null,
     code: null as any,
     responsibleEmployeeId: c.responsibleEmployeeId ?? null,
@@ -173,13 +177,15 @@ export async function getCustomer(customerId: string) {
       subDealerCode: "",
       dealerId: c.subDealerDetail?.dealerId ?? undefined,
       relationshipScore: (c as any)?.relationshipScore ?? null,
-      competitor: null,
-      cropsInArea: null,
-      averageMonthlyPurchase: null,
-      mainProducts: null,
-      brandsSold: null,
-      areaType: null,
-      businessNotes: null,
+      contactPhone: (c as any).subDealerDetail?.contactPhone ?? null,
+      contactEmail: (c as any).subDealerDetail?.contactEmail ?? null,
+      competitor: (c as any).subDealerDetail?.competitor ?? null,
+      cropsInArea: (c as any).subDealerDetail?.cropsInArea ?? null,
+      averageMonthlyPurchase: (c as any).subDealerDetail?.averageMonthlyPurchase ?? null,
+      mainProducts: (c as any).subDealerDetail?.mainProducts ?? null,
+      brandsSold: (c as any).subDealerDetail?.brandsSold ?? null,
+      areaType: (c as any).subDealerDetail?.areaType ?? null,
+      businessNotes: (c as any).subDealerDetail?.businessNotes ?? null,
     } as any;
   }
 
