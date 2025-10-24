@@ -241,21 +241,52 @@ export function EditOrderDialog({
           if (!s) return { street: "" };
           const out: ParsedAddress = { street: s };
           try {
+            // Postal code: last 5 consecutive digits in the string
             const mZip = s.match(/(\d{5})(?!.*\d)/);
             if (mZip) out.postalCode = mZip[1];
-            const mSub = s.match(/ต\.?\s*([^\s]+)/);
-            if (mSub) out.subdistrict = mSub[1];
-            const mDist = s.match(/อ\.?\s*([^\s]+)/);
-            if (mDist) out.district = mDist[1];
-            const mProv = s.match(/จ\.?\s*([^\s\d]+)/);
-            if (mProv) out.province = mProv[1];
-            const cutIdx = (() => {
-              const idxs = [s.indexOf("ต."), s.indexOf("อ."), s.indexOf("จ.")].filter(
-                (i) => i >= 0,
-              );
-              return idxs.length ? Math.min(...(idxs as number[])) : -1;
+
+            // Support multiple Thai labels: ต./ตำบล/แขวง, อ./อำเภอ/เขต, จ./จังหวัด
+            const subMatch =
+              s.match(/(?:ต\.|ตำบล|แขวง)\s*([^\s,\d]+)/) ||
+              s.match(/(?:ต\.|ตำบล|แขวง)\s*([^,]+)/);
+            if (subMatch) out.subdistrict = (subMatch[1] || "").trim();
+
+            const distMatch =
+              s.match(/(?:อ\.|อำเภอ|เขต)\s*([^\s,\d]+)/) ||
+              s.match(/(?:อ\.|อำเภอ|เขต)\s*([^,]+)/);
+            if (distMatch) out.district = (distMatch[1] || "").trim();
+
+            let provMatch =
+              s.match(/(?:จ\.|จังหวัด)\s*([^\s,\d]+)/) ||
+              s.match(/(?:จ\.|จังหวัด)\s*([^,]+)/);
+            // Special cases for Bangkok
+            if (!provMatch) {
+              const bkk = s.match(/กรุงเทพมหานคร|กรุงเทพฯ|กทม\.?/);
+              if (bkk) out.province = "กรุงเทพมหานคร";
+            }
+            if (provMatch) out.province = (provMatch[1] || "").trim();
+
+            // Cut street part before the first geo token
+            const tokenIdx = (() => {
+              const tokens = [
+                "ต.",
+                "ตำบล",
+                "แขวง",
+                "อ.",
+                "อำเภอ",
+                "เขต",
+                "จ.",
+                "จังหวัด",
+                "กรุงเทพมหานคร",
+                "กรุงเทพฯ",
+                "กทม",
+              ];
+              const idxs = tokens
+                .map((t) => s.indexOf(t))
+                .filter((i) => i >= 0) as number[];
+              return idxs.length ? Math.min(...idxs) : -1;
             })();
-            if (cutIdx > 0) out.street = s.slice(0, cutIdx).trim();
+            if (tokenIdx > 0) out.street = s.slice(0, tokenIdx).trim();
           } catch {}
           return out;
         };
@@ -271,6 +302,26 @@ export function EditOrderDialog({
         setShipDistrict(sh.district);
         setShipSubdistrict(sh.subdistrict);
         setShipPostalCode(sh.postalCode);
+
+        // Fallback: if structured fields missing, try populate from selected customer profile
+        const cust = customerOptions.find((c) => c.id === so.customerId);
+        const noBillStruct = !b.province && !b.district && !b.subdistrict && !b.postalCode;
+        if (cust && noBillStruct) {
+          if (!b.street && (cust.address || "").trim()) setBillAddressLine(cust.address || "");
+          setBillProvince(cust.province ?? undefined);
+          setBillDistrict(cust.district ?? undefined);
+          setBillSubdistrict(cust.subdistrict ?? undefined);
+          setBillPostalCode(cust.postalCode ?? undefined);
+        }
+        const noShipStruct = !sh.province && !sh.district && !sh.subdistrict && !sh.postalCode;
+        if (cust && noShipStruct) {
+          const useAddr = sh.street || cust.address || b.street || "";
+          setShipAddressLine(useAddr);
+          setShipProvince(cust.province ?? b.province ?? undefined);
+          setShipDistrict(cust.district ?? b.district ?? undefined);
+          setShipSubdistrict(cust.subdistrict ?? b.subdistrict ?? undefined);
+          setShipPostalCode(cust.postalCode ?? b.postalCode ?? undefined);
+        }
         setStatus(so.status || "DRAFT");
         setInitialServerStatus(so.status || "DRAFT");
         setPaymentStatus(so.paymentStatus || "UNPAID");

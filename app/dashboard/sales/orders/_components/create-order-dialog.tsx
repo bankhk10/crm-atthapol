@@ -19,6 +19,7 @@ import {
   Checkbox,
   FormControlLabel,
 } from "@mui/material";
+import CasinoIcon from "@mui/icons-material/Casino";
 import Autocomplete from "@mui/material/Autocomplete";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
@@ -220,6 +221,103 @@ export function CreateOrderDialog({
     setPromotionLoading(false);
   };
 
+  const fillRandom = () => {
+    const randInt = (min: number, max: number) =>
+      Math.floor(Math.random() * (max - min + 1)) + min;
+    const choice = <T,>(arr: T[]): T => arr[randInt(0, Math.max(0, arr.length - 1))];
+    const pad = (n: number, len: number) => String(n).padStart(len, "0");
+
+    // Pick customer and salesperson
+    if (customerOptions.length > 0) {
+      const c = choice(customerOptions);
+      setCustomerId(c.id);
+      setBillAddressLine(c.address ?? "");
+      setBillProvince(c.province ?? undefined);
+      setBillDistrict(c.district ?? undefined);
+      setBillSubdistrict(c.subdistrict ?? undefined);
+      setBillPostalCode(c.postalCode ?? undefined);
+      // Default ship-to same as bill-to
+      setShipAddressLine(c.address ?? "");
+      setShipProvince(c.province ?? undefined);
+      setShipDistrict(c.district ?? undefined);
+      setShipSubdistrict(c.subdistrict ?? undefined);
+      setShipPostalCode(c.postalCode ?? undefined);
+    }
+    if (employeeOptions.length > 0) {
+      const e = choice(employeeOptions);
+      setSalespersonId(e.id);
+    }
+
+    // Dates: order today, shipping 1-7 days after, due 7-45 days after for POSTPAID
+    const today = new Date();
+    const toISODate = (d: Date) => d.toISOString().slice(0, 10);
+    const shipDays = randInt(1, 7);
+    const shipDate = new Date(today.getTime());
+    shipDate.setDate(today.getDate() + shipDays);
+    setOrderDate(toISODate(today));
+    setShippingDate(toISODate(shipDate));
+
+    // Payment condition
+    const pc: "PREPAID" | "POSTPAID" = Math.random() < 0.5 ? "PREPAID" : "POSTPAID";
+    setPaymentCondition(pc);
+    if (pc === "POSTPAID") {
+      const credit = randInt(7, 45);
+      setCreditTermDays(credit);
+      const due = new Date(today.getTime());
+      due.setDate(today.getDate() + credit);
+      setDueDate(toISODate(due));
+    } else {
+      setCreditTermDays("");
+      setDueDate(null);
+    }
+
+    // VAT and currency
+    setCurrency("THB");
+    setVatIncluded(true);
+    setVatRate(7);
+
+    // PO and note
+    setPoNumber(`PO-${pad(randInt(1, 999999), 6)}`);
+    setNote("สร้างโดยกรอกแบบสุ่มสำหรับทดสอบ");
+
+    // Charges/discounts
+    const shipFee = [0, 0, 50, 120, 200][randInt(0, 4)];
+    const others = [0, 0, 30, 80, 150][randInt(0, 4)];
+    setShippingFee(shipFee);
+    setOtherCharges(others);
+    setOrderDiscount(randInt(0, 300));
+
+    // Promotion: keep off to avoid async budget validation
+    setUsePromotion(false);
+    setPromotionAmount("");
+
+    // Items: 1-3 random unique products
+    const count = Math.max(1, Math.min(productOptions.length, randInt(1, 3)));
+    const picked: ProductOption[] = [];
+    const pool = [...productOptions];
+    for (let i = 0; i < count && pool.length > 0; i++) {
+      const idx = randInt(0, pool.length - 1);
+      picked.push(pool[idx]);
+      pool.splice(idx, 1);
+    }
+    const nextItems: Item[] = picked.map((p) => {
+      const soh = Number(p.stockOnHand ?? 0);
+      const qty = soh > 0 ? randInt(1, Math.min(soh, 10)) : 1;
+      const discountMode = Math.random() < 0.5 ? "PCT" : "AMT" as const;
+      return {
+        productId: p.id,
+        productCodeSnapshot: p.productCode,
+        nameSnapshot: p.nameTH,
+        unit: p.unit || undefined,
+        qty,
+        unitPrice: typeof p.price === "number" ? p.price : 0,
+        discountPercent: discountMode === "PCT" ? randInt(0, 15) : 0,
+        discountAmount: discountMode === "AMT" ? randInt(0, 200) : 0,
+      };
+    });
+    setItems(nextItems.length ? nextItems : [{ ...DEFAULT_ITEM }]);
+  };
+
   // Map UI workflow status to backend status/paymentStatus
   const applyWorkflowMapping = (wf: string) => {
     setWorkflowStatus(wf);
@@ -397,6 +495,17 @@ export function CreateOrderDialog({
       <DialogTitle>สร้างใบสั่งขาย</DialogTitle>
       <DialogContent dividers>
         <Stack spacing={2}>
+          <Stack direction="row" justifyContent="flex-end">
+            <Button
+              type="button"
+              variant="outlined"
+              color="secondary"
+              startIcon={<CasinoIcon />}
+              onClick={fillRandom}
+            >
+              กรอกแบบสุ่ม
+            </Button>
+          </Stack>
           {error && (
             <Alert severity="error" onClose={() => setError(null)}>
               {error}
