@@ -15,17 +15,14 @@ import {
   Divider,
 } from "@mui/material";
 
-import type {
-  EmployeeFormValues,
-  EmployeeRoleOption,
-  RoleDefinitionOption,
-} from "../types";
+import type { EmployeeFormValues, EmployeeRoleOption, RoleDefinitionOption } from "../types";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { th } from "date-fns/locale";
 import { Box } from "@mui/material";
 import ThaiAddressPicker from "@/components/ThaiAddressPicker";
+import { grey } from "@mui/material/colors";
 
 export type EmployeeFormProps = {
   title: string;
@@ -70,20 +67,17 @@ export function EmployeeForm({
 
   const departmentItems = useMemo(
     () => [...departmentOptions].sort((a, b) => a.localeCompare(b)),
-    []
+    [],
   );
 
   const selectedRole = useMemo(
     () => roleOptions.find((option) => option.value === values.role),
-    [roleOptions, values.role]
+    [roleOptions, values.role],
   );
 
   const selectedRoleDefinition = useMemo(
-    () =>
-      roleDefinitions.find(
-        (definition) => definition.id === values.roleDefinitionId
-      ) ?? null,
-    [roleDefinitions, values.roleDefinitionId]
+    () => roleDefinitions.find((definition) => definition.id === values.roleDefinitionId) ?? null,
+    [roleDefinitions, values.roleDefinitionId],
   );
 
   useEffect(() => {
@@ -145,12 +139,7 @@ export function EmployeeForm({
         )}
 
         <Stack spacing={1} alignItems="center">
-          <Typography
-            variant="h4"
-            fontWeight={700}
-            component="h1"
-            align="center"
-          >
+          <Typography variant="h4" fontWeight={700} component="h1" align="center">
             {title}
           </Typography>
           <Typography color="text.secondary" align="center">
@@ -229,20 +218,15 @@ export function EmployeeForm({
 
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           <Box flex={1}>
-            <LocalizationProvider
-              dateAdapter={AdapterDateFns}
-              adapterLocale={th}
-            >
+            <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={th}>
               <DatePicker
                 label="วันเกิด"
                 value={values.birthDate ? new Date(values.birthDate) : null}
-                views={['year', 'month', 'day']}
+                views={["year", "month", "day"]}
                 onChange={(newValue) => {
                   setValues((prev) => ({
                     ...prev,
-                    birthDate: newValue
-                      ? newValue.toISOString().slice(0, 10)
-                      : "",
+                    birthDate: newValue ? newValue.toISOString().slice(0, 10) : "",
                   }));
                 }}
                 slotProps={{
@@ -258,13 +242,13 @@ export function EmployeeForm({
                 typeof values.age === "number" && values.age >= 0
                   ? String(values.age)
                   : values.birthDate
-                  ? String(
-                      Math.floor(
-                        (Date.now() - new Date(values.birthDate).getTime()) /
-                          (1000 * 60 * 60 * 24 * 365.25)
+                    ? String(
+                        Math.floor(
+                          (Date.now() - new Date(values.birthDate).getTime()) /
+                            (1000 * 60 * 60 * 24 * 365.25),
+                        ),
                       )
-                    )
-                  : ""
+                    : ""
               }
               InputProps={{ readOnly: true }}
               fullWidth
@@ -315,13 +299,11 @@ export function EmployeeForm({
             <DatePicker
               label="วันที่เริ่มงาน"
               value={values.startDate ? new Date(values.startDate) : null}
-              views={['year', 'month', 'day']}
+              views={["year", "month", "day"]}
               onChange={(newValue) => {
                 setValues((prev) => ({
                   ...prev,
-                  startDate: newValue
-                    ? newValue.toISOString().slice(0, 10)
-                    : "",
+                  startDate: newValue ? newValue.toISOString().slice(0, 10) : "",
                 }));
               }}
               slotProps={{
@@ -403,9 +385,7 @@ export function EmployeeForm({
             onChange={handleChange("password")}
             type="password"
             required={requirePassword}
-            helperText={
-              requirePassword ? "" : "เว้นว่างไว้หากไม่ต้องการเปลี่ยนรหัสผ่าน"
-            }
+            helperText={requirePassword ? "" : "เว้นว่างไว้หากไม่ต้องการเปลี่ยนรหัสผ่าน"}
             fullWidth
           />
         </Stack>
@@ -562,21 +542,22 @@ export function EmployeeForm({
           </TextField>
         </Stack>
 
-        <Stack
-          direction={{ xs: "column", sm: "row" }}
-          spacing={2}
-          justifyContent="flex-end"
-        >
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="center">
           <Button
             component={Link}
             href="/dashboard/employees"
-            variant="outlined"
-            color="inherit"
+            variant="contained"
+            sx={{
+              bgcolor: grey[500],
+              "&:hover": {
+                bgcolor: grey[700],
+              },
+            }}
           >
             ยกเลิก
           </Button>
-          <Button type="submit" variant="contained" disabled={isSubmitting}>
-            {submitLabel}
+          <Button type="submit" variant="contained" disabled={isSubmitting} >
+            บันทึก
           </Button>
         </Stack>
       </Stack>
