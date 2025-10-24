@@ -22,7 +22,9 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { th } from "date-fns/locale";
 import { Box } from "@mui/material";
 import ThaiAddressPicker from "@/components/ThaiAddressPicker";
-import { grey } from "@mui/material/colors";
+import { blue, red } from "@mui/material/colors";
+import CheckIcon from "@mui/icons-material/Check";
+import CloseIcon from "@mui/icons-material/Close";
 
 export type EmployeeFormProps = {
   title: string;
@@ -571,20 +573,40 @@ export function EmployeeForm({
         </Stack>
 
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="center">
+          {/* ปุ่มยกเลิก */}
           <Button
             component={Link}
             href="/dashboard/employees"
             variant="contained"
+            startIcon={<CloseIcon />}
             sx={{
-              bgcolor: grey[500],
+              bgcolor: red[500],
+              color: "white",
               "&:hover": {
-                bgcolor: grey[700],
+                bgcolor: red[600],
               },
+              fontWeight: 800,
+              px: 3,
             }}
           >
             ยกเลิก
           </Button>
-          <Button type="submit" variant="contained" disabled={isSubmitting}>
+          {/* ปุ่มบันทึก */}
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={isSubmitting}
+            startIcon={<CheckIcon />}
+            sx={{
+              bgcolor: blue[500],
+              color: "white",
+              "&:hover": {
+                bgcolor: blue[600],
+              },
+              fontWeight: 800,
+              px: 3,
+            }}
+          >
             บันทึก
           </Button>
         </Stack>

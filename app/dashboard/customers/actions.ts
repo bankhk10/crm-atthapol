@@ -542,8 +542,8 @@ export async function updateCustomer(customerId: string, rawValues: CustomerForm
         });
         // Sync plots by upserting existing and creating new; delete removed
         const existing: any[] = await (tx as any).farmPlot.findMany({ where: { farmerDetailId: fd.id }, select: { id: true } });
-        const existingIds = new Set(existing.map((r: any) => r.id));
-        const submittedIds = new Set((plots.map((p: any) => p.id).filter(Boolean)) as string[]);
+        const existingIds = new Set((existing.map((r: any) => r.id).filter(Boolean) as Array<string | number>).map(String));
+        const submittedIds = new Set(((plots.map((p: any) => p.id).filter(Boolean)) as Array<string | number>).map(String));
         const toDelete = [...existingIds].filter((id) => !submittedIds.has(id));
         if (toDelete.length) {
           await (tx as any).farmPlot.deleteMany({ where: { id: { in: toDelete } } });
@@ -560,8 +560,12 @@ export async function updateCustomer(customerId: string, rawValues: CustomerForm
             waterSource: p.water_source || undefined,
             machineryUsed: Array.isArray(p.machinery_used) ? p.machinery_used : undefined,
           } as any;
-          if (p.id) {
-            await (tx as any).farmPlot.update({ where: { id: p.id }, data });
+          const pid = p.id ? String(p.id) : undefined;
+          if (pid && existingIds.has(pid)) {
+            await (tx as any).farmPlot.update({ where: { id: pid }, data });
+          } else if (pid && !existingIds.has(pid)) {
+            // If an unknown id is submitted (e.g., stale client), create a new row instead of failing update
+            await (tx as any).farmPlot.create({ data });
           } else {
             await (tx as any).farmPlot.create({ data });
           }

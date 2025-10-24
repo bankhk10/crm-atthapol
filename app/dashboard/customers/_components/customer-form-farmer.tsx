@@ -3,6 +3,8 @@
 import type { Dispatch, SetStateAction } from "react";
 import { Box, Stack, TextField, Typography, MenuItem, Paper, Button } from "@mui/material";
 import CasinoIcon from "@mui/icons-material/Casino";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -207,7 +209,25 @@ export default function FarmerFormSection({
         {(values.farmPlots ?? []).map((plot, idx) => (
           <Paper key={idx} variant="outlined" sx={{ p: 2 }}>
             <Stack spacing={2}>
-              <Typography fontWeight={700}>แปลงที่ {idx + 1}</Typography>
+              <Stack direction="row" alignItems="center" justifyContent="space-between">
+                <Typography fontWeight={700}>แปลงที่ {idx + 1}</Typography>
+                <Button
+                  type="button"
+                  size="small"
+                  color="error"
+                  variant="text"
+                  startIcon={<DeleteOutlineIcon />}
+                  onClick={() =>
+                    setValues((prev) => {
+                      const arr = [...(prev.farmPlots ?? [])];
+                      arr.splice(idx, 1);
+                      return { ...prev, farmPlots: arr };
+                    })
+                  }
+                >
+                  ลบแปลง
+                </Button>
+              </Stack>
               {/* hidden id for round-trip */}
               {plot && (plot as any).id && (
                 <input type="hidden" value={(plot as any).id} readOnly />
@@ -317,30 +337,35 @@ export default function FarmerFormSection({
             </Stack>
           </Paper>
         ))}
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-          <TextField
-            label="ชื่อฟาร์ม"
-            value={values.farmName ?? ""}
-            onChange={handleChange("farmName")}
-            fullWidth
-          />
-          <TextField
-            label="ขนาดพื้นที่รวม (ไร่)"
-            type="number"
-            value={values.farmSize ?? ""}
-            onChange={handleChange("farmSize")}
-            fullWidth
-          />
-          <TextField
-            label="พืชหลัก"
-            value={values.cropType ?? ""}
-            onChange={handleChange("cropType")}
-            fullWidth
-          />
-        </Stack>
+        {/* {(values.farmPlots?.length ?? 0) > 0 && (
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <TextField
+              label="ชื่อฟาร์ม"
+              value={values.farmName ?? ""}
+              onChange={handleChange("farmName")}
+              fullWidth
+            />
+            <TextField
+              label="ขนาดพื้นที่รวม (ไร่)"
+              type="number"
+              value={values.farmSize ?? ""}
+              onChange={handleChange("farmSize")}
+              fullWidth
+            />
+            <TextField
+              label="พืชหลัก"
+              value={values.cropType ?? ""}
+              onChange={handleChange("cropType")}
+              fullWidth
+            />
+          </Stack>
+        )} */}
         <Stack>
-          <button
+          <Button
             type="button"
+            variant="contained"
+            color="primary"
+            startIcon={<AddCircleOutlineIcon />}
             onClick={() => {
               setValues((prev) => ({
                 ...prev,
@@ -359,9 +384,10 @@ export default function FarmerFormSection({
                 ],
               }));
             }}
+            sx={{ alignSelf: { xs: "stretch", sm: "center" } }}
           >
             เพิ่มข้อมูลแปลงเกษตร
-          </button>
+          </Button>
         </Stack>
       </Stack>
     </Stack>

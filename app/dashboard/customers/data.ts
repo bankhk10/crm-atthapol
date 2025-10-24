@@ -85,7 +85,12 @@ export async function getCustomer(customerId: string) {
     include: {
       dealerDetail: true,
       subDealerDetail: { include: { dealer: { include: { customer: true } } } },
-      farmerDetail: { include: { dealer: { include: { customer: true } }, farmPlots: true } },
+      farmerDetail: {
+        include: {
+          dealer: { include: { customer: true } },
+          farmPlots: { where: { deletedAt: null } },
+        },
+      },
       brokerDetail: true,
     },
   });

@@ -13,6 +13,10 @@ import DealerFormSection from "./customer-form-dealer";
 import SubDealerFormSection from "./customer-form-subdealer";
 import FarmerFormSection from "./customer-form-farmer";
 import BrokerFormSection from "./customer-form-broker";
+import { blue, red } from "@mui/material/colors";
+import CheckIcon from "@mui/icons-material/Check";
+import CloseIcon from "@mui/icons-material/Close";
+
 
 type CustomerFormProps = {
   title: string;
@@ -211,7 +215,8 @@ export function CustomerForm({
               options={employeeOptions}
               getOptionLabel={(option) => option.label}
               value={
-                employeeOptions.find((opt) => opt.id === (values.responsibleEmployeeId ?? "")) ?? null
+                employeeOptions.find((opt) => opt.id === (values.responsibleEmployeeId ?? "")) ??
+                null
               }
               onChange={(_e, option) =>
                 setValues((prev) => ({ ...prev, responsibleEmployeeId: option ? option.id : null }))
@@ -230,13 +235,43 @@ export function CustomerForm({
           </Stack>
         )}
 
-        {/* ปุ่มบันทึก/ยกเลิก */}
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="flex-end">
-          <Button component={Link} href="/dashboard/customers" variant="outlined" color="inherit">
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="center">
+          {/* ปุ่มยกเลิก */}
+          <Button
+            component={Link}
+            href="/dashboard/customers"
+            variant="contained"
+            startIcon={<CloseIcon />}
+            sx={{
+              bgcolor: red[500],
+              color: "white",
+              "&:hover": {
+                bgcolor: red[600],
+              },
+              fontWeight: 800,
+              px: 3,
+            }}
+          >
             ยกเลิก
           </Button>
-          <Button type="submit" variant="contained" disabled={isSubmitting}>
-            {submitLabel}
+
+          {/* ปุ่มบันทึก */}
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={isSubmitting}
+            startIcon={<CheckIcon />}
+            sx={{
+              bgcolor: blue[500],
+              color: "white",
+              "&:hover": {
+                bgcolor: blue[600],
+              },
+              fontWeight: 800,
+              px: 3,
+            }}
+          >
+            {submitLabel || "บันทึก"}
           </Button>
         </Stack>
       </Stack>
