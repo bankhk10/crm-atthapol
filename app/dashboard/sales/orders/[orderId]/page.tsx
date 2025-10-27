@@ -54,7 +54,7 @@ function displayCustomerName(c: any) {
 export default async function SalesOrderDetailPage({ params }: { params: Promise<{ orderId: string }> }) {
   const { orderId: id } = await params;
   const session = await getServerSession(authOptions);
-  const perms = session?.user?.permissions;
+  const perms = session?.user?.permissions ?? [];
   if (!hasPermission(perms, "sales", "view")) {
     return (
       <Stack spacing={2}>
@@ -83,7 +83,6 @@ export default async function SalesOrderDetailPage({ params }: { params: Promise
     );
   }
 
-  const perms = (await getServerSession(authOptions))?.user?.permissions ?? [];
   const canApprove = perms.includes("sales:approve");
   const canReject = perms.includes("sales:reject");
 
