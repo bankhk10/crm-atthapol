@@ -44,13 +44,12 @@ const statusOptions = [
 ];
 
 const departmentOptions = [
-  "วิศวกรรม",
-  "ประสบการณ์ผู้ใช้",
-  "วิเคราะห์ธุรกิจ",
-  "การตลาด",
-  "ทรัพยากรบุคคล",
+  "เทคโนโลยีสารสนเทศ",
   "การเงิน",
-  "บริการลูกค้า",
+  "บริหารงานาขาย",
+  "การตลาด",
+  "พัฒนาการตลาด",
+  "ธุระการขาย",
 ];
 
 export function EmployeeForm({
@@ -336,9 +335,17 @@ export function EmployeeForm({
             required
             fullWidth
           >
-            <MenuItem value="บริษัท A">บริษัท A</MenuItem>
-            <MenuItem value="บริษัท B">บริษัท B</MenuItem>
-            <MenuItem value="บริษัท C">บริษัท C</MenuItem>
+            <MenuItem value="บริษัท อินเตอร์ คร็อพ จำกัด">บริษัท อินเตอร์ คร็อพ จำกัด</MenuItem>
+            <MenuItem value="บริษัท แอ็กโฟรีแพ็กซ์ อินดัสตรีส์ จำกัด">
+              บริษัท แอ็กโฟรีแพ็กซ์ อินดัสตรีส์ จำกัด
+            </MenuItem>
+            <MenuItem value="บริษัท ยูนิพรีมา จำกัด">บริษัท ยูนิพรีมา จำกัด</MenuItem>
+            <MenuItem value="บริษัท เอแม็กซ์ อินเตอร์ จำกัด">
+              บริษัท เอแม็กซ์ อินเตอร์ จำกัด
+            </MenuItem>
+            <MenuItem value="บริษัท บีแฟค อินเตอร์ จำกัด">บริษัท บีแฟค อินเตอร์ จำกัด</MenuItem>
+            <MenuItem value="บริษัท ซีเพซ อินเตอร์ จำกัด">บริษัท ซีเพซ อินเตอร์ จำกัด</MenuItem>
+            <MenuItem value="บริษัท คร็อพ ซายน์ จำกัด">บริษัท คร็อพ ซายน์ จำกัด</MenuItem>
           </TextField>
 
           {/* เขตที่รับผิดชอบ */}
