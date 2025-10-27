@@ -27,6 +27,8 @@ import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { th } from "date-fns/locale";
 import ThaiAddressPicker from "@/components/ThaiAddressPicker";
+import { useSession } from "next-auth/react";
+import { hasPermission } from "@/lib/permissions";
 
 export type Option = {
   id: string;
@@ -129,6 +131,9 @@ export function EditOrderDialog({
   productOptions,
   onUpdated,
 }: Props) {
+  const { data: session } = useSession();
+  const canApprove = hasPermission(session?.user?.permissions, "sales", "approve");
+  const canReject = hasPermission(session?.user?.permissions, "sales", "reject");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setSubmitting] = useState(false);
@@ -200,8 +205,8 @@ export function EditOrderDialog({
     return net;
   }, [totals, orderDiscount]);
 
-  // ล็อกเฉพาะเมื่อสถานะเดิมจากระบบคือ SHIPPED (แก้ไขไม่ได้)
-  const isLocked = initialServerStatus === "SHIPPED";
+  // ล็อกเมื่อสถานะเดิมคือ SHIPPED หรือ อนุมัติแล้วแต่ผู้ใช้ไม่มีสิทธิ์อนุมัติ
+  const isLocked = initialServerStatus === "SHIPPED" || (initialServerStatus === "APPROVED" && !canApprove);
 
   // คงไว้: useEffect สำหรับโหลดข้อมูล (ไม่ reset form ตอนเปิด)
   useEffect(() => {
@@ -882,9 +887,15 @@ export function EditOrderDialog({
               label="สถานะเอกสาร"
               value={workflowStatus}
               onChange={(e) => applyWorkflowMapping(e.target.value)}
+              disabled={initialServerStatus === "APPROVED" && !canApprove}
               fullWidth
             >
-              {STATUS_OPTIONS.map((s) => (
+              {STATUS_OPTIONS.filter((s) => {
+                if (canApprove) return true;
+                if (s.value === "DRAFT" || s.value === "PENDING_APPROVAL") return true;
+                if (s.value === "CANCELLED") return Boolean(canReject);
+                return false;
+              }).map((s) => (
                 <MenuItem key={s.value} value={s.value}>
                   {s.label}
                 </MenuItem>

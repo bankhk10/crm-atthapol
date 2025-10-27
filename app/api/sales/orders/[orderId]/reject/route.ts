@@ -32,13 +32,14 @@ export async function POST(req: NextRequest, context: { params: Promise<{ orderI
     const session = await getServerSession(authOptions);
     const perms = session?.user?.permissions;
     if (!hasPermission(perms, "sales", "reject")) {
-      return NextResponse.json({ error: "ไม่มีสิทธิ์ยกเลิก/ปฏิเสธเอกสาร" }, { status: 403 });
+      return NextResponse.json({ error: "ไม่มีสิทธิ์ปฏิเสธเอกสาร" }, { status: 403 });
     }
-    let cancelReason: string | undefined = undefined;
+
+    let rejectReason: string | undefined = undefined;
     try {
       const json = await req.json();
-      const reason = (json?.reason || json?.cancelReason || "").trim();
-      if (reason) cancelReason = reason;
+      const reason = (json?.reason || json?.rejectReason || "").trim();
+      if (reason) rejectReason = reason;
     } catch {}
 
     const result = await prisma.$transaction(async (tx) => {
@@ -48,33 +49,15 @@ export async function POST(req: NextRequest, context: { params: Promise<{ orderI
         throw new Error("NOT_FOUND");
       }
 
-      await releaseReservations(tx, orderId);
+      const status = String((order as any).status || "");
+      if (status === "SHIPPED") throw new Error("LOCKED");
+      if (status === "CANCELLED") throw new Error("LOCKED");
 
-      // If order had shippingDate OR status is SHIPPED (treated as issued), return qtyOnHand back
-      if ((order as any).shippingDate || (order as any).status === "SHIPPED") {
-        const items = await tx.saleOrderItem.findMany({ where: { saleOrderId: orderId } });
-        for (const item of items as any[]) {
-          if (!item.productId || !item.qty) continue;
-          let remaining = Math.max(0, Math.floor(Number(item.qty)));
-          if (!Number.isFinite(remaining) || remaining <= 0) continue;
-          const stocks = await tx.stock.findMany({
-            where: { productId: item.productId, deletedAt: null },
-            orderBy: [{ expDate: "asc" }, { mfgDate: "asc" }, { createdAt: "asc" }],
-          });
-          for (const s of stocks as any[]) {
-            if (remaining <= 0) break;
-            const alloc = Math.min(remaining, Number.MAX_SAFE_INTEGER);
-            if (alloc <= 0) continue;
-            await tx.stock.update({ where: { id: s.id }, data: { qtyOnHand: { increment: alloc } } });
-            await (tx as any).stockMovement.create({ data: { stockId: s.id, productId: s.productId, saleOrderId: orderId, type: 'RETURN', qty: alloc } });
-            remaining -= alloc;
-          }
-        }
-      }
+      await releaseReservations(tx, orderId);
 
       const updated = await tx.saleOrder.update({
         where: { id: orderId },
-        data: { status: "CANCELLED" as any, cancelReason, approvedAt: null, approvedByUserId: null },
+        data: { status: "CANCELLED" as any, rejectReason, approvedAt: null, approvedByUserId: null },
         include: { items: true, reservations: true },
       });
       return updated;
@@ -85,7 +68,11 @@ export async function POST(req: NextRequest, context: { params: Promise<{ orderI
     if (err instanceof Error && err.message === "NOT_FOUND") {
       return NextResponse.json({ error: "ไม่พบใบสั่งขาย" }, { status: 404 });
     }
-    console.error("[POST /api/sales/orders/:id/cancel] error", err);
-    return NextResponse.json({ error: "ยกเลิกใบสั่งขายไม่สำเร็จ" }, { status: 500 });
+    if (err instanceof Error && err.message === "LOCKED") {
+      return NextResponse.json({ error: "เอกสารสถานะนี้ไม่สามารถปฏิเสธได้" }, { status: 400 });
+    }
+    console.error("[POST /api/sales/orders/:id/reject] error", err);
+    return NextResponse.json({ error: "ปฏิเสธเอกสารไม่สำเร็จ" }, { status: 500 });
   }
 }
+

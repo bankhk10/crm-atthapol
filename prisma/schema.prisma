@@ -232,6 +232,7 @@ model User {
   roleDefinition      RoleDefinition? @relation(fields: [roleDefinitionId], references: [id])
   performedAuditLogs  AuditLog[]      @relation("AuditPerformedByUser")
   createdInteractions Interaction[]   @relation("UserCreatedInteractions")
+  approvedSaleOrders  SaleOrder[]     @relation("UserApprovedSaleOrders")
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -454,24 +455,24 @@ model DealerDetail {
 }
 
 model SubDealerDetail {
-  id         String        @id @default(cuid())
-  customerId String        @unique
-  dealerId   String?
-  status     PartnerStatus @default(ACTIVE)
+  id                     String        @id @default(cuid())
+  customerId             String        @unique
+  dealerId               String?
+  status                 PartnerStatus @default(ACTIVE)
   // Contacts
-  contactPhone String?
-  contactEmail String?
+  contactPhone           String?
+  contactEmail           String?
   // Geo
-  latitude   Float?
-  longitude  Float?
+  latitude               Float?
+  longitude              Float?
   // Business info
-  competitor              String?
-  cropsInArea             String?
-  averageMonthlyPurchase  Float?
-  mainProducts            String?
-  brandsSold              String?
-  areaType                String?
-  businessNotes           String?
+  competitor             String?
+  cropsInArea            String?
+  averageMonthlyPurchase Float?
+  mainProducts           String?
+  brandsSold             String?
+  areaType               String?
+  businessNotes          String?
 
   customer Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
   dealer   DealerDetail? @relation(fields: [dealerId], references: [id])
@@ -613,6 +614,11 @@ model SaleOrder {
   status        SaleOrderStatus @default(DRAFT)
   paymentStatus PaymentStatus   @default(UNPAID)
 
+  // Approval metadata
+  approvedAt       DateTime?
+  approvedByUserId String?
+  approvedBy       User?     @relation("UserApprovedSaleOrders", fields: [approvedByUserId], references: [id])
+
   subTotal       Float  @default(0)
   discountTotal  Float  @default(0)
   // Additional order-level discount in currency (not included in discountTotal)
@@ -624,8 +630,8 @@ model SaleOrder {
   promotionSpent Float? @default(0)
   grandTotal     Float  @default(0)
 
-  poNumber String?
-  note     String?
+  poNumber     String?
+  note         String?
   // เหตุผลการปฏิเสธเอกสาร (แยกจาก note)
   rejectReason String?
   // เหตุผลการยกเลิกเอกสาร (แยกจาก note)
@@ -645,6 +651,7 @@ model SaleOrder {
   @@index([shippingDate])
   @@index([customerId])
   @@index([salespersonId])
+  @@index([approvedByUserId])
 }
 
 model SaleOrderItem {

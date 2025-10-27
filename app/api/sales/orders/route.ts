@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { hasPermission } from "@/lib/permissions";
+import { buildSaleOrderVisibilityWhere } from "@/lib/sales-visibility";
 
 export const runtime = "nodejs";
 
@@ -108,6 +112,12 @@ async function generateSoNumberTx(tx: any) {
 
 export async function GET(req: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    const perms = session?.user?.permissions;
+    if (!hasPermission(perms, "sales", "view")) {
+      return NextResponse.json({ error: "ไม่มีสิทธิ์เข้าถึงรายการขาย" }, { status: 403 });
+    }
+
     const { searchParams } = new URL(req.url);
     const page = Math.max(1, Number(searchParams.get("page") || 1));
     const pageSize = Math.min(100, Math.max(1, Number(searchParams.get("pageSize") || 20)));
@@ -196,15 +206,19 @@ export async function GET(req: NextRequest) {
       if (Object.keys(range).length > 0) (where as any).shippingDate = range;
     }
 
+    const scopeWhere = await buildSaleOrderVisibilityWhere();
+
+    const whereFinal: any = { ...where, ...scopeWhere };
+
     const [items, total] = await Promise.all([
       prisma.saleOrder.findMany({
-        where,
+        where: whereFinal,
         include: { items: true, customer: true, salesperson: true },
         orderBy: { createdAt: "desc" },
         skip,
         take: pageSize,
       }),
-      prisma.saleOrder.count({ where }),
+      prisma.saleOrder.count({ where: whereFinal }),
     ]);
 
     return NextResponse.json({ items, total, page, pageSize });
@@ -216,6 +230,12 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    const perms = session?.user?.permissions;
+    if (!hasPermission(perms, "sales", "create")) {
+      return NextResponse.json({ error: "ไม่มีสิทธิ์สร้างใบสั่งขาย" }, { status: 403 });
+    }
+
     const json = await req.json();
     const parsed = CreateOrderSchema.safeParse(json);
     if (!parsed.success) {
@@ -225,6 +245,17 @@ export async function POST(req: NextRequest) {
   const data = parsed.data;
 
   const totals = computeTotals(data);
+
+    // Status gating: only approvers can set APPROVED / CANCELLED on create
+    const requestedStatus = (data.status as string | undefined) ?? "DRAFT";
+    const wantsApprove = requestedStatus === "APPROVED";
+    const wantsCancel = requestedStatus === "CANCELLED";
+    if (wantsApprove && !hasPermission(perms, "sales", "approve")) {
+      return NextResponse.json({ error: "ไม่มีสิทธิ์อนุมัติเอกสาร" }, { status: 403 });
+    }
+    if (wantsCancel && !hasPermission(perms, "sales", "reject")) {
+      return NextResponse.json({ error: "ไม่มีสิทธิ์ปฏิเสธ/ยกเลิกเอกสาร" }, { status: 403 });
+    }
 
     // Pre-check credit if POSTPAID
     if ((data.paymentCondition ?? "PREPAID") === "POSTPAID") {
@@ -252,6 +283,12 @@ export async function POST(req: NextRequest) {
     for (let attempt = 0; attempt < 5; attempt++) {
       try {
         created = await prisma.$transaction(async (tx) => {
+          // Default salesperson to current employee if missing
+          let salespersonId: string | undefined = data.salespersonId;
+          if (!salespersonId && session?.user?.id) {
+            const emp = await tx.employee.findUnique({ where: { userId: session.user.id }, select: { id: true } });
+            if (emp?.id) salespersonId = emp.id;
+          }
           const soNumber = await generateSoNumberTx(tx);
           // Handle promotion budget usage
           let promoUsed = 0;
@@ -276,7 +313,7 @@ export async function POST(req: NextRequest) {
             data: {
               soNumber,
               customerId: data.customerId,
-              salespersonId: data.salespersonId,
+              salespersonId,
               orderDate: data.orderDate ? new Date(data.orderDate) : new Date(),
               dueDate: data.dueDate ? new Date(data.dueDate) : null,
               shippingDate: data.shippingDate ? new Date(data.shippingDate) : null,
@@ -296,6 +333,8 @@ export async function POST(req: NextRequest) {
           poNumber: data.poNumber,
           note: data.note,
           rejectReason: (data as any).rejectReason,
+          approvedAt: wantsApprove ? new Date() : null,
+          approvedByUserId: wantsApprove ? (session?.user?.id as string | undefined) : null,
               subTotal: totals.subTotal,
               discountTotal: totals.discountTotal,
               taxAmount: totals.taxAmount,

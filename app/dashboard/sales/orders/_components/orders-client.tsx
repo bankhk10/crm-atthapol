@@ -31,6 +31,8 @@ import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import DoneOutlinedIcon from "@mui/icons-material/DoneOutlined";
+import ThumbDownOutlinedIcon from "@mui/icons-material/ThumbDownOutlined";
 import Link from "next/link";
 import AddIcon from "@mui/icons-material/Add";
 import dayjs from "dayjs";
@@ -177,6 +179,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
   const canCancel = hasPermission(session?.user?.permissions, "sales", "reject");
   const canDelete = hasPermission(session?.user?.permissions, "sales", "delete");
   const canEdit = hasPermission(session?.user?.permissions, "sales", "edit");
+  const canApprove = hasPermission(session?.user?.permissions, "sales", "approve");
 
   const chips = useMemo(() => WORKFLOW_STATUS_OPTIONS, []);
   const paymentChips = useMemo(
@@ -238,6 +241,40 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
     try {
       const res = await fetch(`/api/sales/orders/${order.id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("ลบไม่สำเร็จ");
+      await load();
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const doApprove = async (order: OrderItem) => {
+    setBusyId(order.id);
+    try {
+      const res = await fetch(`/api/sales/orders/${order.id}/approve`, { method: "POST" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || "อนุมัติไม่สำเร็จ");
+      }
+      await load();
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const doReject = async (order: OrderItem) => {
+    setBusyId(order.id);
+    try {
+      const reason = window.prompt("กรุณาระบุเหตุผลการปฏิเสธ", "");
+      const payload = reason && reason.trim().length > 0 ? { reason: reason.trim() } : undefined;
+      const res = await fetch(`/api/sales/orders/${order.id}/reject`, {
+        method: "POST",
+        headers: payload ? { "Content-Type": "application/json" } : undefined,
+        body: payload ? JSON.stringify(payload) : undefined,
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || "ปฏิเสธไม่สำเร็จ");
+      }
       await load();
     } finally {
       setBusyId(null);
@@ -358,7 +395,7 @@ function workflowChipSx(wf: string) {
             </TableCell>
           ))}
           {showActions && (
-            <TableCell align="center" sx={{ width: 120 }}>
+            <TableCell align="center" sx={{ width: 180 }}>
               <Tooltip title="การกระทำ" arrow>
                 <span>การกระทำ</span>
               </Tooltip>
@@ -485,7 +522,7 @@ function workflowChipSx(wf: string) {
                     label={`ชำระ: ${PAYMENT_STATUS_LABEL[o.paymentStatus] || o.paymentStatus}`}
                   />
                 </Stack>
-                {(canView || canEdit || canCancel || canDelete) && (
+                {(canView || canEdit || canCancel || canDelete || canApprove) && (
                   <Stack direction="row" spacing={0.5} justifyContent="flex-end">
                     {canView && (
                       <Tooltip title="ดูรายละเอียด" arrow>
@@ -496,6 +533,34 @@ function workflowChipSx(wf: string) {
                         >
                           <VisibilityOutlinedIcon fontSize="small" />
                         </IconButton>
+                      </Tooltip>
+                    )}
+                    {canApprove && (o.status === "CONFIRMED" || o.status === "DRAFT") && (
+                      <Tooltip title="อนุมัติ" arrow>
+                        <span>
+                          <IconButton
+                            size="small"
+                            color="success"
+                            disabled={busyId === o.id}
+                            onClick={() => doApprove(o)}
+                          >
+                            <DoneOutlinedIcon fontSize="small" />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                    )}
+                    {canCancel && (o.status === "CONFIRMED" || o.status === "DRAFT") && (
+                      <Tooltip title="ปฏิเสธ" arrow>
+                        <span>
+                          <IconButton
+                            size="small"
+                            color="warning"
+                            disabled={busyId === o.id}
+                            onClick={() => doReject(o)}
+                          >
+                            <ThumbDownOutlinedIcon fontSize="small" />
+                          </IconButton>
+                        </span>
                       </Tooltip>
                     )}
                     {!isTerminal && canEdit && (
@@ -676,8 +741,8 @@ function workflowChipSx(wf: string) {
                     <span>{PAYMENT_STATUS_LABEL[o.paymentStatus] || o.paymentStatus}</span>
                   </Tooltip>
                 </TableCell>
-                {(canView || canEdit || canCancel || canDelete) && (
-                  <TableCell align="center" sx={{ width: 120, px: 2 }}>
+                {(canView || canEdit || canCancel || canDelete || canApprove) && (
+                  <TableCell align="center" sx={{ width: 180, px: 2 }}>
                     <Stack direction="row" spacing={0.5} justifyContent="center">
                       {canView && (
                         <Tooltip title="ดูรายละเอียด" arrow>
@@ -689,6 +754,34 @@ function workflowChipSx(wf: string) {
                           >
                             <VisibilityOutlinedIcon fontSize="small" />
                           </IconButton>
+                        </Tooltip>
+                      )}
+                      {canApprove && (o.status === "CONFIRMED" || o.status === "DRAFT") && (
+                        <Tooltip title="อนุมัติ" arrow>
+                          <span>
+                            <IconButton
+                              size="small"
+                              color="success"
+                              disabled={busyId === o.id}
+                              onClick={() => doApprove(o)}
+                            >
+                              <DoneOutlinedIcon fontSize="small" />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+                      )}
+                      {canCancel && (o.status === "CONFIRMED" || o.status === "DRAFT") && (
+                        <Tooltip title="ปฏิเสธ" arrow>
+                          <span>
+                            <IconButton
+                              size="small"
+                              color="warning"
+                              disabled={busyId === o.id}
+                              onClick={() => doReject(o)}
+                            >
+                              <ThumbDownOutlinedIcon fontSize="small" />
+                            </IconButton>
+                          </span>
                         </Tooltip>
                       )}
                       {!isTerminal && canEdit && (

@@ -1,6 +1,11 @@
 import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { hasPermission } from "@/lib/permissions";
+import { buildSaleOrderVisibilityWhere } from "@/lib/sales-visibility";
 import { Box, Chip, Divider, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, Button } from "@mui/material";
 import Link from "next/link";
+import { ActionsBar } from "./_components/actions-bar";
 
 // UI workflow status options and helper mapping from backend enums
 const WORKFLOW_STATUS_OPTIONS = [
@@ -48,8 +53,19 @@ function displayCustomerName(c: any) {
 
 export default async function SalesOrderDetailPage({ params }: { params: Promise<{ orderId: string }> }) {
   const { orderId: id } = await params;
-  const so = await (prisma as any).saleOrder.findUnique({
-    where: { id },
+  const session = await getServerSession(authOptions);
+  const perms = session?.user?.permissions;
+  if (!hasPermission(perms, "sales", "view")) {
+    return (
+      <Stack spacing={2}>
+        <Typography variant="h5" fontWeight={700}>ไม่มีสิทธิ์เข้าถึงใบสั่งขาย</Typography>
+        <Button component={Link as any} href="/dashboard/sales/orders" variant="outlined">กลับรายการขาย</Button>
+      </Stack>
+    );
+  }
+  const scopeWhere = await buildSaleOrderVisibilityWhere();
+  const so = await (prisma as any).saleOrder.findFirst({
+    where: { id, ...(scopeWhere as any) },
     include: {
       items: true,
       customer: true,
@@ -67,11 +83,15 @@ export default async function SalesOrderDetailPage({ params }: { params: Promise
     );
   }
 
+  const perms = (await getServerSession(authOptions))?.user?.permissions ?? [];
+  const canApprove = perms.includes("sales:approve");
+  const canReject = perms.includes("sales:reject");
+
   return (
     <Stack spacing={2}>
       <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "flex-start", sm: "center" }}>
         <Typography variant="h4" fontWeight={700}>ใบสั่งขาย #{so.soNumber}</Typography>
-        <Stack direction="row" spacing={1}>
+        <Stack direction="row" spacing={1} alignItems="center">
           {(() => {
             const baseWf = workflowFromBackend(String(so.status || ""), String(so.paymentStatus || ""));
             const wf = so.status === "CANCELLED" && (so as any)?.rejectReason ? "REJECTED" : baseWf;
@@ -80,6 +100,7 @@ export default async function SalesOrderDetailPage({ params }: { params: Promise
             return <Chip label={label} color={isCancelled ? "default" : "primary"} variant={isCancelled ? "outlined" : "filled"} />;
           })()}
           <Chip label={`ชำระเงิน: ${PAYMENT_STATUS_LABEL[String(so.paymentStatus || "")] || String(so.paymentStatus)}`} variant="outlined" />
+          <ActionsBar orderId={so.id} status={String(so.status)} canApprove={canApprove} canReject={canReject} />
         </Stack>
       </Stack>
 

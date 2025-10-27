@@ -77,7 +77,11 @@ const roleSeeds: RoleSeed[] = [
     key: "admin",
     name: "ผู้ดูแลระบบ",
     description: "เข้าถึงทุกเมนูและปุ่มคำสั่งทั้งหมด",
-    permissions: allPermissionKeys,
+    permissions: [
+      ...allPermissionKeys,
+      // Visibility scope: admin sees all
+      "sales_scope:all",
+    ],
   },
   {
     key: "sales_manager",
@@ -87,6 +91,8 @@ const roleSeeds: RoleSeed[] = [
       ...buildPermissionGroup("customers", manageActions),
       ...buildPermissionGroup("products", manageActions),
       ...buildPermissionGroup("sales", manageActions),
+      // Visibility scope: manager sees department
+      "sales_scope:department",
     ],
   },
   {
@@ -96,6 +102,8 @@ const roleSeeds: RoleSeed[] = [
     permissions: [
       ...buildPermissionGroup("customers", contributeActions),
       ...buildPermissionGroup("sales", viewCreateActions),
+      // Visibility scope: staff sees own
+      "sales_scope:own",
     ],
   },
 ];
@@ -180,6 +188,21 @@ async function main() {
         });
         permissionIdMap.set(buildPermissionKey(resource.key, action), permission.id);
       }
+    }
+
+    // Add explicit sales visibility scope permissions (not part of PERMISSION_ACTIONS)
+    const scopeDefs = [
+      { category: "sales_scope", name: "own", description: "เห็นเฉพาะที่ตัวเองรับผิดชอบ" },
+      { category: "sales_scope", name: "department", description: "เห็นเฉพาะแผนกตนเอง" },
+      { category: "sales_scope", name: "all", description: "เห็นทั้งหมด" },
+    ];
+    for (const s of scopeDefs) {
+      const perm = await tx.permission.upsert({
+        where: { category_name: { category: s.category, name: s.name } },
+        update: { description: s.description },
+        create: s,
+      });
+      permissionIdMap.set(`${s.category}:${s.name}`, perm.id);
     }
 
     for (const role of roleSeeds) {

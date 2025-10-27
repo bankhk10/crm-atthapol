@@ -27,6 +27,8 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { th } from "date-fns/locale";
+import { useSession } from "next-auth/react";
+import { hasPermission } from "@/lib/permissions";
 import ThaiAddressPicker from "@/components/ThaiAddressPicker";
 
 export type Option = {
@@ -124,6 +126,9 @@ export function CreateOrderDialog({
   productOptions,
   onCreated,
 }: Props) {
+  const { data: session } = useSession();
+  const canApprove = hasPermission(session?.user?.permissions, "sales", "approve");
+  const canReject = hasPermission(session?.user?.permissions, "sales", "reject");
   const [customerId, setCustomerId] = useState("");
   const [salespersonId, setSalespersonId] = useState("");
   const [orderDate, setOrderDate] = useState<string | null>(new Date().toISOString().slice(0, 10));
@@ -220,6 +225,15 @@ export function CreateOrderDialog({
     setPromotionAvailable(null);
     setPromotionLoading(false);
   };
+
+  const allowedStatusOptions = (() => {
+    if (canApprove) return STATUS_OPTIONS;
+    return STATUS_OPTIONS.filter((s) => {
+      if (s.value === "DRAFT" || s.value === "PENDING_APPROVAL") return true;
+      if (s.value === "CANCELLED") return Boolean(canReject);
+      return false;
+    });
+  })();
 
   const fillRandom = () => {
     const randInt = (min: number, max: number) =>
@@ -749,7 +763,7 @@ export function CreateOrderDialog({
               onChange={(e) => applyWorkflowMapping(e.target.value)}
               fullWidth
             >
-              {STATUS_OPTIONS.map((s) => (
+              {allowedStatusOptions.map((s) => (
                 <MenuItem key={s.value} value={s.value}>
                   {s.label}
                 </MenuItem>

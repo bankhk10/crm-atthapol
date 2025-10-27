@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { hasPermission } from "@/lib/permissions";
+import { buildSaleOrderVisibilityWhere } from "@/lib/sales-visibility";
 
 export const runtime = "nodejs";
 
@@ -25,8 +29,15 @@ async function releaseReservations(tx: any, saleOrderId: string) {
 export async function DELETE(_req: NextRequest, context: { params: Promise<{ orderId: string }> }) {
   const { orderId } = await context.params;
   try {
+    const session = await getServerSession(authOptions);
+    const perms = session?.user?.permissions;
+    if (!hasPermission(perms, "sales", "delete")) {
+      return NextResponse.json({ error: "ไม่มีสิทธิ์ลบใบสั่งขาย" }, { status: 403 });
+    }
+
     await prisma.$transaction(async (tx) => {
-      const order = await tx.saleOrder.findUnique({ where: { id: orderId } });
+      const scopeWhere = await buildSaleOrderVisibilityWhere();
+      const order = await tx.saleOrder.findFirst({ where: { id: orderId, ...(scopeWhere as any) } });
       if (!order || (order as any).deletedAt) {
         throw new Error("NOT_FOUND");
       }
@@ -50,8 +61,14 @@ export async function DELETE(_req: NextRequest, context: { params: Promise<{ ord
 export async function GET(_req: NextRequest, context: { params: Promise<{ orderId: string }> }) {
   const { orderId } = await context.params;
   try {
-    const order = await prisma.saleOrder.findUnique({
-      where: { id: orderId },
+    const session = await getServerSession(authOptions);
+    const perms = session?.user?.permissions;
+    if (!hasPermission(perms, "sales", "view")) {
+      return NextResponse.json({ error: "ไม่มีสิทธิ์เข้าถึงใบสั่งขาย" }, { status: 403 });
+    }
+    const scopeWhere = await buildSaleOrderVisibilityWhere();
+    const order = await prisma.saleOrder.findFirst({
+      where: { id: orderId, ...(scopeWhere as any) },
       include: { items: true, customer: true, salesperson: true, reservations: { include: { stock: true } } },
     });
     if (!order || (order as any).deletedAt) {
@@ -144,6 +161,11 @@ function computeTotals(payload: z.infer<typeof UpdateOrderSchema>) {
 export async function PUT(req: NextRequest, context: { params: Promise<{ orderId: string }> }) {
   const { orderId } = await context.params;
   try {
+    const session = await getServerSession(authOptions);
+    const perms = session?.user?.permissions;
+    if (!hasPermission(perms, "sales", "edit")) {
+      return NextResponse.json({ error: "ไม่มีสิทธิ์แก้ไขใบสั่งขาย" }, { status: 403 });
+    }
     const json = await req.json();
     const parsed = UpdateOrderSchema.safeParse(json);
     if (!parsed.success) {
@@ -180,9 +202,35 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ orderId
     }
 
     const updated = await prisma.$transaction(async (tx) => {
-      const exists = await tx.saleOrder.findUnique({ where: { id: orderId } });
+      const scopeWhere = await buildSaleOrderVisibilityWhere();
+      const exists = await tx.saleOrder.findFirst({ where: { id: orderId, ...(scopeWhere as any) } });
       if (!exists || (exists as any).deletedAt) throw new Error("NOT_FOUND");
       if ((exists as any).status === "SHIPPED") throw new Error("LOCKED");
+
+      // Approval and status change gating
+      const prevStatus = String((exists as any).status || "");
+      const nextStatus = String((data as any).status ?? prevStatus);
+      const changingStatus = nextStatus !== prevStatus;
+      if (changingStatus) {
+        if (nextStatus === "APPROVED" && !hasPermission(perms, "sales", "approve")) {
+          throw new Error("NO_APPROVE");
+        }
+        if (nextStatus === "CANCELLED" && !hasPermission(perms, "sales", "reject")) {
+          throw new Error("NO_REJECT");
+        }
+        // Allow non-approvers to move between DRAFT and CONFIRMED (submit/recall)
+        const isFreeChange = (prevStatus === "DRAFT" && nextStatus === "CONFIRMED") || (prevStatus === "CONFIRMED" && nextStatus === "DRAFT");
+        if (!isFreeChange) {
+          const needsApprove = ["SHIPPED", "INVOICED", "APPROVED"].includes(nextStatus);
+          if (needsApprove && !hasPermission(perms, "sales", "approve")) {
+            throw new Error("NO_APPROVE");
+          }
+        }
+      }
+      // If already approved and user wants to edit without reopening, block
+      if (prevStatus === "APPROVED" && nextStatus === "APPROVED") {
+        throw new Error("LOCKED_APPROVED");
+      }
 
       // --- Promotion budget adjustment (difference-based and customer-change aware) ---
       const currentSpent = Number((exists as any).promotionSpent ?? 0);
@@ -275,6 +323,9 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ orderId
           note: data.note,
           rejectReason: (data as any).rejectReason,
           cancelReason: (data as any).cancelReason,
+          // Approval metadata update
+          approvedAt: nextStatus === "APPROVED" ? new Date() : (prevStatus === "APPROVED" && nextStatus !== "APPROVED" ? null : (exists as any).approvedAt),
+          approvedByUserId: nextStatus === "APPROVED" ? (session?.user?.id as string | undefined) : (prevStatus === "APPROVED" && nextStatus !== "APPROVED" ? null : (exists as any).approvedByUserId),
           subTotal: totals.subTotal,
           discountTotal: totals.discountTotal,
           taxAmount: totals.taxAmount,
@@ -341,6 +392,15 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ orderId
     }
     if (err instanceof Error && err.message === "LOCKED") {
       return NextResponse.json({ error: "เอกสารสถานะสำเร็จ ไม่สามารถแก้ไขได้" }, { status: 400 });
+    }
+    if (err instanceof Error && err.message === "LOCKED_APPROVED") {
+      return NextResponse.json({ error: "เอกสารถูกอนุมัติแล้ว ต้องเปลี่ยนสถานะเป็นรออนุมัติจึงจะแก้ไขได้" }, { status: 400 });
+    }
+    if (err instanceof Error && err.message === "NO_APPROVE") {
+      return NextResponse.json({ error: "ไม่มีสิทธิ์เปลี่ยนแปลงสถานะ/อนุมัติเอกสาร" }, { status: 403 });
+    }
+    if (err instanceof Error && err.message === "NO_REJECT") {
+      return NextResponse.json({ error: "ไม่มีสิทธิ์ปฏิเสธ/ยกเลิกเอกสาร" }, { status: 403 });
     }
     if (err instanceof Error && err.message === 'PROMO_NOT_SUPPORTED') {
       return NextResponse.json({ error: "ลูกค้ารายนี้ไม่รองรับวงเงินส่งเสริมการขาย" }, { status: 400 });
