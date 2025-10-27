@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { Box, Typography, Paper } from "@mui/material";
 import { authOptions } from "@/lib/auth";
 import { ActionButtons } from "./_components/action-buttons";
+import InProgressPage from "./_components/In-progress";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -10,7 +11,8 @@ export default async function DashboardPage() {
 
   return (
     <>
-      <ActionButtons resource="reports" />
+      <InProgressPage />
+      {/* <ActionButtons resource="reports" />
       <Box>
         <Typography variant="h4" fontWeight={700} mb={1}>
           Dashboard
@@ -24,7 +26,7 @@ export default async function DashboardPage() {
         <Typography>
           สวัสดี {session?.user?.name ?? "ผู้ใช้"} (role: {role})
         </Typography>
-      </Paper>
+      </Paper> */}
     </>
   );
 }

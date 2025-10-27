@@ -1,10 +1,12 @@
 import { Stack, Typography } from "@mui/material";
 import { ActionButtons } from "../_components/action-buttons";
+import InProgressPage from "../_components/In-progress";
 
 export default function MapPage() {
   return (
     <>
-      <ActionButtons resource="map" />
+    <InProgressPage/>
+      {/* <ActionButtons resource="map" />
       <Stack spacing={2}>
         <Typography variant="h4" fontWeight={700}>
           แผนที่
@@ -13,7 +15,7 @@ export default function MapPage() {
           หน้าว่างสำหรับแสดงข้อมูลแผนที่ ลูกค้าสามารถปรับปรุงภายหลังได้ตามความต้องการ
           เช่น การปักหมุดสาขาและการวิเคราะห์พื้นที่เป้าหมาย
         </Typography>
-      </Stack>
+      </Stack> */}
     </>
   );
 }
