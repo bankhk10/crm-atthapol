@@ -8,6 +8,15 @@ import { buildSaleOrderVisibilityWhere } from "@/lib/sales-visibility";
 
 export const runtime = "nodejs";
 
+// Accept both full ISO datetime and date-only (YYYY-MM-DD) strings
+const DateString = z
+  .string()
+  .refine((s) => {
+    if (typeof s !== "string" || s.trim().length === 0) return false;
+    const t = Date.parse(s);
+    return Number.isFinite(t);
+  }, { message: "Invalid date" });
+
 const OrderItemSchema = z.object({
   productId: z.string().optional(),
   nameSnapshot: z.string().optional(),
@@ -19,17 +28,17 @@ const OrderItemSchema = z.object({
   discountAmount: z.number().min(0).optional().default(0),
   lineVatRate: z.number().min(0).optional(),
   lotNumber: z.string().optional(),
-  mfgDate: z.string().datetime().optional(),
-  expDate: z.string().datetime().optional(),
+  mfgDate: DateString.optional(),
+  expDate: DateString.optional(),
   note: z.string().optional(),
 });
 
 const CreateOrderSchema = z.object({
   customerId: z.string(),
   salespersonId: z.string().optional(),
-  orderDate: z.string().datetime().optional(),
-  dueDate: z.string().datetime().optional(),
-  shippingDate: z.string().datetime().optional(),
+  orderDate: DateString.optional(),
+  dueDate: DateString.optional(),
+  shippingDate: DateString.optional(),
   creditTermDays: z.number().int().optional(),
   paymentCondition: z.enum(["PREPAID","POSTPAID"]).optional(),
   currency: z.string().default("THB"),
@@ -415,8 +424,16 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(created, { status: 201 });
   } catch (err) {
-    if (err instanceof Error && err.message === "SO_NUMBER_CONFLICT") {
-      return NextResponse.json({ error: "เลขที่เอกสารถูกใช้แล้ว โปรดลองอีกครั้ง" }, { status: 409 });
+    if (err instanceof Error) {
+      if (err.message === "SO_NUMBER_CONFLICT") {
+        return NextResponse.json({ error: "เลขที่เอกสารถูกใช้แล้ว โปรดลองอีกครั้ง" }, { status: 409 });
+      }
+      if (err.message === "PROMO_NOT_SUPPORTED") {
+        return NextResponse.json({ error: "ลูกค้านี้ไม่รองรับการใช้วงเงินส่งเสริมการขาย" }, { status: 400 });
+      }
+      if (err.message === "PROMO_BUDGET_NOT_ENOUGH") {
+        return NextResponse.json({ error: "วงเงินส่งเสริมการขายไม่เพียงพอ" }, { status: 400 });
+      }
     }
     console.error("[POST /api/sales/orders] error", err);
     return NextResponse.json({ error: "บันทึกใบสั่งขายไม่สำเร็จ" }, { status: 500 });
