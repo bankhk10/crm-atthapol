@@ -86,6 +86,9 @@ npx prisma generate
 pnpm prisma:migrate
 
 npx prisma db push
+
+<!-- ล้าง -->
+npx prisma migrate reset
  
 ### Reports (Mock Data)
 
