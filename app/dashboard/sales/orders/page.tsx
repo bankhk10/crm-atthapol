@@ -4,9 +4,14 @@ import { getCustomers } from "@/app/dashboard/customers/data";
 import { getEmployees } from "@/app/dashboard/employees/data";
 import { OrdersClient } from "./_components/orders-client";
 import { getProducts } from "@/app/dashboard/products/data";
+import InProgressPage from "../../_components/In-progress";
 
 export default async function SalesOrdersPage() {
-  const [customers, employees, products] = await Promise.all([getCustomers(), getEmployees(), getProducts()]);
+  const [customers, employees, products] = await Promise.all([
+    getCustomers(),
+    getEmployees(),
+    getProducts(),
+  ]);
   const customerOptions = customers.map((c) => ({
     id: c.id,
     label: c.name,
@@ -18,7 +23,10 @@ export default async function SalesOrdersPage() {
   }));
   const employeeOptions = employees.map((e) => ({
     id: e.id,
-    label: ([e.prefix, e.firstName, e.lastName].filter(Boolean).join(" ") || e.user?.name || e.user?.email || e.id) as string,
+    label: ([e.prefix, e.firstName, e.lastName].filter(Boolean).join(" ") ||
+      e.user?.name ||
+      e.user?.email ||
+      e.id) as string,
   }));
   const productOptions = products.map((p) => ({
     id: p.id,
@@ -33,12 +41,7 @@ export default async function SalesOrdersPage() {
   return (
     <>
       {/* <ActionButtons resource="sales" /> */}
-      <Stack spacing={2}>
-        <Typography variant="h4" fontWeight={700}>
-          รายการขาย
-        </Typography>
-        <OrdersClient customerOptions={customerOptions} employeeOptions={employeeOptions} productOptions={productOptions} />
-      </Stack>
+      <InProgressPage />
     </>
   );
 }

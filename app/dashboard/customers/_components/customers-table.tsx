@@ -374,7 +374,7 @@ export function CustomersTable({ customers, query }: CustomersTableProps) {
                     {showActions && (
                       <TableCell align="center" sx={{ whiteSpace: "nowrap" }}>
                         <Stack direction="row" justifyContent="center" spacing={0.5}>
-                          {canView && (
+                          {/* {canView && (
                             <Tooltip title="ดูรายละเอียด" arrow>
                               <IconButton
                                 component={Link}
@@ -384,7 +384,7 @@ export function CustomersTable({ customers, query }: CustomersTableProps) {
                                 <VisibilityOutlinedIcon fontSize="small" />
                               </IconButton>
                             </Tooltip>
-                          )}
+                          )} */}
                           {canEdit && (
                             <Tooltip title="แก้ไข" arrow>
                               <IconButton

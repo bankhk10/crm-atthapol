@@ -148,12 +148,12 @@ const navItems: NavItem[] = [
     icon: <Diversity3Icon fontSize="small" />,
     resource: "employees",
   },
-  {
-    href: "/dashboard/roles",
-    label: "สิทธิ์",
-    icon: <SecurityOutlinedIcon fontSize="small" />,
-    resource: "roles",
-  },
+  // {
+  //   href: "/dashboard/roles",
+  //   label: "สิทธิ์",
+  //   icon: <SecurityOutlinedIcon fontSize="small" />,
+  //   resource: "roles",
+  // },
 ];
 
 type NavLinkProps = {
