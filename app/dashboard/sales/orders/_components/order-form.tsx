@@ -1001,7 +1001,7 @@ export function OrderForm({
         >
           {submitLabel}
         </Button>
-        {isSubmitting && <Loader size={20} />}
+        {isSubmitting && <Loader fullscreen />}
       </Stack>
     </Stack>
   );

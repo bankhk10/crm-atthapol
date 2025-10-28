@@ -273,7 +273,7 @@ export function CustomerForm({
           >
             บันทึก
           </Button>
-          {isSubmitting && <Loader size={20} />}
+          {isSubmitting && <Loader fullscreen />}
         </Stack>
       </Stack>
     </Paper>

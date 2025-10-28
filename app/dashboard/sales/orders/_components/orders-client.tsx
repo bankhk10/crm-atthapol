@@ -536,13 +536,7 @@ function workflowChipSx(wf: string) {
                           <VisibilityOutlinedIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
-                    )}
-                    {busyId === o.id && (
-                      <Box sx={{ display: 'inline-flex', alignItems: 'center', ml: 0.5 }}>
-                        <Loader size={16} />
-                      </Box>
-                    )}
-                    {!isTerminal && canEdit && (
+                    )}\n                    {!isTerminal && canEdit && (
                       <Tooltip
                         title={wf === "COMPLETED" ? "แก้ไขไม่ได้ (เสร็จสิ้น)" : "แก้ไข"}
                         arrow
@@ -557,13 +551,7 @@ function workflowChipSx(wf: string) {
                           </IconButton>
                         </span>
                       </Tooltip>
-                    )}
-                    {busyId === o.id && (
-                      <Box sx={{ display: 'inline-flex', alignItems: 'center', ml: 0.5 }}>
-                        <Loader size={16} />
-                      </Box>
-                    )}
-                    {!isTerminal && canCancel && (
+                    )}\n                    {!isTerminal && canCancel && (
                       <Tooltip title={o.status === "CANCELLED" ? "ถูกยกเลิกแล้ว" : "ยกเลิก"} arrow>
                         <span>
                           <IconButton
@@ -808,9 +796,7 @@ function workflowChipSx(wf: string) {
                 >
                   <Box py={4} textAlign="center">
                     {loading ? (
-                      <Box sx={{ display: "flex", justifyContent: "center" }}>
-                        <Loader size={40} />
-                      </Box>
+                      null
                     ) : (
                       <Typography color="text.secondary">ยังไม่มีรายการ</Typography>
                     )}
@@ -867,6 +853,8 @@ function workflowChipSx(wf: string) {
           </Button>
         </DialogActions>
       </Dialog>
+      {(loading || Boolean(busyId)) && <Loader fullscreen />}
     </Stack>
   );
 }
+

@@ -70,11 +70,7 @@ export function EditOrderPageClient({ orderId, customerOptions, employeeOptions,
     return <div style={{ color: "red" }}>{error}</div>;
   }
   if (!initial) {
-    return (
-      <div style={{ background: "#fff", minHeight: "40vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <Loader center size={48} />
-      </div>
-    );
+    return <Loader fullscreen size={72} />;
   }
 
   return (

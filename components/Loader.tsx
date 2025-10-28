@@ -3,6 +3,7 @@
 import { Box } from "@mui/material";
 import { keyframes, styled } from "@mui/material/styles";
 import { grey, red } from "@mui/material/colors";
+import { useEffect, useState } from "react";
 
 const spin = keyframes`
   0%, 100% { box-shadow: .2em 0px 0 0px currentcolor; }
@@ -43,12 +44,50 @@ const LoaderRoot = styled("div")<{ size: number; primaryColor: string; secondary
     },
   }));
 
-export default function Loader({ size = 48, color = grey[600], secondary = red[600], center = false }: { size?: number; color?: string; secondary?: string; center?: boolean }) {
+type LoaderProps = {
+  size?: number;
+  color?: string;
+  secondary?: string;
+  center?: boolean;
+  fullscreen?: boolean;
+  delay?: number; // หน่วงเวลาแสดง (มิลลิวินาที)
+};
+
+export default function Loader({ size = 64, color = grey[600], secondary = red[600], center = false, fullscreen = false, delay = 100 }: LoaderProps) {
+  const [ready, setReady] = useState(delay === 0);
+
+  useEffect(() => {
+    if (delay === 0) return;
+    const t = setTimeout(() => setReady(true), delay);
+    return () => clearTimeout(t);
+  }, [delay]);
+
+  if (!ready) return null;
   const content = <LoaderRoot size={size} primaryColor={color} secondaryColor={secondary} />;
-  if (!center) return content;
-  return (
-    <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%" }}>
-      {content}
-    </Box>
-  );
+  if (fullscreen) {
+    return (
+      <Box
+        sx={{
+          position: "fixed",
+          inset: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: (t) => t.zIndex.modal + 1,
+          backgroundColor: "rgba(255,255,255,0.6)",
+          pointerEvents: "auto",
+        }}
+      >
+        {content}
+      </Box>
+    );
+  }
+  if (center) {
+    return (
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%" }}>
+        {content}
+      </Box>
+    );
+  }
+  return content;
 }

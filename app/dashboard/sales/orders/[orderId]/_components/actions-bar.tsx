@@ -85,8 +85,9 @@ export function ActionsBar({ orderId, status, canApprove, canReject }: Props) {
             </span>
           </Tooltip>
         )}
-        {busy && <Loader size={20} />}
       </Stack>
+
+      {busy && <Loader fullscreen />}
 
       <Dialog open={openReject} onClose={() => setOpenReject(false)}>
         <DialogTitle>ปฏิเสธเอกสาร</DialogTitle>

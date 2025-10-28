@@ -629,7 +629,7 @@ export function EmployeeForm({
           >
             บันทึก
           </Button>
-          {isSubmitting && <Loader size={20} />}
+          {isSubmitting && <Loader fullscreen />}
         </Stack>
       </Stack>
     </Paper>
