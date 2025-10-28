@@ -54,8 +54,8 @@ function displayCustomerName(c: any) {
 export default async function SalesOrderDetailPage({ params }: { params: Promise<{ orderId: string }> }) {
   const { orderId: id } = await params;
   const session = await getServerSession(authOptions);
-  const perms = session?.user?.permissions;
-  if (!hasPermission(perms, "sales", "view")) {
+  const permissions = session?.user?.permissions ?? [];
+  if (!hasPermission(permissions, "sales", "view")) {
     return (
       <Stack spacing={2}>
         <Typography variant="h5" fontWeight={700}>ไม่มีสิทธิ์เข้าถึงใบสั่งขาย</Typography>
@@ -83,9 +83,8 @@ export default async function SalesOrderDetailPage({ params }: { params: Promise
     );
   }
 
-  const perms = (await getServerSession(authOptions))?.user?.permissions ?? [];
-  const canApprove = perms.includes("sales:approve");
-  const canReject = perms.includes("sales:reject");
+  const canApprove = permissions.includes("sales:approve");
+  const canReject = permissions.includes("sales:reject");
 
   return (
     <Stack spacing={2}>

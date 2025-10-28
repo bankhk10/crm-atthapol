@@ -309,6 +309,10 @@ export async function POST(req: NextRequest) {
             }
             promoUsed = amt;
           }
+          // If creating in APPROVED state, validate approver user exists to avoid FK violation
+          const actorId = wantsApprove && session?.user?.id ? session.user.id : undefined;
+          const approver = actorId ? await tx.user.findUnique({ where: { id: actorId }, select: { id: true } }) : null;
+
           const order = await (tx as any).saleOrder.create({
             data: {
               soNumber,
@@ -334,7 +338,7 @@ export async function POST(req: NextRequest) {
           note: data.note,
           rejectReason: (data as any).rejectReason,
           approvedAt: wantsApprove ? new Date() : null,
-          approvedByUserId: wantsApprove ? (session?.user?.id as string | undefined) : null,
+          approvedByUserId: wantsApprove ? (approver?.id ?? null) : null,
               subTotal: totals.subTotal,
               discountTotal: totals.discountTotal,
               taxAmount: totals.taxAmount,

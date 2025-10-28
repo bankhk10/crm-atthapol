@@ -236,8 +236,7 @@ export function CreateOrderDialog({
   })();
 
   const fillRandom = () => {
-    const randInt = (min: number, max: number) =>
-      Math.floor(Math.random() * (max - min + 1)) + min;
+    const randInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
     const choice = <T,>(arr: T[]): T => arr[randInt(0, Math.max(0, arr.length - 1))];
     const pad = (n: number, len: number) => String(n).padStart(len, "0");
 
@@ -317,7 +316,7 @@ export function CreateOrderDialog({
     const nextItems: Item[] = picked.map((p) => {
       const soh = Number(p.stockOnHand ?? 0);
       const qty = soh > 0 ? randInt(1, Math.min(soh, 10)) : 1;
-      const discountMode = Math.random() < 0.5 ? "PCT" : "AMT" as const;
+      const discountMode = Math.random() < 0.5 ? "PCT" : ("AMT" as const);
       return {
         productId: p.id,
         productCodeSnapshot: p.productCode,
@@ -506,7 +505,9 @@ export function CreateOrderDialog({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>สร้างใบสั่งขาย</DialogTitle>
+      <DialogTitle variant="h5" fontWeight={960} align="center">
+        สร้างใบสั่งขาย
+      </DialogTitle>
       <DialogContent dividers>
         <Stack spacing={2}>
           <Stack direction="row" justifyContent="flex-end">

@@ -522,7 +522,7 @@ function workflowChipSx(wf: string) {
                     label={`ชำระ: ${PAYMENT_STATUS_LABEL[o.paymentStatus] || o.paymentStatus}`}
                   />
                 </Stack>
-                {(canView || canEdit || canCancel || canDelete || canApprove) && (
+                {(canView || canEdit || canCancel || canDelete) && (
                   <Stack direction="row" spacing={0.5} justifyContent="flex-end">
                     {canView && (
                       <Tooltip title="ดูรายละเอียด" arrow>
@@ -533,34 +533,6 @@ function workflowChipSx(wf: string) {
                         >
                           <VisibilityOutlinedIcon fontSize="small" />
                         </IconButton>
-                      </Tooltip>
-                    )}
-                    {canApprove && (o.status === "CONFIRMED" || o.status === "DRAFT") && (
-                      <Tooltip title="อนุมัติ" arrow>
-                        <span>
-                          <IconButton
-                            size="small"
-                            color="success"
-                            disabled={busyId === o.id}
-                            onClick={() => doApprove(o)}
-                          >
-                            <DoneOutlinedIcon fontSize="small" />
-                          </IconButton>
-                        </span>
-                      </Tooltip>
-                    )}
-                    {canCancel && (o.status === "CONFIRMED" || o.status === "DRAFT") && (
-                      <Tooltip title="ปฏิเสธ" arrow>
-                        <span>
-                          <IconButton
-                            size="small"
-                            color="warning"
-                            disabled={busyId === o.id}
-                            onClick={() => doReject(o)}
-                          >
-                            <ThumbDownOutlinedIcon fontSize="small" />
-                          </IconButton>
-                        </span>
                       </Tooltip>
                     )}
                     {!isTerminal && canEdit && (
@@ -754,34 +726,6 @@ function workflowChipSx(wf: string) {
                           >
                             <VisibilityOutlinedIcon fontSize="small" />
                           </IconButton>
-                        </Tooltip>
-                      )}
-                      {canApprove && (o.status === "CONFIRMED" || o.status === "DRAFT") && (
-                        <Tooltip title="อนุมัติ" arrow>
-                          <span>
-                            <IconButton
-                              size="small"
-                              color="success"
-                              disabled={busyId === o.id}
-                              onClick={() => doApprove(o)}
-                            >
-                              <DoneOutlinedIcon fontSize="small" />
-                            </IconButton>
-                          </span>
-                        </Tooltip>
-                      )}
-                      {canCancel && (o.status === "CONFIRMED" || o.status === "DRAFT") && (
-                        <Tooltip title="ปฏิเสธ" arrow>
-                          <span>
-                            <IconButton
-                              size="small"
-                              color="warning"
-                              disabled={busyId === o.id}
-                              onClick={() => doReject(o)}
-                            >
-                              <ThumbDownOutlinedIcon fontSize="small" />
-                            </IconButton>
-                          </span>
                         </Tooltip>
                       )}
                       {!isTerminal && canEdit && (

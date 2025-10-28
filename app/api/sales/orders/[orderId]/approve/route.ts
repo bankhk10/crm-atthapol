@@ -26,12 +26,16 @@ export async function POST(_req: NextRequest, context: { params: Promise<{ order
       if (status === "SHIPPED") throw new Error("LOCKED");
       if (status !== "CONFIRMED" && status !== "DRAFT") throw new Error("INVALID_STATE");
 
+      // ตรวจสอบว่า user id ใน session มีอยู่จริงในตาราง User เพื่อเลี่ยง FK violation
+      const actorId = session?.user?.id as string | undefined;
+      const actor = actorId ? await tx.user.findUnique({ where: { id: actorId }, select: { id: true } }) : null;
+
       const order = await tx.saleOrder.update({
         where: { id: orderId },
         data: {
           status: "APPROVED" as any,
           approvedAt: new Date(),
-          approvedByUserId: (session?.user?.id as string | undefined) ?? null,
+          approvedByUserId: actor?.id ?? null,
         },
         include: { items: true, reservations: true },
       });

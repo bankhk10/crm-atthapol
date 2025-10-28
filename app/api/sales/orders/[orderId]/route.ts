@@ -297,6 +297,10 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ orderId
       // soft-delete existing items
       await tx.saleOrderItem.deleteMany({ where: { saleOrderId: orderId } });
 
+      // If approving, ensure approver user exists to avoid FK violation
+      const actorId = nextStatus === "APPROVED" && session?.user?.id ? session.user.id : undefined;
+      const approver = actorId ? await tx.user.findUnique({ where: { id: actorId }, select: { id: true } }) : null;
+
       // update order header and recreate items
       const order = await (tx as any).saleOrder.update({
         where: { id: orderId },
@@ -325,7 +329,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ orderId
           cancelReason: (data as any).cancelReason,
           // Approval metadata update
           approvedAt: nextStatus === "APPROVED" ? new Date() : (prevStatus === "APPROVED" && nextStatus !== "APPROVED" ? null : (exists as any).approvedAt),
-          approvedByUserId: nextStatus === "APPROVED" ? (session?.user?.id as string | undefined) : (prevStatus === "APPROVED" && nextStatus !== "APPROVED" ? null : (exists as any).approvedByUserId),
+          approvedByUserId: nextStatus === "APPROVED" ? (approver?.id ?? null) : (prevStatus === "APPROVED" && nextStatus !== "APPROVED" ? null : (exists as any).approvedByUserId),
           subTotal: totals.subTotal,
           discountTotal: totals.discountTotal,
           taxAmount: totals.taxAmount,
