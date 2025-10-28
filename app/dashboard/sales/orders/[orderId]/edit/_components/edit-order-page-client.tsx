@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { OrderForm } from "../../../_components/order-form";
 import type { Option, ProductOption, OrderFormInitial } from "../../../types";
+import Loader from "@/components/Loader";
 import { useRouter } from "next/navigation";
 
 type Props = {
@@ -69,7 +70,11 @@ export function EditOrderPageClient({ orderId, customerOptions, employeeOptions,
     return <div style={{ color: "red" }}>{error}</div>;
   }
   if (!initial) {
-    return <div>กำลังโหลด...</div>;
+    return (
+      <div style={{ background: "#fff", minHeight: "40vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Loader center size={48} />
+      </div>
+    );
   }
 
   return (

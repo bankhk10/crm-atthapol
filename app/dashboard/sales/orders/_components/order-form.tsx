@@ -59,7 +59,12 @@ const PAYMENT_STATUS_OPTIONS = [
   { value: "OVERDUE", label: "เกินกำหนด" },
 ];
 
-function computeTotals(items: OrderItemInput[], vatRate: number, shippingFee: number, otherCharges: number) {
+function computeTotals(
+  items: OrderItemInput[],
+  vatRate: number,
+  shippingFee: number,
+  otherCharges: number,
+) {
   let subTotal = 0;
   let discountTotal = 0;
   let taxAmount = 0;
@@ -103,23 +108,31 @@ export function OrderForm({
 }: OrderFormProps) {
   const [customerId, setCustomerId] = useState(initial?.customerId ?? "");
   const [salespersonId, setSalespersonId] = useState(initial?.salespersonId ?? "");
-  const [orderDate, setOrderDate] = useState<string | null>(initial?.orderDate ?? new Date().toISOString().slice(0, 10));
+  const [orderDate, setOrderDate] = useState<string | null>(
+    initial?.orderDate ?? new Date().toISOString().slice(0, 10),
+  );
   const [dueDate, setDueDate] = useState<string | null>(initial?.dueDate ?? null);
   const [shippingDate, setShippingDate] = useState<string | null>(initial?.shippingDate ?? null);
   const [creditTermDays, setCreditTermDays] = useState<number | "">(initial?.creditTermDays ?? "");
-  const [paymentCondition, setPaymentCondition] = useState<"PREPAID" | "POSTPAID">(initial?.paymentCondition ?? "PREPAID");
+  const [paymentCondition, setPaymentCondition] = useState<"PREPAID" | "POSTPAID">(
+    initial?.paymentCondition ?? "PREPAID",
+  );
   const [currency, setCurrency] = useState(initial?.currency ?? "THB");
   const [vatIncluded, setVatIncluded] = useState(initial?.vatIncluded ?? true);
   const [vatRate, setVatRate] = useState<number>(initial?.vatRate ?? 7);
   const [billAddressLine, setBillAddressLine] = useState(initial?.billAddressLine ?? "");
   const [billProvince, setBillProvince] = useState<string | undefined>(initial?.billProvince);
   const [billDistrict, setBillDistrict] = useState<string | undefined>(initial?.billDistrict);
-  const [billSubdistrict, setBillSubdistrict] = useState<string | undefined>(initial?.billSubdistrict);
+  const [billSubdistrict, setBillSubdistrict] = useState<string | undefined>(
+    initial?.billSubdistrict,
+  );
   const [billPostalCode, setBillPostalCode] = useState<string | undefined>(initial?.billPostalCode);
   const [shipAddressLine, setShipAddressLine] = useState(initial?.shipAddressLine ?? "");
   const [shipProvince, setShipProvince] = useState<string | undefined>(initial?.shipProvince);
   const [shipDistrict, setShipDistrict] = useState<string | undefined>(initial?.shipDistrict);
-  const [shipSubdistrict, setShipSubdistrict] = useState<string | undefined>(initial?.shipSubdistrict);
+  const [shipSubdistrict, setShipSubdistrict] = useState<string | undefined>(
+    initial?.shipSubdistrict,
+  );
   const [shipPostalCode, setShipPostalCode] = useState<string | undefined>(initial?.shipPostalCode);
   const [status, setStatus] = useState(initial?.status ?? "DRAFT");
   const [paymentStatus, setPaymentStatus] = useState(initial?.paymentStatus ?? "UNPAID");
@@ -128,11 +141,15 @@ export function OrderForm({
   const [otherCharges, setOtherCharges] = useState<number | "">(initial?.otherCharges ?? 0);
   const [poNumber, setPoNumber] = useState(initial?.poNumber ?? "");
   const [note, setNote] = useState(initial?.note ?? "");
-  const [items, setItems] = useState<OrderItemInput[]>(initial?.items?.length ? initial.items : [{ ...DEFAULT_ITEM }]);
+  const [items, setItems] = useState<OrderItemInput[]>(
+    initial?.items?.length ? initial.items : [{ ...DEFAULT_ITEM }],
+  );
   const [isSubmitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [usePromotion, setUsePromotion] = useState(initial?.usePromotion ?? false);
-  const [promotionAmount, setPromotionAmount] = useState<number | "">(initial?.promotionAmount ?? "");
+  const [promotionAmount, setPromotionAmount] = useState<number | "">(
+    initial?.promotionAmount ?? "",
+  );
   const [promotionAvailable, setPromotionAvailable] = useState<number | null>(null);
   const [promotionLoading, setPromotionLoading] = useState(false);
   const [orderDiscount, setOrderDiscount] = useState<number | "">(initial?.orderDiscount ?? 0);
@@ -141,7 +158,13 @@ export function OrderForm({
   const [autoPromotion, setAutoPromotion] = useState(false);
 
   const totals = useMemo(
-    () => computeTotals(items, Number(vatRate || 0), Number(shippingFee || 0), Number(otherCharges || 0)),
+    () =>
+      computeTotals(
+        items,
+        Number(vatRate || 0),
+        Number(shippingFee || 0),
+        Number(otherCharges || 0),
+      ),
     [items, vatRate, shippingFee, otherCharges],
   );
   const netGrandTotal = useMemo(() => {
@@ -245,10 +268,18 @@ export function OrderForm({
     setPromotionLoading(true);
     fetch(`/api/customers/${customerId}/promotion-budget`)
       .then((r) => r.json())
-      .then((d) => { if (!cancelled) setPromotionAvailable(Number(d?.promotionBudget ?? 0)); })
-      .catch(() => { if (!cancelled) setPromotionAvailable(0); })
-      .finally(() => { if (!cancelled) setPromotionLoading(false); });
-    return () => { cancelled = true; };
+      .then((d) => {
+        if (!cancelled) setPromotionAvailable(Number(d?.promotionBudget ?? 0));
+      })
+      .catch(() => {
+        if (!cancelled) setPromotionAvailable(0);
+      })
+      .finally(() => {
+        if (!cancelled) setPromotionLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [customerId]);
 
   useEffect(() => {
@@ -306,7 +337,10 @@ export function OrderForm({
       if (!p) return false;
       return i.qty <= (p.stockOnHand ?? 0) || true;
     }) &&
-    (!usePromotion || (promotionAmount !== "" && Number(promotionAmount) > 0 && (promotionAvailable === null || Number(promotionAmount) <= Number(promotionAvailable)))) &&
+    (!usePromotion ||
+      (promotionAmount !== "" &&
+        Number(promotionAmount) > 0 &&
+        (promotionAvailable === null || Number(promotionAmount) <= Number(promotionAvailable)))) &&
     (!needRejectReason || (rejectReason || "").trim().length > 0) &&
     (!needCancelReason || (cancelReason || "").trim().length > 0);
 
@@ -344,8 +378,22 @@ export function OrderForm({
         currency,
         vatIncluded,
         vatRate: Number(vatRate || 0),
-        billTo: buildAddress(billAddressLine, billProvince, billDistrict, billSubdistrict, billPostalCode) || undefined,
-        shipTo: buildAddress(shipAddressLine, shipProvince, shipDistrict, shipSubdistrict, shipPostalCode) || undefined,
+        billTo:
+          buildAddress(
+            billAddressLine,
+            billProvince,
+            billDistrict,
+            billSubdistrict,
+            billPostalCode,
+          ) || undefined,
+        shipTo:
+          buildAddress(
+            shipAddressLine,
+            shipProvince,
+            shipDistrict,
+            shipSubdistrict,
+            shipPostalCode,
+          ) || undefined,
         status,
         paymentStatus,
         shippingFee: Number(shippingFee || 0),
@@ -380,23 +428,25 @@ export function OrderForm({
   return (
     <Stack spacing={2} sx={{ maxWidth: 1200, mx: "auto", p: { xs: 1.5, md: 2 }, bgcolor: "#fff" }}>
       <Stack direction="row" alignItems="center" justifyContent="space-between">
-        <Typography variant="h5" fontWeight={960}>{title}</Typography>
+        <Typography variant="h5" fontWeight={960}>
+          {title}
+        </Typography>
         <Stack direction="row" spacing={1}>
           {showFillRandom && (
             <Tooltip title="กรอกข้อมูลสุ่มเพื่อทดสอบ">
               <span>
-                <Button type="button" variant="outlined" color="secondary" startIcon={<CasinoIcon />} onClick={fillRandom}>
+                <Button
+                  type="button"
+                  variant="outlined"
+                  color="secondary"
+                  startIcon={<CasinoIcon />}
+                  onClick={fillRandom}
+                >
                   กรอกแบบสุ่ม
                 </Button>
               </span>
             </Tooltip>
           )}
-          <Button onClick={() => history.back()} color="inherit" variant="outlined">
-            ยกเลิก
-          </Button>
-          <Button onClick={handleSubmit} color="success" variant="contained" disabled={!canSubmit || isSubmitting}>
-            {submitLabel}
-          </Button>
         </Stack>
       </Stack>
 
@@ -406,6 +456,12 @@ export function OrderForm({
         </Alert>
       )}
 
+      {/* ข้อมูลลูกค้า/พนักงานขาย */}
+      <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
+        <Typography variant="h6" fontWeight={960}>
+          ข้อมูลลูกค้า/พนักงานขาย
+        </Typography>
+      </Box>
       <Box>
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           <Autocomplete
@@ -438,130 +494,541 @@ export function OrderForm({
         </Stack>
       </Box>
 
+      {/* วงเงินส่งเสริมการขาย */}
+      <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
+        <Typography variant="h6" fontWeight={960}>
+          วงเงินส่งเสริมการขาย
+        </Typography>
+      </Box>
       <Box>
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="center">
           <FormControlLabel
-            control={<Checkbox checked={usePromotion} onChange={(e) => { const checked = e.target.checked; setUsePromotion(checked); if (!checked) { setPromotionAmount(""); setAutoPromotion(false); } }} />}
+            control={
+              <Checkbox
+                checked={usePromotion}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  setUsePromotion(checked);
+                  if (!checked) {
+                    setPromotionAmount("");
+                    setAutoPromotion(false);
+                  }
+                }}
+              />
+            }
             label="ใช้วงเงินส่งเสริมการขาย"
           />
           <Box sx={{ color: "text.secondary", fontSize: 14, minWidth: 200 }}>
             คงเหลือ:{" "}
-            {promotionLoading ? "..." : (promotionAvailable ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{" "}
+            {promotionLoading
+              ? "..."
+              : (promotionAvailable ?? 0).toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}{" "}
             บาท
           </Box>
           <TextField
             label="ใช้วงเงิน (บาท)"
             type="number"
             value={promotionAmount}
-            onChange={(e) => setPromotionAmount(e.target.value === "" ? "" : Number(e.target.value))}
+            onChange={(e) =>
+              setPromotionAmount(e.target.value === "" ? "" : Number(e.target.value))
+            }
             disabled={!usePromotion}
-            error={usePromotion && typeof promotionAmount === "number" && promotionAvailable !== null && Number(promotionAmount) > Number(promotionAvailable)}
-            helperText={usePromotion && typeof promotionAmount === "number" && promotionAvailable !== null && Number(promotionAmount) > Number(promotionAvailable) ? "เกินวงเงินคงเหลือ" : undefined}
+            error={
+              usePromotion &&
+              typeof promotionAmount === "number" &&
+              promotionAvailable !== null &&
+              Number(promotionAmount) > Number(promotionAvailable)
+            }
+            helperText={
+              usePromotion &&
+              typeof promotionAmount === "number" &&
+              promotionAvailable !== null &&
+              Number(promotionAmount) > Number(promotionAvailable)
+                ? "เกินวงเงินคงเหลือ"
+                : undefined
+            }
             sx={{ flex: 1 }}
           />
         </Stack>
       </Box>
 
+      {/* การชำระเงิน */}
+      <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
+        <Typography variant="h6" fontWeight={960}>
+          การชำระเงิน
+        </Typography>
+      </Box>
       <Box>
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-          <TextField select label="เงื่อนไขการชำระเงิน" value={paymentCondition} onChange={(e) => { const val = e.target.value as "PREPAID" | "POSTPAID"; setPaymentCondition(val); if (val === "PREPAID") { setCreditTermDays(""); setDueDate(null); } }} fullWidth>
+          <TextField
+            select
+            label="เงื่อนไขการชำระเงิน"
+            value={paymentCondition}
+            onChange={(e) => {
+              const val = e.target.value as "PREPAID" | "POSTPAID";
+              setPaymentCondition(val);
+              if (val === "PREPAID") {
+                setCreditTermDays("");
+                setDueDate(null);
+              }
+            }}
+            fullWidth
+          >
             <MenuItem value="PREPAID">โอนเงินก่อนแล้วค่อยส่งของ</MenuItem>
             <MenuItem value="POSTPAID">ส่งของก่อนแล้วค่อยโอนเงิน</MenuItem>
           </TextField>
-          <TextField label="เครดิต (วัน)" type="number" value={creditTermDays} onChange={(e) => setCreditTermDays(e.target.value === "" ? "" : Number(e.target.value))} fullWidth disabled={paymentCondition !== "POSTPAID"} />
+          <TextField
+            label="เครดิต (วัน)"
+            type="number"
+            value={creditTermDays}
+            onChange={(e) => setCreditTermDays(e.target.value === "" ? "" : Number(e.target.value))}
+            fullWidth
+            disabled={paymentCondition !== "POSTPAID"}
+          />
         </Stack>
       </Box>
 
+      {/* กำหนดการ */}
+      <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
+        <Typography variant="h6" fontWeight={960}>
+          กำหนดการ
+        </Typography>
+      </Box>
       <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={th}>
         <Box>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-            <DatePicker label="วันที่สั่งซื้อ" value={orderDate ? new Date(orderDate) : null} views={["year", "month", "day"]} onChange={(v) => setOrderDate(v ? v.toISOString().slice(0, 10) : null)} slotProps={{ textField: { fullWidth: true } }} />
-            <DatePicker label="ครบกำหนดชำระ" value={dueDate ? new Date(dueDate) : null} views={["year", "month", "day"]} onChange={(v) => setDueDate(v ? v.toISOString().slice(0, 10) : null)} slotProps={{ textField: { fullWidth: true } }} />
+            <DatePicker
+              label="วันที่สั่งซื้อ"
+              value={orderDate ? new Date(orderDate) : null}
+              views={["year", "month", "day"]}
+              onChange={(v) => setOrderDate(v ? v.toISOString().slice(0, 10) : null)}
+              slotProps={{ textField: { fullWidth: true } }}
+            />
+            <DatePicker
+              label="ครบกำหนดชำระ"
+              value={dueDate ? new Date(dueDate) : null}
+              views={["year", "month", "day"]}
+              onChange={(v) => setDueDate(v ? v.toISOString().slice(0, 10) : null)}
+              slotProps={{ textField: { fullWidth: true } }}
+            />
           </Stack>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mt: 2 }}>
-            <TextField label="เลขที่ PO ลูกค้า" value={poNumber} onChange={(e) => setPoNumber(e.target.value)} fullWidth />
-            <DatePicker label="วันที่จัดส่ง" value={shippingDate ? new Date(shippingDate) : null} views={["year", "month", "day"]} onChange={(v) => setShippingDate(v ? v.toISOString().slice(0, 10) : null)} slotProps={{ textField: { fullWidth: true } }} />
+            <TextField
+              label="เลขที่ PO ลูกค้า"
+              value={poNumber}
+              onChange={(e) => setPoNumber(e.target.value)}
+              fullWidth
+            />
+            <DatePicker
+              label="วันที่จัดส่ง"
+              value={shippingDate ? new Date(shippingDate) : null}
+              views={["year", "month", "day"]}
+              onChange={(v) => setShippingDate(v ? v.toISOString().slice(0, 10) : null)}
+              slotProps={{ textField: { fullWidth: true } }}
+            />
           </Stack>
         </Box>
       </LocalizationProvider>
 
-      <Box>
-        <Typography variant="h6" fontWeight={960} sx={{ mb: 1 }}>ที่อยู่วางบิล</Typography>
-        <TextField label="ที่อยู่ (บ้านเลขที่, หมู่, ซอย, ถนน)" value={billAddressLine} onChange={(e) => setBillAddressLine(e.target.value)} fullWidth placeholder="เลขที่ หมู่ ซอย ถนน" />
-        <ThaiAddressPicker value={{ province: billProvince, district: billDistrict, subdistrict: billSubdistrict, postalCode: billPostalCode }} onChange={(next) => { setBillProvince(next.province); setBillDistrict(next.district); setBillSubdistrict(next.subdistrict); setBillPostalCode(next.postalCode ?? billPostalCode); }} />
+      {/* ที่อยู่วางบิล */}
+      <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
+        <Typography variant="h6" fontWeight={960}>
+          ที่อยู่วางบิล
+        </Typography>
+      </Box>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 2,
+        }}
+      >
+        <TextField
+          label="ที่อยู่ (บ้านเลขที่, หมู่, ซอย, ถนน)"
+          value={billAddressLine}
+          onChange={(e) => setBillAddressLine(e.target.value)}
+          fullWidth
+          placeholder="บ้านเลขที่ หมู่ ซอย ถนน"
+        />
+        <ThaiAddressPicker
+          value={{
+            province: billProvince,
+            district: billDistrict,
+            subdistrict: billSubdistrict,
+            postalCode: billPostalCode,
+          }}
+          onChange={(next) => {
+            setBillProvince(next.province);
+            setBillDistrict(next.district);
+            setBillSubdistrict(next.subdistrict);
+            setBillPostalCode(next.postalCode ?? billPostalCode);
+          }}
+        />
       </Box>
 
-      <Box>
-        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
-          <Typography variant="h6" fontWeight={960}>ที่อยู่จัดส่ง</Typography>
-          <Button size="small" variant="outlined" onClick={() => { setShipAddressLine(billAddressLine); setShipProvince(billProvince); setShipDistrict(billDistrict); setShipSubdistrict(billSubdistrict); setShipPostalCode(billPostalCode); }}>คัดลอกจากที่อยู่วางบิล</Button>
+      {/* ที่อยู่จัดส่ง */}
+      <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
+        <Typography variant="h6" fontWeight={960}>
+          ที่อยู่จัดส่ง
+        </Typography>
+      </Box>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 2,
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "end", justifyContent: "flex-end" }}>
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={() => {
+              setShipAddressLine(billAddressLine);
+              setShipProvince(billProvince);
+              setShipDistrict(billDistrict);
+              setShipSubdistrict(billSubdistrict);
+              setShipPostalCode(billPostalCode);
+            }}
+          >
+            คัดลอกจากที่อยู่วางบิล
+          </Button>
         </Box>
-        <TextField label="ที่อยู่ (บ้านเลขที่, หมู่, ซอย, ถนน)" value={shipAddressLine} onChange={(e) => setShipAddressLine(e.target.value)} fullWidth placeholder="เลขที่ หมู่ ซอย ถนน" />
-        <ThaiAddressPicker value={{ province: shipProvince, district: shipDistrict, subdistrict: shipSubdistrict, postalCode: shipPostalCode }} onChange={(next) => { setShipProvince(next.province); setShipDistrict(next.district); setShipSubdistrict(next.subdistrict); setShipPostalCode(next.postalCode ?? shipPostalCode); }} />
+        <TextField
+          label="ที่อยู่ (บ้านเลขที่, หมู่, ซอย, ถนน)"
+          value={shipAddressLine}
+          onChange={(e) => setShipAddressLine(e.target.value)}
+          fullWidth
+          placeholder="บ้านเลขที่ หมู่ ซอย ถนน"
+        />
+        <ThaiAddressPicker
+          value={{
+            province: shipProvince,
+            district: shipDistrict,
+            subdistrict: shipSubdistrict,
+            postalCode: shipPostalCode,
+          }}
+          onChange={(next) => {
+            setShipProvince(next.province);
+            setShipDistrict(next.district);
+            setShipSubdistrict(next.subdistrict);
+            setShipPostalCode(next.postalCode ?? shipPostalCode);
+          }}
+        />
       </Box>
 
+      {/* สถานะเอกสาร */}
+      <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
+        <Typography variant="h6" fontWeight={960}>
+          สถานะเอกสาร
+        </Typography>
+      </Box>
       <Box>
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-          <TextField select label="สถานะเอกสาร" value={workflowStatus} onChange={(e) => applyWorkflowMapping(e.target.value)} fullWidth>
-            {allowedStatusOptions.map((s) => (<MenuItem key={s.value} value={s.value}>{s.label}</MenuItem>))}
+          <TextField
+            select
+            label="สถานะเอกสาร"
+            value={workflowStatus}
+            onChange={(e) => applyWorkflowMapping(e.target.value)}
+            fullWidth
+          >
+            {allowedStatusOptions.map((s) => (
+              <MenuItem key={s.value} value={s.value}>
+                {s.label}
+              </MenuItem>
+            ))}
           </TextField>
-          <TextField select label="สถานะชำระเงิน" value={paymentStatus} onChange={(e) => setPaymentStatus(e.target.value)} fullWidth>
-            {PAYMENT_STATUS_OPTIONS.map((s) => (<MenuItem key={s.value} value={s.value}>{s.label}</MenuItem>))}
+          <TextField
+            select
+            label="สถานะชำระเงิน"
+            value={paymentStatus}
+            onChange={(e) => setPaymentStatus(e.target.value)}
+            fullWidth
+          >
+            {PAYMENT_STATUS_OPTIONS.map((s) => (
+              <MenuItem key={s.value} value={s.value}>
+                {s.label}
+              </MenuItem>
+            ))}
           </TextField>
         </Stack>
       </Box>
 
       {needRejectReason && (
-        <TextField label="เหตุผลการปฏิเสธ" value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} fullWidth multiline minRows={2} required error={(rejectReason || "").trim().length === 0} helperText={(rejectReason || "").trim().length === 0 ? "กรอกเหตุผลการปฏิเสธ" : undefined} />
+        <TextField
+          label="เหตุผลการปฏิเสธ"
+          value={rejectReason}
+          onChange={(e) => setRejectReason(e.target.value)}
+          fullWidth
+          multiline
+          minRows={2}
+          required
+          error={(rejectReason || "").trim().length === 0}
+          helperText={(rejectReason || "").trim().length === 0 ? "กรอกเหตุผลการปฏิเสธ" : undefined}
+        />
       )}
       {needCancelReason && (
-        <TextField label="เหตุผลการยกเลิก" value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} fullWidth multiline minRows={2} required error={(cancelReason || "").trim().length === 0} helperText={(cancelReason || "").trim().length === 0 ? "กรอกเหตุผลการยกเลิก" : undefined} />
+        <TextField
+          label="เหตุผลการยกเลิก"
+          value={cancelReason}
+          onChange={(e) => setCancelReason(e.target.value)}
+          fullWidth
+          multiline
+          minRows={2}
+          required
+          error={(cancelReason || "").trim().length === 0}
+          helperText={(cancelReason || "").trim().length === 0 ? "กรอกเหตุผลการยกเลิก" : undefined}
+        />
       )}
 
-      <Box sx={{ px: 2, py: 1 }}>
-        <Typography variant="h6" fontWeight={960}>รายการสินค้า</Typography>
+      {/* รายการสินค้า */}
+      <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
+        <Typography variant="h6" fontWeight={960}>
+          รายการสินค้า
+        </Typography>
       </Box>
 
       <Stack spacing={1.5}>
         {items.map((it, idx) => (
           <Paper key={idx} variant="outlined" sx={{ p: 1.5 }}>
-            <Stack direction={{ xs: "column", md: "row" }} spacing={{ xs: 1.5, md: 2 }} alignItems={{ xs: "stretch", md: "center" }} justifyContent="space-between" flexWrap="wrap">
-              <Stack direction={{ xs: "column", md: "row" }} spacing={{ xs: 1.5, md: 1.5 }} alignItems={{ xs: "stretch", md: "center" }} sx={{ flex: 1, minWidth: 0 }}>
-                <Autocomplete options={productOptions} getOptionLabel={(o) => `${o.productCode} - ${o.nameTH}`} filterOptions={(opts, state) => opts.filter((o) => `${o.productCode} ${o.nameTH}`.toLowerCase().includes((state.inputValue || "").toLowerCase()))} value={productOptions.find((p) => p.id === it.productId) || null} onChange={(_, val) => { const next = [...items]; if (val) { next[idx] = { ...next[idx], productId: val.id, productCodeSnapshot: val.productCode, nameSnapshot: val.nameTH, unit: val.unit || undefined, unitPrice: typeof val.price === "number" ? val.price : 0, }; } else { next[idx] = { ...next[idx], productId: undefined }; } setItems(next); }} renderInput={(params) => (<TextField {...params} label="สินค้า" required fullWidth />)} sx={{ flex: 1, minWidth: 260 }} />
-                <TextField label="ราคาต่อหน่วย" type="number" value={it.unitPrice} onChange={(e) => { const v = Number(e.target.value || 0); const next = [...items]; next[idx] = { ...next[idx], unitPrice: v }; setItems(next); }} sx={{ width: { xs: "100%", md: 130 } }} required disabled />
-                <TextField label="จำนวน" type="number" value={it.qty} onChange={(e) => { const val = e.target.value.replace(/^0+(?=\d)/, ""); const next = [...items]; next[idx] = { ...next[idx], qty: val === "" ? ("" as unknown as number) : Number(val) }; setItems(next); }} onBlur={(e) => { if (e.target.value === "") { const next = [...items]; next[idx] = { ...next[idx], qty: 0 }; setItems(next); } }} sx={{ width: { xs: "100%", md: 110 } }} required error={Boolean(it.productId) && it.qty > (productOptions.find((p) => p.id === it.productId)?.stockOnHand ?? 0)} helperText={Boolean(it.productId) && it.qty > (productOptions.find((p) => p.id === it.productId)?.stockOnHand ?? 0) ? "จำนวนมากกว่าคงเหลือ" : undefined} />
-                <TextField label="ส่วนลด (บาท)" type="number" value={it.discountAmount ?? 0} onChange={(e) => { const v = Number(e.target.value || 0); const next = [...items]; next[idx] = { ...next[idx], discountAmount: v }; setItems(next); }} sx={{ width: { xs: "100%", md: 130 } }} />
+            <Stack
+              direction={{ xs: "column", md: "row" }}
+              spacing={{ xs: 1.5, md: 2 }}
+              alignItems={{ xs: "stretch", md: "center" }}
+              justifyContent="space-between"
+              flexWrap="wrap"
+            >
+              <Stack
+                direction={{ xs: "column", md: "row" }}
+                spacing={{ xs: 1.5, md: 1.5 }}
+                alignItems={{ xs: "stretch", md: "center" }}
+                sx={{ flex: 1, minWidth: 0 }}
+              >
+                <Autocomplete
+                  options={productOptions}
+                  getOptionLabel={(o) => `${o.productCode} - ${o.nameTH}`}
+                  filterOptions={(opts, state) =>
+                    opts.filter((o) =>
+                      `${o.productCode} ${o.nameTH}`
+                        .toLowerCase()
+                        .includes((state.inputValue || "").toLowerCase()),
+                    )
+                  }
+                  value={productOptions.find((p) => p.id === it.productId) || null}
+                  onChange={(_, val) => {
+                    const next = [...items];
+                    if (val) {
+                      next[idx] = {
+                        ...next[idx],
+                        productId: val.id,
+                        productCodeSnapshot: val.productCode,
+                        nameSnapshot: val.nameTH,
+                        unit: val.unit || undefined,
+                        unitPrice: typeof val.price === "number" ? val.price : 0,
+                      };
+                    } else {
+                      next[idx] = { ...next[idx], productId: undefined };
+                    }
+                    setItems(next);
+                  }}
+                  renderInput={(params) => (
+                    <TextField {...params} label="สินค้า" required fullWidth />
+                  )}
+                  sx={{ flex: 1, minWidth: 260 }}
+                />
+                <TextField
+                  label="ราคาต่อหน่วย"
+                  type="number"
+                  value={it.unitPrice}
+                  onChange={(e) => {
+                    const v = Number(e.target.value || 0);
+                    const next = [...items];
+                    next[idx] = { ...next[idx], unitPrice: v };
+                    setItems(next);
+                  }}
+                  sx={{ width: { xs: "100%", md: 130 } }}
+                  required
+                  disabled
+                />
+                <TextField
+                  label="จำนวน"
+                  type="number"
+                  value={it.qty}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/^0+(?=\d)/, "");
+                    const next = [...items];
+                    next[idx] = {
+                      ...next[idx],
+                      qty: val === "" ? ("" as unknown as number) : Number(val),
+                    };
+                    setItems(next);
+                  }}
+                  onBlur={(e) => {
+                    if (e.target.value === "") {
+                      const next = [...items];
+                      next[idx] = { ...next[idx], qty: 0 };
+                      setItems(next);
+                    }
+                  }}
+                  sx={{ width: { xs: "100%", md: 110 } }}
+                  required
+                  error={
+                    Boolean(it.productId) &&
+                    it.qty > (productOptions.find((p) => p.id === it.productId)?.stockOnHand ?? 0)
+                  }
+                  helperText={
+                    Boolean(it.productId) &&
+                    it.qty > (productOptions.find((p) => p.id === it.productId)?.stockOnHand ?? 0)
+                      ? "จำนวนมากกว่าคงเหลือ"
+                      : undefined
+                  }
+                />
+                <TextField
+                  label="ส่วนลด (บาท)"
+                  type="number"
+                  value={it.discountAmount ?? 0}
+                  onChange={(e) => {
+                    const v = Number(e.target.value || 0);
+                    const next = [...items];
+                    next[idx] = { ...next[idx], discountAmount: v };
+                    setItems(next);
+                  }}
+                  sx={{ width: { xs: "100%", md: 130 } }}
+                />
               </Stack>
-              <Stack direction="row" spacing={1} alignItems="center" justifyContent={{ xs: "flex-end", md: "flex-end" }} sx={{ mt: { xs: 1, md: 0 }, width: { xs: "100%", md: "auto" } }}>
-                {it.productId && (<Box sx={{ minWidth: 50, color: "text.secondary", fontSize: 12, textAlign: "right" }}>คงเหลือ: {productOptions.find((p) => p.id === it.productId)?.stockOnHand ?? 0}</Box>)}
-                <IconButton color="error" aria-label="remove" onClick={() => setItems((prev) => prev.filter((_, i) => i !== idx))}><DeleteOutlineIcon /></IconButton>
+              <Stack
+                direction="row"
+                spacing={1}
+                alignItems="center"
+                justifyContent={{ xs: "flex-end", md: "flex-end" }}
+                sx={{ mt: { xs: 1, md: 0 }, width: { xs: "100%", md: "auto" } }}
+              >
+                {it.productId && (
+                  <Box
+                    sx={{ minWidth: 50, color: "text.secondary", fontSize: 12, textAlign: "right" }}
+                  >
+                    คงเหลือ: {productOptions.find((p) => p.id === it.productId)?.stockOnHand ?? 0}
+                  </Box>
+                )}
+                <IconButton
+                  color="error"
+                  aria-label="remove"
+                  onClick={() => setItems((prev) => prev.filter((_, i) => i !== idx))}
+                >
+                  <DeleteOutlineIcon />
+                </IconButton>
               </Stack>
             </Stack>
           </Paper>
         ))}
-        <Button startIcon={<AddIcon />} onClick={() => setItems((prev) => [...prev, { ...DEFAULT_ITEM }])}>เพิ่มรายการสินค้า</Button>
+        <Button
+          startIcon={<AddIcon />}
+          onClick={() => setItems((prev) => [...prev, { ...DEFAULT_ITEM }])}
+        >
+          เพิ่มรายการสินค้า
+        </Button>
       </Stack>
 
+      {/* สรุปค่าใช้จ่าย */}
+      <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
+        <Typography variant="h6" fontWeight={960}>
+          สรุปค่าใช้จ่าย
+        </Typography>
+      </Box>
       <Box>
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-          <TextField label="ค่าขนส่ง" type="number" value={shippingFee} onChange={(e) => { const val = e.target.value.replace(/^0+(?=\d)/, ""); setShippingFee(val === "" ? "" : Number(val)); }} fullWidth />
-          <TextField label="ค่าใช้จ่ายอื่น" type="number" value={otherCharges} onChange={(e) => { const val = e.target.value.replace(/^0+(?=\d)/, ""); setOtherCharges(val === "" ? "" : Number(val)); }} fullWidth />
-          <TextField label="ส่วนลดทั้งออเดอร์ (บาท)" type="number" value={orderDiscount} onChange={(e) => { const val = e.target.value.replace(/^0+(?=\d)/, ""); setOrderDiscount(val === "" ? "" : Math.max(0, Number(val))); }} fullWidth />
+          <TextField
+            label="ค่าขนส่ง"
+            type="number"
+            value={shippingFee}
+            onChange={(e) => {
+              const val = e.target.value.replace(/^0+(?=\d)/, "");
+              setShippingFee(val === "" ? "" : Number(val));
+            }}
+            fullWidth
+          />
+          <TextField
+            label="ค่าใช้จ่ายอื่น"
+            type="number"
+            value={otherCharges}
+            onChange={(e) => {
+              const val = e.target.value.replace(/^0+(?=\d)/, "");
+              setOtherCharges(val === "" ? "" : Number(val));
+            }}
+            fullWidth
+          />
+          <TextField
+            label="ส่วนลดทั้งออเดอร์ (บาท)"
+            type="number"
+            value={orderDiscount}
+            onChange={(e) => {
+              const val = e.target.value.replace(/^0+(?=\d)/, "");
+              setOrderDiscount(val === "" ? "" : Math.max(0, Number(val)));
+            }}
+            fullWidth
+          />
         </Stack>
       </Box>
 
+      {/* หมายเหตุ */}
+      <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
+        <Typography variant="h6" fontWeight={960}>
+          หมายเหตุ
+        </Typography>
+      </Box>
       <Box>
-        <TextField label="หมายเหตุ" value={note} onChange={(e) => setNote(e.target.value)} fullWidth />
+        <TextField
+          label="หมายเหตุ"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          fullWidth
+        />
       </Box>
       <Divider sx={{ my: 1 }} />
 
+      {/* สรุปยอด */}
+      <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
+        <Typography variant="h6" fontWeight={960}>
+          สรุปยอด
+        </Typography>
+      </Box>
       <Box>
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-          <TextField label="ยอดก่อนภาษี" value={totals.subTotal.toFixed(2)} InputProps={{ readOnly: true }} fullWidth />
-          <TextField label="ภาษีมูลค่าเพิ่ม" value={totals.taxAmount.toFixed(2)} InputProps={{ readOnly: true }} fullWidth />
-          <TextField label="ยอดรวมสุทธิ" value={netGrandTotal.toFixed(2)} InputProps={{ readOnly: true }} fullWidth />
+          <TextField
+            label="ยอดก่อนภาษี"
+            value={totals.subTotal.toFixed(2)}
+            InputProps={{ readOnly: true }}
+            fullWidth
+          />
+          <TextField
+            label="ภาษีมูลค่าเพิ่ม"
+            value={totals.taxAmount.toFixed(2)}
+            InputProps={{ readOnly: true }}
+            fullWidth
+          />
+          <TextField
+            label="ยอดรวมสุทธิ"
+            value={netGrandTotal.toFixed(2)}
+            InputProps={{ readOnly: true }}
+            fullWidth
+          />
         </Stack>
       </Box>
+
+      <Button onClick={() => history.back()} color="inherit" variant="outlined">
+        ยกเลิก
+      </Button>
+      <Button
+        onClick={handleSubmit}
+        color="success"
+        variant="contained"
+        disabled={!canSubmit || isSubmitting}
+      >
+        {submitLabel}
+      </Button>
     </Stack>
   );
 }

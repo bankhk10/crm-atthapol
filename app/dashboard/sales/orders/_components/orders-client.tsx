@@ -42,6 +42,7 @@ import { th } from "date-fns/locale";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useRouter } from "next/navigation";
+import Loader from "@/components/Loader";
 import type { Option, ProductOption } from "../types";
 
 dayjs.extend(relativeTime);
@@ -796,9 +797,13 @@ function workflowChipSx(wf: string) {
                   }
                 >
                   <Box py={4} textAlign="center">
-                    <Typography color="text.secondary">
-                      {loading ? "กำลังโหลด..." : "ยังไม่มีรายการ"}
-                    </Typography>
+                    {loading ? (
+                      <Box sx={{ display: "flex", justifyContent: "center" }}>
+                        <Loader size={40} />
+                      </Box>
+                    ) : (
+                      <Typography color="text.secondary">ยังไม่มีรายการ</Typography>
+                    )}
                   </Box>
                 </TableCell>
               </TableRow>
