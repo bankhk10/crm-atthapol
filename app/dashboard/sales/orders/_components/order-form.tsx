@@ -16,6 +16,7 @@ import {
   FormControlLabel,
   Tooltip,
 } from "@mui/material";
+import Link from "next/link";
 import CasinoIcon from "@mui/icons-material/Casino";
 import Autocomplete from "@mui/material/Autocomplete";
 import AddIcon from "@mui/icons-material/Add";
@@ -26,6 +27,9 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { th } from "date-fns/locale";
 import ThaiAddressPicker from "@/components/ThaiAddressPicker";
 import type { Option, ProductOption, OrderItemInput, OrderFormInitial } from "../types";
+import { blue, red } from "@mui/material/colors";
+import CheckIcon from "@mui/icons-material/Check";
+import CloseIcon from "@mui/icons-material/Close";
 
 // Option and ProductOption moved to ../types
 
@@ -1015,17 +1019,43 @@ export function OrderForm({
         </Stack>
       </Box>
 
-      <Button onClick={() => history.back()} color="inherit" variant="outlined">
-        ยกเลิก
-      </Button>
-      <Button
-        onClick={handleSubmit}
-        color="success"
-        variant="contained"
-        disabled={!canSubmit || isSubmitting}
-      >
-        {submitLabel}
-      </Button>
+      <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="center">
+        <Button
+          component={Link}
+          href="/dashboard/sales/orders"
+          variant="contained"
+          startIcon={<CloseIcon />}
+          sx={{
+            bgcolor: red[600],
+            color: "white",
+            "&:hover": {
+              bgcolor: red[700],
+            },
+            fontWeight: 800,
+            px: 3,
+          }}
+        >
+          ยกเลิก
+        </Button>
+
+        <Button
+          onClick={handleSubmit}
+          variant="contained"
+          disabled={!canSubmit || isSubmitting}
+          startIcon={<CheckIcon />}
+          sx={{
+            bgcolor: blue[600],
+            color: "white",
+            "&:hover": {
+              bgcolor: blue[700],
+            },
+            fontWeight: 800,
+            px: 3,
+          }}
+        >
+          {submitLabel}
+        </Button>
+      </Stack>
     </Stack>
   );
 }
