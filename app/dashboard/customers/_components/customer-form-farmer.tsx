@@ -2,7 +2,7 @@
 
 import type { Dispatch, SetStateAction } from "react";
 import { Box, Stack, TextField, Typography, MenuItem, Paper, Button } from "@mui/material";
-import CasinoIcon from "@mui/icons-material/Casino";
+import { FillRandomButton } from "@/components/FillRandomButton";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -96,9 +96,7 @@ export default function FarmerFormSection({
   return (
     <Stack spacing={3}>
       <Stack direction="row" justifyContent="flex-end">
-        <Button type="button" variant="outlined" color="secondary" startIcon={<CasinoIcon />} onClick={fillRandom}>
-          กรอกแบบสุ่ม
-        </Button>
+        <FillRandomButton onClick={fillRandom} />
       </Stack>
       <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
         <Typography variant="h6" fontWeight={960}>

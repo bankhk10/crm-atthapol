@@ -25,6 +25,8 @@ import ThaiAddressPicker from "@/components/ThaiAddressPicker";
 import { blue, red } from "@mui/material/colors";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
+import { FillRandomButton } from "@/components/FillRandomButton";
+import { makeRandomEmployeeValues } from "@/lib/random-fill/employee";
 
 export type EmployeeFormProps = {
   title: string;
@@ -133,6 +135,16 @@ export function EmployeeForm({
       sx={{ p: { xs: 2, sm: 3 }, maxWidth: 960 }}
     >
       <Stack spacing={3}>
+        <Stack direction="row" justifyContent="flex-end">
+          <FillRandomButton
+            onClick={() =>
+              setValues((prev) => ({
+                ...prev,
+                ...makeRandomEmployeeValues({ roleOptions, roleDefinitions }),
+              }))
+            }
+          />
+        </Stack>
         {error && (
           <Alert severity="error" onClose={() => setError(null)}>
             {error}

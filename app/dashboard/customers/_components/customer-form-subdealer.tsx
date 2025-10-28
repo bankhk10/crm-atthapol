@@ -1,8 +1,8 @@
 "use client";
 
 import type { Dispatch, SetStateAction } from "react";
-import { Box, Stack, TextField, Typography, MenuItem, Button } from "@mui/material";
-import CasinoIcon from "@mui/icons-material/Casino";
+import { Box, Stack, TextField, Typography, MenuItem } from "@mui/material";
+import { FillRandomButton } from "@/components/FillRandomButton";
 import Autocomplete from "@mui/material/Autocomplete";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
@@ -113,9 +113,7 @@ export default function SubDealerFormSection({
   return (
     <Stack spacing={3}>
       <Stack direction="row" justifyContent="flex-end">
-        <Button type="button" variant="outlined" color="secondary" startIcon={<CasinoIcon />} onClick={fillRandom}>
-          กรอกแบบสุ่ม
-        </Button>
+        <FillRandomButton onClick={fillRandom} />
       </Stack>
       <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
         <Typography variant="h6" fontWeight={960}>

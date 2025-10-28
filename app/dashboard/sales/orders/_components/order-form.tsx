@@ -14,10 +14,8 @@ import {
   Typography,
   Checkbox,
   FormControlLabel,
-  Tooltip,
 } from "@mui/material";
 import Link from "next/link";
-import CasinoIcon from "@mui/icons-material/Casino";
 import Autocomplete from "@mui/material/Autocomplete";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
@@ -30,6 +28,8 @@ import type { Option, ProductOption, OrderItemInput, OrderFormInitial } from "..
 import { blue, red } from "@mui/material/colors";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
+import { FillRandomButton } from "@/components/FillRandomButton";
+import { fillOrderFormRandom } from "@/lib/random-fill/order";
 
 // Option and ProductOption moved to ../types
 
@@ -182,86 +182,43 @@ export function OrderForm({
   const needRejectReason = mode === "edit" && workflowStatus === "REJECTED";
   const needCancelReason = mode === "edit" && workflowStatus === "CANCELLED";
 
-  const fillRandom = () => {
-    const randInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
-    const choice = <T,>(arr: T[]): T => arr[randInt(0, Math.max(0, arr.length - 1))];
-
-    if (customerOptions.length > 0) {
-      const c = choice(customerOptions);
-      setCustomerId(c.id);
-      setBillAddressLine(c.address ?? "");
-      setBillProvince(c.province ?? undefined);
-      setBillDistrict(c.district ?? undefined);
-      setBillSubdistrict(c.subdistrict ?? undefined);
-      setBillPostalCode(c.postalCode ?? undefined);
-      setShipAddressLine(c.address ?? "");
-      setShipProvince(c.province ?? undefined);
-      setShipDistrict(c.district ?? undefined);
-      setShipSubdistrict(c.subdistrict ?? undefined);
-      setShipPostalCode(c.postalCode ?? undefined);
-    }
-    if (employeeOptions.length > 0) {
-      const e = choice(employeeOptions);
-      setSalespersonId(e.id);
-    }
-
-    const todayISO = new Date().toISOString().slice(0, 10);
-    setOrderDate(todayISO);
-    const shipOffset = randInt(1, 7);
-    const shipDate = new Date();
-    shipDate.setDate(shipDate.getDate() + shipOffset);
-    setShippingDate(shipDate.toISOString().slice(0, 10));
-
-    const pc: "PREPAID" | "POSTPAID" = Math.random() < 0.5 ? "PREPAID" : "POSTPAID";
-    setPaymentCondition(pc);
-    if (pc === "POSTPAID") {
-      const term = choice([15, 30, 45]);
-      setCreditTermDays(term);
-      const due = new Date();
-      due.setDate(due.getDate() + term);
-      setDueDate(due.toISOString().slice(0, 10));
-    } else {
-      setCreditTermDays("");
-      setDueDate(null);
-    }
-
-    setCurrency("THB");
-    setVatIncluded(true);
-    setVatRate(7);
-
-    setPoNumber(`PO-${randInt(100000, 999999)}`);
-    setNote("ตัวอย่างข้อมูลที่กรอกอัตโนมัติ เพื่อทดสอบการสร้างเอกสาร");
-
-    const pickCount = Math.max(1, Math.min(4, randInt(1, 3)));
-    const shuffled = [...productOptions].sort(() => Math.random() - 0.5).slice(0, pickCount);
-    const nextItems: OrderItemInput[] = shuffled.map((p) => {
-      const maxQty = Math.max(1, Math.min(10, Number(p.stockOnHand ?? 0) || 5));
-      const qty = randInt(1, maxQty);
-      const discount = Math.random() < 0.3 ? randInt(0, 50) : 0;
-      return {
-        productId: p.id,
-        productCodeSnapshot: p.productCode,
-        nameSnapshot: p.nameTH,
-        unit: p.unit || undefined,
-        qty,
-        unitPrice: typeof p.price === "number" ? p.price : 0,
-        discountPercent: 0,
-        discountAmount: discount,
-      };
+  const handleFillRandom = () =>
+    fillOrderFormRandom({
+      customerOptions,
+      employeeOptions,
+      productOptions,
+      setCustomerId,
+      setBillAddressLine,
+      setBillProvince,
+      setBillDistrict,
+      setBillSubdistrict,
+      setBillPostalCode,
+      setShipAddressLine,
+      setShipProvince,
+      setShipDistrict,
+      setShipSubdistrict,
+      setShipPostalCode,
+      setSalespersonId,
+      setOrderDate,
+      setShippingDate,
+      setPaymentCondition,
+      setCreditTermDays,
+      setDueDate,
+      setCurrency,
+      setVatIncluded,
+      setVatRate,
+      setPoNumber,
+      setNote,
+      setItems,
+      setShippingFee,
+      setOtherCharges,
+      setOrderDiscount,
+      setWorkflowStatus,
+      setStatus,
+      setPaymentStatus,
+      setUsePromotion,
+      setAutoPromotion,
     });
-    setItems(nextItems.length ? nextItems : [{ ...DEFAULT_ITEM }]);
-
-    setShippingFee(randInt(0, 500));
-    setOtherCharges(randInt(0, 300));
-    setOrderDiscount(randInt(0, 300));
-
-    setWorkflowStatus("DRAFT");
-    setStatus("DRAFT");
-    setPaymentStatus("UNPAID");
-
-    setUsePromotion(true);
-    setAutoPromotion(true);
-  };
 
   useEffect(() => {
     if (!customerId) {
@@ -431,19 +388,7 @@ export function OrderForm({
 
   return (
     <Stack spacing={2} sx={{ maxWidth: 1200, mx: "auto", p: { xs: 1.5, md: 2 }, bgcolor: "#fff" }}>
-      <Tooltip title="กรอกข้อมูลสุ่มเพื่อทดสอบ">
-        <span>
-          <Button
-            type="button"
-            variant="outlined"
-            color="secondary"
-            startIcon={<CasinoIcon />}
-            onClick={fillRandom}
-          >
-            กรอกแบบสุ่ม
-          </Button>
-        </span>
-      </Tooltip>
+      {showFillRandom && <FillRandomButton onClick={handleFillRandom} />}
 
       <Stack direction="row" alignItems="center" justifyContent="center">
         <Typography variant="h4" fontWeight={960} m={2}>
