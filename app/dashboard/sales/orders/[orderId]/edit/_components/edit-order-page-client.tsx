@@ -1,0 +1,99 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { OrderForm } from "../../../_components/order-form";
+import type { Option, ProductOption, OrderFormInitial } from "../../../types";
+import { useRouter } from "next/navigation";
+
+type Props = {
+  orderId: string;
+  customerOptions: Option[];
+  employeeOptions: Option[];
+  productOptions: ProductOption[];
+};
+
+export function EditOrderPageClient({ orderId, customerOptions, employeeOptions, productOptions }: Props) {
+  const router = useRouter();
+  const [initial, setInitial] = useState<OrderFormInitial | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`/api/sales/orders/${orderId}`);
+        if (!res.ok) throw new Error("โหลดข้อมูลไม่สำเร็จ");
+        const so = await res.json();
+        const items = (so.items || []).map((it: any) => ({
+          productId: it.productId ?? undefined,
+          productCodeSnapshot: it.productCodeSnapshot ?? undefined,
+          nameSnapshot: it.nameSnapshot ?? "",
+          unit: it.unit ?? undefined,
+          qty: Number(it.qty || 0),
+          unitPrice: Number(it.unitPrice || 0),
+          discountPercent: Number(it.discountPercent || 0),
+          discountAmount: Number(it.discountAmount || 0),
+        }));
+        setInitial({
+          customerId: so.customerId,
+          salespersonId: so.salespersonId || "",
+          orderDate: so.orderDate ? new Date(so.orderDate).toISOString().slice(0, 10) : null,
+          dueDate: so.dueDate ? new Date(so.dueDate).toISOString().slice(0, 10) : null,
+          shippingDate: so.shippingDate ? new Date(so.shippingDate).toISOString().slice(0, 10) : null,
+          creditTermDays: typeof so.creditTermDays === "number" ? so.creditTermDays : "",
+          paymentCondition: (so.paymentCondition as any) === "POSTPAID" ? "POSTPAID" : "PREPAID",
+          currency: so.currency || "THB",
+          vatIncluded: Boolean(so.vatIncluded),
+          vatRate: Number(so.vatRate || 0),
+          billAddressLine: (so.billTo as string) || "",
+          shipAddressLine: (so.shipTo as string) || "",
+          status: String(so.status || "DRAFT"),
+          paymentStatus: String(so.paymentStatus || "UNPAID"),
+          shippingFee: Number(so.shippingFee ?? 0),
+          otherCharges: Number(so.otherCharges ?? 0),
+          orderDiscount: Number((so as any).orderDiscount ?? 0),
+          usePromotion: false,
+          promotionAmount: "",
+          poNumber: (so as any).poNumber || "",
+          note: so.note || "",
+          items,
+          rejectReason: (so as any).rejectReason || "",
+          cancelReason: (so as any).cancelReason || "",
+        });
+      } catch (e: any) {
+        setError(e?.message || "โหลดข้อมูลไม่สำเร็จ");
+      }
+    })();
+  }, [orderId]);
+
+  if (error) {
+    return <div style={{ color: "red" }}>{error}</div>;
+  }
+  if (!initial) {
+    return <div>กำลังโหลด...</div>;
+  }
+
+  return (
+    <OrderForm
+      mode="edit"
+      title="แก้ไขใบสั่งขาย"
+      submitLabel="บันทึก"
+      customerOptions={customerOptions}
+      employeeOptions={employeeOptions}
+      productOptions={productOptions}
+      initial={initial}
+      onSubmit={async (payload) => {
+        const res = await fetch(`/api/sales/orders/${orderId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data?.error || "บันทึกไม่สำเร็จ");
+        }
+        const updated = await res.json();
+        router.push(`/dashboard/sales/orders/${updated.id}`);
+      }}
+    />
+  );
+}

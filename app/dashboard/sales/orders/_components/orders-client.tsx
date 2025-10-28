@@ -29,25 +29,25 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
-import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
-import DoneOutlinedIcon from "@mui/icons-material/DoneOutlined";
-import ThumbDownOutlinedIcon from "@mui/icons-material/ThumbDownOutlined";
+// removed approve/reject icons with popup removal
 import Link from "next/link";
 import AddIcon from "@mui/icons-material/Add";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import thLocale from "dayjs/locale/th";
-import { CreateOrderDialog, type Option, type ProductOption } from "./create-order-dialog";
-import { EditOrderDialog } from "./edit-order-dialog";
 import { useSession } from "next-auth/react";
 import { hasPermission } from "@/lib/permissions";
 import { th } from "date-fns/locale";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
+import { useRouter } from "next/navigation";
+import type { Option, ProductOption } from "../types";
 
 dayjs.extend(relativeTime);
 dayjs.locale(thLocale);
+
+// Option, ProductOption types moved to ../types
 
 type OrderItem = {
   id: string;
@@ -150,6 +150,7 @@ type Props = {
 };
 
 export function OrdersClient({ customerOptions, employeeOptions, productOptions }: Props) {
+  const router = useRouter();
   const { data: session } = useSession();
   const [items, setItems] = useState<OrderItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -157,13 +158,13 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
   const [shippingFrom, setShippingFrom] = useState<string | null>(null);
   const [shippingTo, setShippingTo] = useState<string | null>(null);
   const [paymentFilter, setPaymentFilter] = useState<string>("ALL");
-  const [open, setOpen] = useState(false);
+  
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<null | { type: "cancel" | "delete"; order: OrderItem }>(
     null,
   );
-  const [editId, setEditId] = useState<string | null>(null);
+  // edit dialog removed; navigate to edit page instead
 
   // Sorting & Pagination (match products table UX)
   const [order, setOrder] = useState<Order>("asc");
@@ -435,7 +436,7 @@ function workflowChipSx(wf: string) {
             <Button
               startIcon={<AddIcon />}
               variant="contained"
-              onClick={() => setOpen(true)}
+              onClick={() => router.push("/dashboard/sales/orders/create")}
               sx={{ width: { xs: "100%", sm: "auto" } }}
             >
               สร้างใบสั่งขาย
@@ -544,7 +545,7 @@ function workflowChipSx(wf: string) {
                           <IconButton
                             size="small"
                             disabled={wf === "COMPLETED"}
-                            onClick={() => setEditId(o.id)}
+                            onClick={() => router.push(`/dashboard/sales/orders/${o.id}/edit`)}
                           >
                             <EditOutlinedIcon fontSize="small" />
                           </IconButton>
@@ -744,7 +745,7 @@ function workflowChipSx(wf: string) {
                               disabled={
                                 workflowFromBackend(o.status, o.paymentStatus) === "COMPLETED"
                               }
-                              onClick={() => setEditId(o.id)}
+                              onClick={() => router.push(`/dashboard/sales/orders/${o.id}/edit`)}
                             >
                               <EditOutlinedIcon fontSize="small" />
                             </IconButton>
@@ -819,24 +820,9 @@ function workflowChipSx(wf: string) {
         }}
       />
 
-      <CreateOrderDialog
-        open={open}
-        onClose={() => setOpen(false)}
-        customerOptions={customerOptions}
-        employeeOptions={employeeOptions}
-        productOptions={productOptions}
-        onCreated={() => load()}
-      />
+      {/* Create moved to dedicated page: /dashboard/sales/orders/create */}
 
-      <EditOrderDialog
-        open={editId !== null}
-        orderId={editId || ""}
-        onClose={() => setEditId(null)}
-        customerOptions={customerOptions}
-        employeeOptions={employeeOptions}
-        productOptions={productOptions}
-        onUpdated={() => load()}
-      />
+      {/* Edit moved to dedicated page: /dashboard/sales/orders/[orderId]/edit */}
 
       <Dialog open={Boolean(confirm)} onClose={() => setConfirm(null)}>
         <DialogTitle>{confirm?.type === "delete" ? "ยืนยันการลบ" : "ยืนยันการยกเลิก"}</DialogTitle>
