@@ -4,7 +4,7 @@ import { z } from "zod";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
-import { buildSaleOrderVisibilityWhere } from "@/lib/sales-visibility";
+import { buildSaleOrderVisibilityWhere, getVisibilityScope } from "@/lib/sales-visibility";
 
 export const runtime = "nodejs";
 
@@ -283,11 +283,24 @@ export async function POST(req: NextRequest) {
     for (let attempt = 0; attempt < 5; attempt++) {
       try {
         created = await prisma.$transaction(async (tx) => {
-          // Default salesperson to current employee if missing
-          let salespersonId: string | undefined = data.salespersonId;
-          if (!salespersonId && session?.user?.id) {
+          // Resolve current employee (if any)
+          let currentEmpId: string | null = null;
+          if (session?.user?.id) {
             const emp = await tx.employee.findUnique({ where: { userId: session.user.id }, select: { id: true } });
-            if (emp?.id) salespersonId = emp.id;
+            currentEmpId = emp?.id ?? null;
+          }
+
+          // Determine salesperson assignment with visibility guard
+          let salespersonId: string | undefined = data.salespersonId;
+          const scope = getVisibilityScope(perms);
+          if (scope === "OWN") {
+            // Force ownership to current employee soผู้ใช้งานเห็นเอกสารของตัวเองได้
+            if (currentEmpId) {
+              salespersonId = currentEmpId;
+            }
+          } else if (!salespersonId && currentEmpId) {
+            // For broader scopes, still default to current employee when not provided
+            salespersonId = currentEmpId;
           }
           const soNumber = await generateSoNumberTx(tx);
           // Handle promotion budget usage
