@@ -102,6 +102,15 @@ enum PaymentCondition {
   POSTPAID // ส่งของก่อนแล้วค่อยโอนเงิน
 }
 
+// Quote enums
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
 // ====================
 // PRODUCT & STOCK
 // ====================
@@ -126,6 +135,7 @@ model Product {
   stocks         Stock[]
   images         ProductImage[]
   plants         ProductPlant[]
+  quoteItems     QuoteItem[]
   saleOrderItems SaleOrderItem[]
   movements      StockMovement[]
   createdAt      DateTime        @default(now())
@@ -309,6 +319,7 @@ model Employee {
   responsibleCustomers Customer[]
   // Sale orders created/owned by this employee
   saleOrders           SaleOrder[]
+  quotes               Quote[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -396,6 +407,7 @@ model Customer {
   customerType          CustomerType
   relationshipScore     Int?
   saleOrders            SaleOrder[]
+  quotes                Quote[]
   prefix                String?
   firstName             String?
   lastName              String?
@@ -700,4 +712,71 @@ model SaleOrderStockReservation {
 
   @@index([saleOrderId])
   @@index([stockId])
+}
+
+// ====================
+// QUOTES
+// ====================
+model Quote {
+  id               String         @id @default(cuid())
+  quoteNumber      String         @unique
+  customerId       String
+  salespersonId    String?
+  quoteDate        DateTime       @default(now())
+  validUntil       DateTime?
+  paymentCondition PaymentCondition @default(PREPAID)
+  creditTermDays   Int?
+
+  currency    String  @default("THB")
+  vatIncluded Boolean @default(true)
+  vatRate     Float   @default(7)
+
+  shippingMethod String?
+  note           String?
+  status         QuoteStatus @default(DRAFT)
+
+  subTotal      Float  @default(0)
+  discountTotal Float  @default(0)
+  orderDiscount Float  @default(0)
+  taxAmount     Float  @default(0)
+  shippingFee   Float  @default(0)
+  otherCharges  Float  @default(0)
+  grandTotal    Float  @default(0)
+
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  salesperson Employee? @relation(fields: [salespersonId], references: [id])
+  items      QuoteItem[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([quoteDate])
+  @@index([customerId])
+  @@index([salespersonId])
+}
+
+model QuoteItem {
+  id        String  @id @default(cuid())
+  quoteId   String
+  productId String?
+
+  productCodeSnapshot String?
+  nameSnapshot        String?
+  unit                String?
+  qty                 Float
+  unitPrice           Float
+  discountPercent     Float? @default(0)
+  discountAmount      Float? @default(0)
+  amount              Float  @default(0)
+
+  quote   Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([quoteId])
+  @@index([productId])
 }

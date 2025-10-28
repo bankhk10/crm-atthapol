@@ -1,16 +1,10 @@
-import { Stack, Typography } from "@mui/material";
-import { ActionButtons } from "../../_components/action-buttons";
+import { Box } from "@mui/material";
+import QuotationsClient from "./_components/quotations-client";
 
-export default function ProductsPage() {
+export default function QuotationsPage() {
   return (
-    <>
-      <ActionButtons resource="sales" />
-      <Stack spacing={2}>
-        <Typography variant="h4" fontWeight={700}>
-          ใบเสนอราคา
-        </Typography>
-        <Typography color="text.secondary">หน้าว่างสำหรับใบเสนอราคาา</Typography>
-      </Stack>
-    </>
+    <Box sx={{ p: { xs: 1.5, md: 2 } }}>
+      <QuotationsClient />
+    </Box>
   );
 }
