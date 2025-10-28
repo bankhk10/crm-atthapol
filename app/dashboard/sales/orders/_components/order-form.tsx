@@ -427,27 +427,24 @@ export function OrderForm({
 
   return (
     <Stack spacing={2} sx={{ maxWidth: 1200, mx: "auto", p: { xs: 1.5, md: 2 }, bgcolor: "#fff" }}>
-      <Stack direction="row" alignItems="center" justifyContent="space-between">
-        <Typography variant="h5" fontWeight={960}>
+      <Tooltip title="กรอกข้อมูลสุ่มเพื่อทดสอบ">
+        <span>
+          <Button
+            type="button"
+            variant="outlined"
+            color="secondary"
+            startIcon={<CasinoIcon />}
+            onClick={fillRandom}
+          >
+            กรอกแบบสุ่ม
+          </Button>
+        </span>
+      </Tooltip>
+
+      <Stack direction="row" alignItems="center" justifyContent="center">
+        <Typography variant="h4" fontWeight={960} m={2}>
           {title}
         </Typography>
-        <Stack direction="row" spacing={1}>
-          {showFillRandom && (
-            <Tooltip title="กรอกข้อมูลสุ่มเพื่อทดสอบ">
-              <span>
-                <Button
-                  type="button"
-                  variant="outlined"
-                  color="secondary"
-                  startIcon={<CasinoIcon />}
-                  onClick={fillRandom}
-                >
-                  กรอกแบบสุ่ม
-                </Button>
-              </span>
-            </Tooltip>
-          )}
-        </Stack>
       </Stack>
 
       {error && (
