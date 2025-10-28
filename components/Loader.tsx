@@ -2,6 +2,7 @@
 
 import { Box } from "@mui/material";
 import { keyframes, styled } from "@mui/material/styles";
+import { grey, red } from "@mui/material/colors";
 
 const spin = keyframes`
   0%, 100% { box-shadow: .2em 0px 0 0px currentcolor; }
@@ -42,7 +43,7 @@ const LoaderRoot = styled("div")<{ size: number; primaryColor: string; secondary
     },
   }));
 
-export default function Loader({ size = 48, color = "#fff", secondary = "#FF3D00", center = false }: { size?: number; color?: string; secondary?: string; center?: boolean }) {
+export default function Loader({ size = 48, color = grey[600], secondary = red[600], center = false }: { size?: number; color?: string; secondary?: string; center?: boolean }) {
   const content = <LoaderRoot size={size} primaryColor={color} secondaryColor={secondary} />;
   if (!center) return content;
   return (
@@ -51,4 +52,3 @@ export default function Loader({ size = 48, color = "#fff", secondary = "#FF3D00
     </Box>
   );
 }
-

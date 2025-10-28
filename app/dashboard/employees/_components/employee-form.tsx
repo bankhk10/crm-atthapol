@@ -27,6 +27,7 @@ import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
 import { FillRandomButton } from "@/components/FillRandomButton";
 import { makeRandomEmployeeValues } from "@/lib/random-fill/employee";
+import Loader from "@/components/Loader";
 
 export type EmployeeFormProps = {
   title: string;
@@ -591,7 +592,7 @@ export function EmployeeForm({
           </TextField>
         </Stack>
 
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="center">
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="center" alignItems="center">
           {/* ปุ่มยกเลิก */}
           <Button
             component={Link}
@@ -628,6 +629,7 @@ export function EmployeeForm({
           >
             บันทึก
           </Button>
+          {isSubmitting && <Loader size={20} />}
         </Stack>
       </Stack>
     </Paper>

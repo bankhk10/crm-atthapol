@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Tooltip } from "@mui/material";
 import { useRouter } from "next/navigation";
+import Loader from "@/components/Loader";
 
 type Props = {
   orderId: string;
@@ -65,7 +66,7 @@ export function ActionsBar({ orderId, status, canApprove, canReject }: Props) {
 
   return (
     <>
-      <Stack direction="row" spacing={1}>
+      <Stack direction="row" spacing={1} alignItems="center">
         {showApprove && (
           <Tooltip title="อนุมัติเอกสาร" arrow>
             <span>
@@ -84,6 +85,7 @@ export function ActionsBar({ orderId, status, canApprove, canReject }: Props) {
             </span>
           </Tooltip>
         )}
+        {busy && <Loader size={20} />}
       </Stack>
 
       <Dialog open={openReject} onClose={() => setOpenReject(false)}>

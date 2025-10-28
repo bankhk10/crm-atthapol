@@ -16,6 +16,7 @@ import BrokerFormSection from "./customer-form-broker";
 import { blue, red } from "@mui/material/colors";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
+import Loader from "@/components/Loader";
 
 type CustomerFormProps = {
   title: string;
@@ -234,7 +235,7 @@ export function CustomerForm({
           </Stack>
         )}
 
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="center">
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="center" alignItems="center">
           {/* ปุ่มยกเลิก */}
           <Button
             component={Link}
@@ -272,6 +273,7 @@ export function CustomerForm({
           >
             บันทึก
           </Button>
+          {isSubmitting && <Loader size={20} />}
         </Stack>
       </Stack>
     </Paper>

@@ -537,6 +537,11 @@ function workflowChipSx(wf: string) {
                         </IconButton>
                       </Tooltip>
                     )}
+                    {busyId === o.id && (
+                      <Box sx={{ display: 'inline-flex', alignItems: 'center', ml: 0.5 }}>
+                        <Loader size={16} />
+                      </Box>
+                    )}
                     {!isTerminal && canEdit && (
                       <Tooltip
                         title={wf === "COMPLETED" ? "แก้ไขไม่ได้ (เสร็จสิ้น)" : "แก้ไข"}
@@ -552,6 +557,11 @@ function workflowChipSx(wf: string) {
                           </IconButton>
                         </span>
                       </Tooltip>
+                    )}
+                    {busyId === o.id && (
+                      <Box sx={{ display: 'inline-flex', alignItems: 'center', ml: 0.5 }}>
+                        <Loader size={16} />
+                      </Box>
                     )}
                     {!isTerminal && canCancel && (
                       <Tooltip title={o.status === "CANCELLED" ? "ถูกยกเลิกแล้ว" : "ยกเลิก"} arrow>

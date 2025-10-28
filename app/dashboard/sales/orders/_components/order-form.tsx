@@ -30,6 +30,7 @@ import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
 import { FillRandomButton } from "@/components/FillRandomButton";
 import { fillOrderFormRandom } from "@/lib/random-fill/order";
+import Loader from "@/components/Loader";
 
 // Option and ProductOption moved to ../types
 
@@ -964,7 +965,7 @@ export function OrderForm({
         </Stack>
       </Box>
 
-      <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="center">
+      <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="center" alignItems="center">
         <Button
           component={Link}
           href="/dashboard/sales/orders"
@@ -1000,6 +1001,7 @@ export function OrderForm({
         >
           {submitLabel}
         </Button>
+        {isSubmitting && <Loader size={20} />}
       </Stack>
     </Stack>
   );
