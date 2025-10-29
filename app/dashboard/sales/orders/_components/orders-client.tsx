@@ -539,7 +539,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
             alignItems={{ xs: "stretch", md: "flex-end" }}
           >
             <TextField
-              label="เลขที่ SO"
+              label="ค้นหาเลขที่ SO"
               value={soInput}
               onChange={(e) => setSoInput(e.target.value)}
               onKeyDown={(e) => {
@@ -553,7 +553,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
               size="small"
             />
             <TextField
-              label="ชื่อลูกค้า"
+              label="ค้นหาชื่อลูกค้า"
               value={customerInput}
               onChange={(e) => setCustomerInput(e.target.value)}
               onKeyDown={(e) => {
@@ -577,7 +577,18 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
                     setCustomerQuery("");
                     setPage(0);
                   }}
-                  sx={{ flex: { xs: 1, md: "unset" } }}
+                  sx={{
+                    backgroundColor: "#f5f5f5",
+                    borderColor: "#ccc",
+                    border: "1px solid #ddd", // เพิ่มเส้นกรอบเอง
+                    borderRadius: 2, // มุมโค้งเล็กน้อย
+                    px: 2,
+                    color: "text.primary",
+                    "&:hover": {
+                      backgroundColor: "#f5f5f5",
+                      borderColor: "#ccc",
+                    },
+                  }}
                 >
                   ล้าง
                 </Button>
