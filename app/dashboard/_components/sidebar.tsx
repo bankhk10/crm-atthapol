@@ -113,22 +113,10 @@ const navItems: NavItem[] = [
     resource: "products",
   },
   {
-    href: "/dashboard/sales",
-    label: "การขาย",
+    href: "/dashboard/sales/orders",
+    label: "รายการขาย",
     icon: <MonetizationOnIcon fontSize="small" />,
     resource: "sales",
-    children: [
-      {
-        href: "/dashboard/sales/orders",
-        label: "รายการขาย",
-        resource: "sales",
-      },
-      {
-        href: "/dashboard/sales/quotations",
-        label: "ใบเสนอราคา",
-        resource: "sales",
-      },
-    ],
   },
   {
     href: "/dashboard/marketing",
