@@ -9,6 +9,8 @@ import {
   Grid,
 } from "@mui/material";
 import { getProduct } from "../data";
+import Link from "next/link";
+import { Button } from "@mui/material";
 import ProductGallery from "../_components/product-gallery";
 
 // Define a more accurate type for Plant based on the log
@@ -52,6 +54,16 @@ export default async function ProductDetailPage({
         }}
       >
         <Paper sx={{ p: { xs: 2, md: 3 } }}>
+          <Stack direction="row" justifyContent="flex-end" sx={{ mb: 2 }}>
+            <Button
+              component={Link}
+              href={`/dashboard/products/${product.id}/inventory`}
+              variant="contained"
+              color="primary"
+            >
+              จัดการสต็อก/ล็อต
+            </Button>
+          </Stack>
           <Grid container spacing={3}>
             {/* Product Gallery & Description Column */}
             <Grid size={{ xs: 12, md: 6 }}>

@@ -30,6 +30,7 @@ import { hasPermission } from "@/lib/permissions";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined";
 import Link from "next/link";
 import type { ProductListItem } from "../data";
 import { deleteProduct } from "../delete";
@@ -316,6 +317,15 @@ export function ProductsTable({ products, query }: Props) {
               </Stack>
               {showActions && (
                 <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                  <Tooltip title="จัดการสต็อก/ล็อต" arrow>
+                    <IconButton
+                      component={Link}
+                      href={`/dashboard/products/${p.id}/inventory`}
+                      size="small"
+                    >
+                      <ShoppingCartOutlinedIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
                   <Tooltip title="ดูรายละเอียด" arrow>
                     <IconButton component={Link} href={`/dashboard/products/${p.id}`} size="small">
                       <VisibilityOutlinedIcon fontSize="small" />
@@ -478,6 +488,15 @@ export function ProductsTable({ products, query }: Props) {
                 {showActions && (
                   <TableCell align="center" sx={{ width: 120 }}>
                     <Stack direction="row" justifyContent="center" spacing={0.5}>
+                      <Tooltip title="จัดการสต็อก/ล็อต" arrow>
+                        <IconButton
+                          component={Link}
+                          href={`/dashboard/products/${p.id}/inventory`}
+                          size="small"
+                        >
+                          <ShoppingCartOutlinedIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
                       <Tooltip title="ดูรายละเอียด" arrow>
                         <IconButton
                           component={Link}
