@@ -393,7 +393,7 @@ export function OrderForm({
 
       <Stack direction="row" alignItems="center" justifyContent="center">
         <Typography variant="h4" fontWeight={960} m={2}>
-          {title + " ( Sale note )"}
+          {title + " ( Sales note )"}
         </Typography>
       </Stack>
 
