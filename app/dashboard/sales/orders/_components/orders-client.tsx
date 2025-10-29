@@ -20,9 +20,10 @@ import {
   Typography,
   Tooltip,
   TableSortLabel,
-  TablePagination,
   IconButton,
   TextField,
+  Pagination,
+  PaginationItem,
 } from "@mui/material";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
@@ -31,6 +32,10 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import FirstPageIcon from "@mui/icons-material/FirstPage";
+import LastPageIcon from "@mui/icons-material/LastPage";
+import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
+import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
 // removed approve/reject icons with popup removal
 import Link from "next/link";
 import AddIcon from "@mui/icons-material/Add";
@@ -261,8 +266,8 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
     }
     const p = Number(searchParams.get("page") || "");
     if (Number.isFinite(p) && p > 0) setPage(p - 1);
-    const rpp = Number(searchParams.get("pageSize") || "");
-    if (Number.isFinite(rpp) && rpp > 0) setRowsPerPage(rpp);
+    // Force fixed page size (10 per page)
+    setRowsPerPage(10);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -346,12 +351,12 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
   };
 
   function workflowChipSx(wf: string) {
-    if (wf === "COMPLETED") return { color: "#fff", bgcolor: "#22C55E" } as const;
+    if (wf === "COMPLETED") return { color: "common.white", bgcolor: "success.main" } as const;
     if (wf === "CANCELLED" || wf === "REJECTED")
-      return { color: "#fff", bgcolor: "#EF4444" } as const;
+      return { color: "common.white", bgcolor: "error.main" } as const;
     if (wf === "IN_TRANSIT" || wf === "READY_TO_SHIP" || wf === "AWAITING_STOCK")
-      return { color: "#000", bgcolor: "#FACC15" } as const;
-    return { color: "#424242", bgcolor: "#E0E0E0" } as const;
+      return { color: "grey.900", bgcolor: "warning.light" } as const;
+    return { color: "text.primary", bgcolor: "grey.200" } as const;
   }
 
   // Client-side sorting (current page only)
@@ -477,6 +482,8 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
     setOrderBy(property);
   };
 
+  // Note: TablePagination removed; using numbered Pagination only
+
   return (
     <Stack spacing={2}>
       <Stack spacing={1}>
@@ -583,38 +590,6 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
             />
           ))}
         </Stack>
-        {/* <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={th}>
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            spacing={1}
-            alignItems={{ xs: "stretch", sm: "center" }}
-          >
-            <DatePicker
-              label="จัดส่งตั้งแต่"
-              value={shippingFrom ? new Date(shippingFrom) : null}
-              onChange={(v) => setShippingFrom(v ? v.toISOString().slice(0, 10) : null)}
-              slotProps={{ textField: { fullWidth: true, size: "small" } }}
-              views={["year", "month", "day"]}
-            />
-            <DatePicker
-              label="ถึง"
-              value={shippingTo ? new Date(shippingTo) : null}
-              views={["year", "month", "day"]}
-              onChange={(v) => setShippingTo(v ? v.toISOString().slice(0, 10) : null)}
-              slotProps={{ textField: { fullWidth: true, size: "small" } }}
-            />
-            <Button
-              onClick={() => {
-                setShippingFrom(null);
-                setShippingTo(null);
-              }}
-              color="inherit"
-              sx={{ whiteSpace: "nowrap" }}
-            >
-              ล้างช่วงวันที่
-            </Button>
-          </Stack>
-        </LocalizationProvider> */}
       </Stack>
 
       {/* Mobile cards layout */}
@@ -661,6 +636,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
                           component={Link as any}
                           href={`/dashboard/sales/orders/${o.id}`}
                           size="small"
+                          color="primary"
                         >
                           <VisibilityOutlinedIcon fontSize="small" />
                         </IconButton>
@@ -675,6 +651,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
                         <span>
                           <IconButton
                             size="small"
+                            color="secondary"
                             disabled={wf === "COMPLETED"}
                             onClick={() => router.push(`/dashboard/sales/orders/${o.id}/edit`)}
                           >
@@ -689,6 +666,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
                         <span>
                           <IconButton
                             size="small"
+                            color="warning"
                             disabled={o.status === "CANCELLED" || busyId === o.id}
                             onClick={() => setConfirm({ type: "cancel", order: o })}
                           >
@@ -702,6 +680,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
                         <span>
                           <IconButton
                             size="small"
+                            color="error"
                             disabled={busyId === o.id}
                             onClick={() => setConfirm({ type: "delete", order: o })}
                           >
@@ -944,18 +923,48 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
         </Table>
       </TableContainer>
 
-      <TablePagination
-        rowsPerPageOptions={[5, 10, 20, 50]}
-        component="div"
-        count={total}
-        rowsPerPage={rowsPerPage}
-        page={page}
-        onPageChange={(_, p) => setPage(p)}
-        onRowsPerPageChange={(e) => {
-          setRowsPerPage(parseInt(e.target.value, 10));
-          setPage(0);
-        }}
-      />
+      {/* Numbered pagination (Next.js-friendly, linkable) */}
+      <Stack direction="row" justifyContent="center" sx={{ py: 1 }}>
+        {(() => {
+          const totalPages = Math.max(1, Math.ceil((total || 0) / Math.max(rowsPerPage, 1)));
+          return (
+            <Pagination
+              count={totalPages}
+              page={page + 1}
+              color="primary"
+              shape="rounded"
+              showFirstButton
+              showLastButton
+              onChange={(_, v) => setPage(v - 1)}
+              renderItem={(item) => {
+                const sp = new URLSearchParams(searchParams.toString());
+                const targetPage = Math.max(1, Number(item.page || 1));
+                sp.set("page", String(targetPage));
+                sp.set("pageSize", String(rowsPerPage));
+                if (statusFilter !== "ALL") sp.set("workflow", statusFilter);
+                else sp.delete("workflow");
+                if (paymentFilter !== "ALL") sp.set("paymentStatus", paymentFilter);
+                else sp.delete("paymentStatus");
+                if (shippingFrom) sp.set("shippingDateFrom", new Date(shippingFrom).toISOString());
+                else sp.delete("shippingDateFrom");
+                if (shippingTo) sp.set("shippingDateTo", new Date(shippingTo).toISOString());
+                else sp.delete("shippingDateTo");
+                if (soQuery.trim()) sp.set("so", soQuery.trim());
+                else sp.delete("so");
+                if (customerQuery.trim()) sp.set("customerQ", customerQuery.trim());
+                else sp.delete("customerQ");
+                return (
+                  <PaginationItem
+                    {...item}
+                    component={Link as any}
+                    href={`${pathname}?${sp.toString()}`}
+                  />
+                );
+              }}
+            />
+          );
+        })()}
+      </Stack>
 
       {/* Create moved to dedicated page: /dashboard/sales/orders/create */}
 
