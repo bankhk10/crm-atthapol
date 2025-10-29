@@ -486,36 +486,53 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
 
   return (
     <Stack spacing={2}>
-      <Stack spacing={1}>
-        <Stack
-          direction={{ xs: "column", sm: "row" }}
-          justifyContent="space-between"
-          alignItems={{ xs: "stretch", sm: "center" }}
-          spacing={1}
-        >
+      <Paper sx={{ p: { xs: 1.5, sm: 2 }, borderRadius: 2 }} variant="outlined">
+        {/* [ปรับปรุง] เพิ่ม Stack ครอบด้านนอก
+        เพื่อจัดระยะห่างแนวตั้ง (vertical spacing) ระหว่างแต่ละส่วน
+      */}
+        <Stack direction="column" spacing={2.5}>
+          {/* ส่วนที่ 1: ชิปสถานะ และ ปุ่มสร้าง */}
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            justifyContent="space-between"
+            alignItems={{ xs: "stretch", sm: "center" }}
+            spacing={2} // [ปรับปรุง] เพิ่ม spacing จาก 1 เป็น 2
+          >
+            <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+              {chips.map((c) => (
+                <Chip
+                  key={c.value}
+                  label={c.label}
+                  color={statusFilter === c.value ? "primary" : "default"}
+                  onClick={() => setStatusFilter(c.value)}
+                />
+              ))}
+            </Stack>
+            {canCreate && (
+              <Button
+                startIcon={<AddIcon />}
+                variant="contained"
+                onClick={() => router.push("/dashboard/sales/orders/create")}
+                sx={{ width: { xs: "100%", sm: "auto" } }}
+              >
+                สร้างบันทึกการขาย
+              </Button>
+            )}
+          </Stack>
+
+          {/* ส่วนที่ 2: ชิปการชำระเงิน */}
           <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-            {chips.map((c) => (
+            {paymentChips.map((c) => (
               <Chip
                 key={c.value}
-                label={c.label}
-                color={statusFilter === c.value ? "primary" : "default"}
-                onClick={() => setStatusFilter(c.value)}
+                label={`ชำระเงิน: ${c.label}`}
+                color={paymentFilter === c.value ? "secondary" : "default"}
+                onClick={() => setPaymentFilter(c.value)}
               />
             ))}
           </Stack>
-          {canCreate && (
-            <Button
-              startIcon={<AddIcon />}
-              variant="contained"
-              onClick={() => router.push("/dashboard/sales/orders/create")}
-              sx={{ width: { xs: "100%", sm: "auto" } }}
-            >
-              สร้างบันทึกการขาย
-            </Button>
-          )}
-        </Stack>
-        {/* Search section */}
-        <Paper sx={{ p: { xs: 1.5, sm: 2 }, borderRadius: 2 }} variant="outlined">
+
+          {/* ส่วนที่ 3: Search section */}
           <Stack
             direction={{ xs: "column", md: "row" }}
             spacing={1.5}
@@ -579,18 +596,8 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
               )}
             </Stack>
           </Stack>
-        </Paper>
-        <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-          {paymentChips.map((c) => (
-            <Chip
-              key={c.value}
-              label={`ชำระเงิน: ${c.label}`}
-              color={paymentFilter === c.value ? "secondary" : "default"}
-              onClick={() => setPaymentFilter(c.value)}
-            />
-          ))}
         </Stack>
-      </Stack>
+      </Paper>
 
       {/* Mobile cards layout */}
       <Stack spacing={1.25} sx={{ p: 1.5, display: { xs: "block", md: "none" } }}>
