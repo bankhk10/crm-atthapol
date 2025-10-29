@@ -39,7 +39,7 @@ import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
 // removed approve/reject icons with popup removal
 import Link from "next/link";
 import AddIcon from "@mui/icons-material/Add";
-import SearchIcon from "@mui/icons-material/Search";
+// import SearchIcon from "@mui/icons-material/Search";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import thLocale from "dayjs/locale/th";
@@ -540,7 +540,6 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
           >
             <TextField
               label="เลขที่ SO"
-              placeholder="เช่น SO-202501-000123"
               value={soInput}
               onChange={(e) => setSoInput(e.target.value)}
               onKeyDown={(e) => {
@@ -550,17 +549,11 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
                   setCustomerQuery(customerInput);
                 }
               }}
-              InputProps={{
-                startAdornment: (
-                  <SearchIcon fontSize="small" style={{ marginRight: 8, opacity: 0.7 }} />
-                ),
-              }}
               fullWidth
               size="small"
             />
             <TextField
               label="ชื่อลูกค้า"
-              placeholder="พิมพ์ชื่อหรือบริษัท"
               value={customerInput}
               onChange={(e) => setCustomerInput(e.target.value)}
               onKeyDown={(e) => {
@@ -569,11 +562,6 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
                   setSoQuery(soInput);
                   setCustomerQuery(customerInput);
                 }
-              }}
-              InputProps={{
-                startAdornment: (
-                  <SearchIcon fontSize="small" style={{ marginRight: 8, opacity: 0.7 }} />
-                ),
               }}
               fullWidth
               size="small"
