@@ -159,7 +159,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
   const [shippingFrom, setShippingFrom] = useState<string | null>(null);
   const [shippingTo, setShippingTo] = useState<string | null>(null);
   const [paymentFilter, setPaymentFilter] = useState<string>("ALL");
-  
+
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<null | { type: "cancel" | "delete"; order: OrderItem }>(
@@ -283,13 +283,14 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
     }
   };
 
-function workflowChipSx(wf: string) {
-  if (wf === "COMPLETED") return { color: "#fff", bgcolor: "#22C55E" } as const;
-  if (wf === "CANCELLED" || wf === "REJECTED") return { color: "#fff", bgcolor: "#EF4444" } as const;
-  if (wf === "IN_TRANSIT" || wf === "READY_TO_SHIP" || wf === "AWAITING_STOCK")
-    return { color: "#000", bgcolor: "#FACC15" } as const;
-  return { color: "#424242", bgcolor: "#E0E0E0" } as const;
-}
+  function workflowChipSx(wf: string) {
+    if (wf === "COMPLETED") return { color: "#fff", bgcolor: "#22C55E" } as const;
+    if (wf === "CANCELLED" || wf === "REJECTED")
+      return { color: "#fff", bgcolor: "#EF4444" } as const;
+    if (wf === "IN_TRANSIT" || wf === "READY_TO_SHIP" || wf === "AWAITING_STOCK")
+      return { color: "#000", bgcolor: "#FACC15" } as const;
+    return { color: "#424242", bgcolor: "#E0E0E0" } as const;
+  }
 
   // Client-side sorting (current page only)
   function descendingComparator(a: OrderItem, b: OrderItem, key: SortableKeys) {
@@ -440,7 +441,7 @@ function workflowChipSx(wf: string) {
               onClick={() => router.push("/dashboard/sales/orders/create")}
               sx={{ width: { xs: "100%", sm: "auto" } }}
             >
-              สร้างใบสั่งขาย
+              สร้างบันทึกการขาย
             </Button>
           )}
         </Stack>
@@ -536,7 +537,9 @@ function workflowChipSx(wf: string) {
                           <VisibilityOutlinedIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
-                    )}\n                    {!isTerminal && canEdit && (
+                    )}
+                    \n{" "}
+                    {!isTerminal && canEdit && (
                       <Tooltip
                         title={wf === "COMPLETED" ? "แก้ไขไม่ได้ (เสร็จสิ้น)" : "แก้ไข"}
                         arrow
@@ -551,7 +554,9 @@ function workflowChipSx(wf: string) {
                           </IconButton>
                         </span>
                       </Tooltip>
-                    )}\n                    {!isTerminal && canCancel && (
+                    )}
+                    \n{" "}
+                    {!isTerminal && canCancel && (
                       <Tooltip title={o.status === "CANCELLED" ? "ถูกยกเลิกแล้ว" : "ยกเลิก"} arrow>
                         <span>
                           <IconButton
@@ -612,181 +617,186 @@ function workflowChipSx(wf: string) {
               const wf = workflowFromBackend(o.status, o.paymentStatus);
               const isTerminal = wf === "COMPLETED" || wf === "CANCELLED";
               return (
-              <TableRow
-                key={o.id}
-                hover
-                sx={{
-                  "&:nth-of-type(even)": { bgcolor: "#fafafa" },
-                  "&:hover": { bgcolor: "#f0f0f0" },
-                }}
-              >
-                <TableCell
+                <TableRow
+                  key={o.id}
+                  hover
                   sx={{
-                    width: 120,
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
+                    "&:nth-of-type(even)": { bgcolor: "#fafafa" },
+                    "&:hover": { bgcolor: "#f0f0f0" },
                   }}
                 >
-                  <Tooltip title={o.soNumber} arrow>
-                    <span>{o.soNumber}</span>
-                  </Tooltip>
-                </TableCell>
-                <TableCell sx={{ width: 110 }}>
-                  <Tooltip title={dayjs(o.orderDate).format("DD/MM/YYYY")} arrow>
-                    <span>{dayjs(o.orderDate).format("DD/MM/YYYY")}</span>
-                  </Tooltip>
-                </TableCell>
-                <TableCell sx={{ width: 120 }}>
-                  <Tooltip
-                    title={o.shippingDate ? dayjs(o.shippingDate).format("DD/MM/YYYY") : "-"}
-                    arrow
+                  <TableCell
+                    sx={{
+                      width: 120,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
                   >
-                    <span>{o.shippingDate ? dayjs(o.shippingDate).format("DD/MM/YYYY") : "-"}</span>
-                  </Tooltip>
-                </TableCell>
-                <TableCell
-                  sx={{
-                    width: 220,
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                  }}
-                >
-                  <Tooltip title={displayCustomerName(o.customer)} arrow>
-                    <span>{displayCustomerName(o.customer)}</span>
-                  </Tooltip>
-                </TableCell>
-                {/* <TableCell sx={{ width: 200, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <Tooltip title={o.soNumber} arrow>
+                      <span>{o.soNumber}</span>
+                    </Tooltip>
+                  </TableCell>
+                  <TableCell sx={{ width: 110 }}>
+                    <Tooltip title={dayjs(o.orderDate).format("DD/MM/YYYY")} arrow>
+                      <span>{dayjs(o.orderDate).format("DD/MM/YYYY")}</span>
+                    </Tooltip>
+                  </TableCell>
+                  <TableCell sx={{ width: 120 }}>
+                    <Tooltip
+                      title={o.shippingDate ? dayjs(o.shippingDate).format("DD/MM/YYYY") : "-"}
+                      arrow
+                    >
+                      <span>
+                        {o.shippingDate ? dayjs(o.shippingDate).format("DD/MM/YYYY") : "-"}
+                      </span>
+                    </Tooltip>
+                  </TableCell>
+                  <TableCell
+                    sx={{
+                      width: 220,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    <Tooltip title={displayCustomerName(o.customer)} arrow>
+                      <span>{displayCustomerName(o.customer)}</span>
+                    </Tooltip>
+                  </TableCell>
+                  {/* <TableCell sx={{ width: 200, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                   <Tooltip title={o.salesperson ? displayEmployeeName(o.salesperson as any) : "-"} arrow>
                     <span>{o.salesperson ? displayEmployeeName(o.salesperson as any) : "-"}</span>
                   </Tooltip>
                 </TableCell> */}
-                <TableCell align="right" sx={{ width: 120 }}>
-                  <Tooltip
-                    title={o.grandTotal?.toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
-                    arrow
-                  >
-                    <span>
-                      {o.grandTotal?.toLocaleString(undefined, {
+                  <TableCell align="right" sx={{ width: 120 }}>
+                    <Tooltip
+                      title={o.grandTotal?.toLocaleString(undefined, {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                       })}
-                    </span>
-                  </Tooltip>
-                </TableCell>
-                <TableCell sx={{ width: 120 }}>
-                  <Tooltip
-                    title={
-                      WORKFLOW_STATUS_OPTIONS.find(
-                        (x) => x.value === workflowFromBackend(o.status, o.paymentStatus),
-                      )?.label || o.status
-                    }
-                    arrow
-                  >
-                    <span>
-                      {WORKFLOW_STATUS_OPTIONS.find(
-                        (x) => x.value === workflowFromBackend(o.status, o.paymentStatus),
-                      )?.label || o.status}
-                    </span>
-                  </Tooltip>
-                </TableCell>
-                <TableCell sx={{ width: 140 }}>
-                  <Tooltip
-                    title={
-                      o.paymentCondition === "POSTPAID" ? "ส่งก่อน-โอนทีหลัง" : "โอนก่อน-ส่งทีหลัง"
-                    }
-                    arrow
-                  >
-                    <span>
-                      {o.paymentCondition === "POSTPAID"
-                        ? "ส่งก่อน-โอนทีหลัง"
-                        : "โอนก่อน-ส่งทีหลัง"}
-                    </span>
-                  </Tooltip>
-                </TableCell>
-                <TableCell sx={{ width: 120 }}>
-                  <Tooltip title={PAYMENT_STATUS_LABEL[o.paymentStatus] || o.paymentStatus} arrow>
-                    <span>{PAYMENT_STATUS_LABEL[o.paymentStatus] || o.paymentStatus}</span>
-                  </Tooltip>
-                </TableCell>
-                {(canView || canEdit || canCancel || canDelete || canApprove) && (
-                  <TableCell align="center" sx={{ width: 180, px: 2 }}>
-                    <Stack direction="row" spacing={0.5} justifyContent="center">
-                      {canView && (
-                        <Tooltip title="ดูรายละเอียด" arrow>
-                          <IconButton
-                            component={Link as any}
-                            href={`/dashboard/sales/orders/${o.id}`}
-                            size="small"
-                            color="primary"
-                          >
-                            <VisibilityOutlinedIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      )}
-                      {!isTerminal && canEdit && (
-                        <Tooltip
-                          title={
-                            workflowFromBackend(o.status, o.paymentStatus) === "COMPLETED"
-                              ? "แก้ไขไม่ได้ (เสร็จสิ้น)"
-                              : "แก้ไข"
-                          }
-                          arrow
-                        >
-                          <span>
-                            <IconButton
-                              size="small"
-                              color="secondary"
-                              disabled={
-                                workflowFromBackend(o.status, o.paymentStatus) === "COMPLETED"
-                              }
-                              onClick={() => router.push(`/dashboard/sales/orders/${o.id}/edit`)}
-                            >
-                              <EditOutlinedIcon fontSize="small" />
-                            </IconButton>
-                          </span>
-                        </Tooltip>
-                      )}
-                      {!isTerminal && canCancel && (
-                        <Tooltip
-                          title={o.status === "CANCELLED" ? "ถูกยกเลิกแล้ว" : "ยกเลิก"}
-                          arrow
-                        >
-                          <span>
-                            <IconButton
-                              size="small"
-                              color="warning"
-                              disabled={o.status === "CANCELLED" || busyId === o.id}
-                              onClick={() => setConfirm({ type: "cancel", order: o })}
-                            >
-                              <CancelOutlinedIcon fontSize="small" />
-                            </IconButton>
-                          </span>
-                        </Tooltip>
-                      )}
-                      {!isTerminal && canDelete && (
-                        <Tooltip title="ลบ" arrow>
-                          <span>
-                            <IconButton
-                              size="small"
-                              color="error"
-                              disabled={busyId === o.id}
-                              onClick={() => setConfirm({ type: "delete", order: o })}
-                            >
-                              <DeleteOutlineIcon fontSize="small" />
-                            </IconButton>
-                          </span>
-                        </Tooltip>
-                      )}
-                    </Stack>
+                      arrow
+                    >
+                      <span>
+                        {o.grandTotal?.toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </span>
+                    </Tooltip>
                   </TableCell>
-                )}
-              </TableRow>
-            );})}
+                  <TableCell sx={{ width: 120 }}>
+                    <Tooltip
+                      title={
+                        WORKFLOW_STATUS_OPTIONS.find(
+                          (x) => x.value === workflowFromBackend(o.status, o.paymentStatus),
+                        )?.label || o.status
+                      }
+                      arrow
+                    >
+                      <span>
+                        {WORKFLOW_STATUS_OPTIONS.find(
+                          (x) => x.value === workflowFromBackend(o.status, o.paymentStatus),
+                        )?.label || o.status}
+                      </span>
+                    </Tooltip>
+                  </TableCell>
+                  <TableCell sx={{ width: 140 }}>
+                    <Tooltip
+                      title={
+                        o.paymentCondition === "POSTPAID"
+                          ? "ส่งก่อน-โอนทีหลัง"
+                          : "โอนก่อน-ส่งทีหลัง"
+                      }
+                      arrow
+                    >
+                      <span>
+                        {o.paymentCondition === "POSTPAID"
+                          ? "ส่งก่อน-โอนทีหลัง"
+                          : "โอนก่อน-ส่งทีหลัง"}
+                      </span>
+                    </Tooltip>
+                  </TableCell>
+                  <TableCell sx={{ width: 120 }}>
+                    <Tooltip title={PAYMENT_STATUS_LABEL[o.paymentStatus] || o.paymentStatus} arrow>
+                      <span>{PAYMENT_STATUS_LABEL[o.paymentStatus] || o.paymentStatus}</span>
+                    </Tooltip>
+                  </TableCell>
+                  {(canView || canEdit || canCancel || canDelete || canApprove) && (
+                    <TableCell align="center" sx={{ width: 180, px: 2 }}>
+                      <Stack direction="row" spacing={0.5} justifyContent="center">
+                        {canView && (
+                          <Tooltip title="ดูรายละเอียด" arrow>
+                            <IconButton
+                              component={Link as any}
+                              href={`/dashboard/sales/orders/${o.id}`}
+                              size="small"
+                              color="primary"
+                            >
+                              <VisibilityOutlinedIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                        {!isTerminal && canEdit && (
+                          <Tooltip
+                            title={
+                              workflowFromBackend(o.status, o.paymentStatus) === "COMPLETED"
+                                ? "แก้ไขไม่ได้ (เสร็จสิ้น)"
+                                : "แก้ไข"
+                            }
+                            arrow
+                          >
+                            <span>
+                              <IconButton
+                                size="small"
+                                color="secondary"
+                                disabled={
+                                  workflowFromBackend(o.status, o.paymentStatus) === "COMPLETED"
+                                }
+                                onClick={() => router.push(`/dashboard/sales/orders/${o.id}/edit`)}
+                              >
+                                <EditOutlinedIcon fontSize="small" />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        )}
+                        {!isTerminal && canCancel && (
+                          <Tooltip
+                            title={o.status === "CANCELLED" ? "ถูกยกเลิกแล้ว" : "ยกเลิก"}
+                            arrow
+                          >
+                            <span>
+                              <IconButton
+                                size="small"
+                                color="warning"
+                                disabled={o.status === "CANCELLED" || busyId === o.id}
+                                onClick={() => setConfirm({ type: "cancel", order: o })}
+                              >
+                                <CancelOutlinedIcon fontSize="small" />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        )}
+                        {!isTerminal && canDelete && (
+                          <Tooltip title="ลบ" arrow>
+                            <span>
+                              <IconButton
+                                size="small"
+                                color="error"
+                                disabled={busyId === o.id}
+                                onClick={() => setConfirm({ type: "delete", order: o })}
+                              >
+                                <DeleteOutlineIcon fontSize="small" />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        )}
+                      </Stack>
+                    </TableCell>
+                  )}
+                </TableRow>
+              );
+            })}
             {sortedItems.length === 0 && (
               <TableRow>
                 <TableCell
@@ -795,9 +805,7 @@ function workflowChipSx(wf: string) {
                   }
                 >
                   <Box py={4} textAlign="center">
-                    {loading ? (
-                      null
-                    ) : (
+                    {loading ? null : (
                       <Typography color="text.secondary">ยังไม่มีรายการ</Typography>
                     )}
                   </Box>
@@ -857,4 +865,3 @@ function workflowChipSx(wf: string) {
     </Stack>
   );
 }
-

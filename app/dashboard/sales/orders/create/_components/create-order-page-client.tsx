@@ -16,7 +16,7 @@ export function CreateOrderPageClient({ customerOptions, employeeOptions, produc
   return (
     <OrderForm
       mode="create"
-      title="สร้างใบสั่งขาย"
+      title="สร้างบันทึกการขาย"
       submitLabel="บันทึก"
       customerOptions={customerOptions}
       employeeOptions={employeeOptions}

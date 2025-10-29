@@ -76,7 +76,7 @@ export function EditOrderPageClient({ orderId, customerOptions, employeeOptions,
   return (
     <OrderForm
       mode="edit"
-      title="แก้ไขใบสั่งขาย"
+      title="แก้ไขบันทึกการขาย"
       submitLabel="บันทึก"
       customerOptions={customerOptions}
       employeeOptions={employeeOptions}

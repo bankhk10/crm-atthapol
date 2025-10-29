@@ -393,7 +393,7 @@ export function OrderForm({
 
       <Stack direction="row" alignItems="center" justifyContent="center">
         <Typography variant="h4" fontWeight={960} m={2}>
-          {title}
+          {title + " ( Sale note )"}
         </Typography>
       </Stack>
 
@@ -965,7 +965,12 @@ export function OrderForm({
         </Stack>
       </Box>
 
-      <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="center" alignItems="center">
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        spacing={2}
+        justifyContent="center"
+        alignItems="center"
+      >
         <Button
           component={Link}
           href="/dashboard/sales/orders"
