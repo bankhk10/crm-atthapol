@@ -130,6 +130,9 @@ export async function GET(req: NextRequest) {
     const workflow = (searchParams.get("workflow") || "").toUpperCase() || undefined;
     const shippingDateFrom = searchParams.get("shippingDateFrom") || undefined;
     const shippingDateTo = searchParams.get("shippingDateTo") || undefined;
+    // Search terms
+    const so = (searchParams.get("so") || "").trim();
+    const customerQ = (searchParams.get("customerQ") || "").trim();
 
     // Normalize paymentStatus values
     let paymentStatusValues: string[] | undefined = undefined;
@@ -149,6 +152,24 @@ export async function GET(req: NextRequest) {
     // Build base where
     const where: any = { deletedAt: null, customerId };
     if (status) where.status = status as any;
+    // Apply text searches if provided
+    if (so) {
+      (where as any).soNumber = { contains: so, mode: "insensitive" } as any;
+    }
+    if (customerQ) {
+      (where as any).customer = {
+        is: {
+          OR: [
+            { companyName: { contains: customerQ, mode: "insensitive" } },
+            { firstName: { contains: customerQ, mode: "insensitive" } },
+            { lastName: { contains: customerQ, mode: "insensitive" } },
+            { prefix: { contains: customerQ, mode: "insensitive" } },
+            { email: { contains: customerQ, mode: "insensitive" } },
+            { phone: { contains: customerQ, mode: "insensitive" } },
+          ],
+        },
+      } as any;
+    }
     if (paymentStatusValues && paymentStatusValues.length > 0) {
       where.paymentStatus = paymentStatusValues.length === 1 ? (paymentStatusValues[0] as any) : ({ in: paymentStatusValues as any } as any);
     }

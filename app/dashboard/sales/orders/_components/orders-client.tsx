@@ -22,6 +22,7 @@ import {
   TableSortLabel,
   TablePagination,
   IconButton,
+  TextField,
 } from "@mui/material";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
@@ -33,6 +34,7 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 // removed approve/reject icons with popup removal
 import Link from "next/link";
 import AddIcon from "@mui/icons-material/Add";
+import SearchIcon from "@mui/icons-material/Search";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import thLocale from "dayjs/locale/th";
@@ -41,7 +43,7 @@ import { hasPermission } from "@/lib/permissions";
 import { th } from "date-fns/locale";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Loader from "@/components/Loader";
 import type { Option, ProductOption } from "../types";
 
@@ -152,6 +154,8 @@ type Props = {
 
 export function OrdersClient({ customerOptions, employeeOptions, productOptions }: Props) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { data: session } = useSession();
   const [items, setItems] = useState<OrderItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -172,6 +176,11 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
   const [orderBy, setOrderBy] = useState<SortableKeys>("orderDate");
   const [page, setPage] = useState(0); // 0-based for TablePagination
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  // Search states
+  const [soInput, setSoInput] = useState("");
+  const [customerInput, setCustomerInput] = useState("");
+  const [soQuery, setSoQuery] = useState("");
+  const [customerQuery, setCustomerQuery] = useState("");
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -210,6 +219,8 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
       if (paymentFilter !== "ALL") params.set("paymentStatus", paymentFilter);
       if (shippingFrom) params.set("shippingDateFrom", new Date(shippingFrom).toISOString());
       if (shippingTo) params.set("shippingDateTo", new Date(shippingTo).toISOString());
+      if (soQuery.trim()) params.set("so", soQuery.trim());
+      if (customerQuery.trim()) params.set("customerQ", customerQuery.trim());
       const res = await fetch(`/api/sales/orders?${params.toString()}`);
       const data = await res.json();
       const list: OrderItem[] = data.items || [];
@@ -225,7 +236,58 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter, paymentFilter, shippingFrom, shippingTo, page, rowsPerPage]);
+  }, [
+    statusFilter,
+    paymentFilter,
+    shippingFrom,
+    shippingTo,
+    page,
+    rowsPerPage,
+    soQuery,
+    customerQuery,
+  ]);
+
+  // Initialize search states from URL on first mount
+  useEffect(() => {
+    const so = (searchParams.get("so") || "").trim();
+    const cq = (searchParams.get("customerQ") || "").trim();
+    if (so) {
+      setSoInput(so);
+      setSoQuery(so);
+    }
+    if (cq) {
+      setCustomerInput(cq);
+      setCustomerQuery(cq);
+    }
+    const p = Number(searchParams.get("page") || "");
+    if (Number.isFinite(p) && p > 0) setPage(p - 1);
+    const rpp = Number(searchParams.get("pageSize") || "");
+    if (Number.isFinite(rpp) && rpp > 0) setRowsPerPage(rpp);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Debounce input -> query application
+  useEffect(() => {
+    const h = setTimeout(() => {
+      setPage(0);
+      setSoQuery(soInput.trim());
+      setCustomerQuery(customerInput.trim());
+    }, 400);
+    return () => clearTimeout(h);
+  }, [soInput, customerInput]);
+
+  // Reflect search + pagination in URL for shareable links
+  useEffect(() => {
+    const next = new URLSearchParams(searchParams.toString());
+    if (soQuery.trim()) next.set("so", soQuery.trim());
+    else next.delete("so");
+    if (customerQuery.trim()) next.set("customerQ", customerQuery.trim());
+    else next.delete("customerQ");
+    next.set("page", String(page + 1));
+    next.set("pageSize", String(rowsPerPage));
+    router.replace(`${pathname}?${next.toString()}`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [soQuery, customerQuery, page, rowsPerPage]);
 
   const doCancel = async (order: OrderItem) => {
     setBusyId(order.id);
@@ -445,6 +507,72 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
             </Button>
           )}
         </Stack>
+        {/* Search section */}
+        <Paper sx={{ p: { xs: 1.5, sm: 2 }, borderRadius: 2 }} variant="outlined">
+          <Stack
+            direction={{ xs: "column", md: "row" }}
+            spacing={1.5}
+            alignItems={{ xs: "stretch", md: "flex-end" }}
+          >
+            <TextField
+              label="เลขที่ SO"
+              placeholder="เช่น SO-202501-000123"
+              value={soInput}
+              onChange={(e) => setSoInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  setPage(0);
+                  setSoQuery(soInput);
+                  setCustomerQuery(customerInput);
+                }
+              }}
+              InputProps={{
+                startAdornment: (
+                  <SearchIcon fontSize="small" style={{ marginRight: 8, opacity: 0.7 }} />
+                ),
+              }}
+              fullWidth
+              size="small"
+            />
+            <TextField
+              label="ชื่อลูกค้า"
+              placeholder="พิมพ์ชื่อหรือบริษัท"
+              value={customerInput}
+              onChange={(e) => setCustomerInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  setPage(0);
+                  setSoQuery(soInput);
+                  setCustomerQuery(customerInput);
+                }
+              }}
+              InputProps={{
+                startAdornment: (
+                  <SearchIcon fontSize="small" style={{ marginRight: 8, opacity: 0.7 }} />
+                ),
+              }}
+              fullWidth
+              size="small"
+            />
+            <Stack direction="row" spacing={1} sx={{ width: { xs: "100%", md: "auto" } }}>
+              {(soQuery || customerQuery) && (
+                <Button
+                  color="inherit"
+                  onClick={() => {
+                    setSoInput("");
+                    setCustomerInput("");
+                    setSoQuery("");
+                    setCustomerQuery("");
+                    setPage(0);
+                  }}
+                  sx={{ flex: { xs: 1, md: "unset" } }}
+                >
+                  ล้าง
+                </Button>
+              )}
+            </Stack>
+          </Stack>
+        </Paper>
         <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
           {paymentChips.map((c) => (
             <Chip
@@ -455,7 +583,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
             />
           ))}
         </Stack>
-        <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={th}>
+        {/* <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={th}>
           <Stack
             direction={{ xs: "column", sm: "row" }}
             spacing={1}
@@ -486,7 +614,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
               ล้างช่วงวันที่
             </Button>
           </Stack>
-        </LocalizationProvider>
+        </LocalizationProvider> */}
       </Stack>
 
       {/* Mobile cards layout */}
