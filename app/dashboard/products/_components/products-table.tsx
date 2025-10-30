@@ -30,7 +30,7 @@ import { hasPermission } from "@/lib/permissions";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
-import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined";
+import FormatListBulletedAddIcon from "@mui/icons-material/FormatListBulletedAdd";
 import Link from "next/link";
 import type { ProductListItem } from "../data";
 import { deleteProduct } from "../delete";
@@ -323,7 +323,7 @@ export function ProductsTable({ products, query }: Props) {
                       href={`/dashboard/products/${p.id}/inventory`}
                       size="small"
                     >
-                      <ShoppingCartOutlinedIcon fontSize="small" />
+                      <FormatListBulletedAddIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
                   <Tooltip title="ดูรายละเอียด" arrow>
@@ -494,7 +494,7 @@ export function ProductsTable({ products, query }: Props) {
                           href={`/dashboard/products/${p.id}/inventory`}
                           size="small"
                         >
-                          <ShoppingCartOutlinedIcon fontSize="small" />
+                          <FormatListBulletedAddIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="ดูรายละเอียด" arrow>
