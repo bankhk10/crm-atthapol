@@ -77,18 +77,7 @@ export async function createProduct(raw: ProductFormValues) {
     });
   }
 
-  await prisma.stock.create({
-    data: {
-      productId: product.id,
-      qtyOnHand: v.qtyOnHand ?? 0,
-      qtyReserved: v.qtyReserved ?? 0,
-      qtyVirtual: v.qtyVirtual ?? 0,
-      lotNumber: v.lotNumber,
-      mfgDate: v.mfgDate ? new Date(v.mfgDate) : null,
-      expDate: v.expDate ? new Date(v.expDate) : null,
-      note: v.stockNote,
-    },
-  });
+  // ตามข้อกำหนด: หลังเพิ่มสินค้าใหม่ ห้ามบันทึกสต็อก/ล็อตโดยอัตโนมัติ
 
   revalidatePath("/dashboard/products");
   return product.id;

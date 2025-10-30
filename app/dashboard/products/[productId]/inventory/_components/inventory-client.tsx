@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import {
   Box,
   Button,
@@ -14,17 +14,24 @@ import {
   TableRow,
   TableCell,
   TableBody,
+  Divider,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SaveIcon from "@mui/icons-material/Save";
-import AddIcon from "@mui/icons-material/Add";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { th } from "date-fns/locale";
 import { createLot, deleteLot, updateLot, updateProductPrice } from "../actions";
+import { useRouter } from "next/navigation";
 
 type ProductInfo = {
   id: string;
   nameTH: string;
   productCode: string;
   price?: number;
+  unit?: string;
 };
 
 type LotRow = {
@@ -34,6 +41,7 @@ type LotRow = {
   importedAt: string;
   expDate: string;
   note?: string;
+  isNew?: boolean;
 };
 
 export default function InventoryClient({
@@ -46,24 +54,60 @@ export default function InventoryClient({
   const [isPending, startTransition] = useTransition();
   const [price, setPrice] = useState<string>(product.price != null ? String(product.price) : "");
   const [rows, setRows] = useState<LotRow[]>(() => lots);
+  const router = useRouter();
+
+  // Sync incoming lots from server after refresh
+  useEffect(() => {
+    setRows(lots);
+  }, [lots]);
 
   const totals = useMemo(() => {
     const onHand = rows.reduce((acc, r) => acc + (r.qtyOnHand || 0), 0);
     return { onHand, available: onHand };
   }, [rows]);
 
-  const [newLot, setNewLot] = useState<{
-    lotNumber: string;
-    qtyOnHand: string;
-    importedAt: string;
-    expDate: string;
-    note: string;
-  }>({ lotNumber: "", qtyOnHand: "", importedAt: "", expDate: "", note: "" });
+  // no inline newLot row; we add draft rows directly into `rows` with isNew=true
 
-  const savePrice = () => {
-    const payload = { price: price === "" ? undefined : Number(price) };
+  // Auto-generate next lot number like "Lot.1", "Lot.2"
+  const nextLotNumber = useMemo(() => {
+    let maxN = 0;
+    for (const r of rows) {
+      const m = /^Lot\.(\d+)$/.exec(r.lotNumber.trim());
+      if (m) {
+        const n = parseInt(m[1], 10);
+        if (!Number.isNaN(n)) maxN = Math.max(maxN, n);
+      }
+    }
+    return `Lot.${maxN + 1}`;
+  }, [rows]);
+
+  const saveAll = () => {
+    const pricePayload = { price: price === "" ? undefined : Number(price) };
+    const existing = rows.filter((r) => !r.isNew);
+    const drafts = rows.filter((r) => r.isNew);
+    const updates = existing.map((r) =>
+      updateLot(product.id, r.id, {
+        lotNumber: r.lotNumber,
+        qtyOnHand: r.qtyOnHand,
+        importedAt: r.importedAt,
+        expDate: r.expDate,
+        note: r.note,
+      }),
+    );
+
     startTransition(async () => {
-      await updateProductPrice(product.id, payload);
+      await updateProductPrice(product.id, pricePayload);
+      for (const p of updates) await p;
+      for (const d of drafts) {
+        await createLot(product.id, {
+          lotNumber: d.lotNumber,
+          qtyOnHand: d.qtyOnHand,
+          importedAt: d.importedAt,
+          expDate: d.expDate,
+          note: d.note,
+        });
+      }
+      router.refresh();
     });
   };
 
@@ -87,17 +131,16 @@ export default function InventoryClient({
   };
 
   const addNewLot = () => {
-    const payload = {
-      lotNumber: newLot.lotNumber,
-      qtyOnHand: Number(newLot.qtyOnHand || 0),
-      importedAt: newLot.importedAt,
-      expDate: newLot.expDate,
-      note: newLot.note,
-    } as const;
-    startTransition(async () => {
-      await createLot(product.id, payload);
-      setNewLot({ lotNumber: "", qtyOnHand: "", importedAt: "", expDate: "", note: "" });
-    });
+    const draft: LotRow = {
+      id: `tmp-${Math.random().toString(36).slice(2)}`,
+      lotNumber: nextLotNumber,
+      qtyOnHand: 0,
+      importedAt: "",
+      expDate: "",
+      note: "",
+      isNew: true,
+    };
+    setRows((prev) => [...prev, draft]);
   };
 
   return (
@@ -126,14 +169,6 @@ export default function InventoryClient({
               sx={{ minWidth: 140 }}
               inputProps={{ min: 0, step: 1 }}
             />
-            <Button
-              variant="contained"
-              startIcon={<SaveIcon />}
-              onClick={savePrice}
-              disabled={isPending}
-            >
-              บันทึกราคา
-            </Button>
           </Stack>
         </Stack>
       </Paper>
@@ -143,178 +178,148 @@ export default function InventoryClient({
           <Typography variant="subtitle1" fontWeight={700}>
             ล็อตสินค้า
           </Typography>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>เลขล็อต</TableCell>
-                <TableCell align="center">จำนวน</TableCell>
-                <TableCell>วันที่นำเข้า</TableCell>
-                <TableCell>วันหมดอายุ</TableCell>
-                <TableCell>หมายเหตุ</TableCell>
-                <TableCell align="center">บันทึก</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {rows.map((r, idx) => (
-                <TableRow key={r.id} hover>
-                  <TableCell sx={{ minWidth: 150 }}>
-                    <TextField
-                      value={r.lotNumber}
-                      onChange={(e) =>
-                        setRows((prev) =>
-                          prev.map((x, i) => (i === idx ? { ...x, lotNumber: e.target.value } : x)),
-                        )
-                      }
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell align="right" sx={{ width: 150 }}>
-                    <TextField
-                      value={r.qtyOnHand}
-                      onChange={(e) =>
-                        setRows((prev) =>
-                          prev.map((x, i) =>
-                            i === idx ? { ...x, qtyOnHand: Number(e.target.value || 0) } : x,
-                          ),
-                        )
-                      }
-                      size="small"
-                      type="number"
-                      inputProps={{ min: 0, step: 1 }}
-                    />
-                  </TableCell>
-                  <TableCell sx={{ width: 170 }}>
-                    <TextField
-                      value={r.importedAt}
-                      onChange={(e) =>
-                        setRows((prev) =>
-                          prev.map((x, i) =>
-                            i === idx ? { ...x, importedAt: e.target.value } : x,
-                          ),
-                        )
-                      }
-                      size="small"
-                      type="date"
-                      InputLabelProps={{ shrink: true }}
-                    />
-                  </TableCell>
-                  <TableCell sx={{ width: 170 }}>
-                    <TextField
-                      value={r.expDate}
-                      onChange={(e) =>
-                        setRows((prev) =>
-                          prev.map((x, i) => (i === idx ? { ...x, expDate: e.target.value } : x)),
-                        )
-                      }
-                      size="small"
-                      type="date"
-                      InputLabelProps={{ shrink: true }}
-                    />
-                  </TableCell>
-                  <TableCell sx={{ minWidth: 160 }}>
-                    <TextField
-                      value={r.note || ""}
-                      onChange={(e) =>
-                        setRows((prev) =>
-                          prev.map((x, i) => (i === idx ? { ...x, note: e.target.value } : x)),
-                        )
-                      }
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell align="center" sx={{ width: 150 }}>
-                    <IconButton
-                      color="primary"
-                      onClick={() => saveRow(r)}
-                      disabled={isPending}
-                      title="บันทึก"
-                    >
-                      <SaveIcon />
-                    </IconButton>
-                    {/* <IconButton
-                      color="error"
-                      onClick={() => removeRow(r)}
-                      disabled={isPending}
-                      title="ลบล็อต"
-                    >
-                      <DeleteIcon />
-                    </IconButton> */}
-                  </TableCell>
+          <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={th}>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 700 }}>เลขล็อต</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700 }}>จำนวน</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>วันที่นำเข้า</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>วันหมดอายุ</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>หมายเหตุ</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700 }}>ดำเนินการ</TableCell>
                 </TableRow>
-              ))}
+              </TableHead>
+              <TableBody>
+                {rows.map((r, idx) => (
+                  <TableRow key={r.id} hover>
+                  <TableCell sx={{ minWidth: 150 }}>
+                    <TextField value={r.lotNumber} size="small" InputProps={{ readOnly: true }} />
+                  </TableCell>
+                    <TableCell align="right" sx={{ width: 150 }}>
+                      <TextField
+                        value={r.qtyOnHand}
+                        onChange={(e) =>
+                          setRows((prev) =>
+                            prev.map((x, i) =>
+                              i === idx ? { ...x, qtyOnHand: Number(e.target.value || 0) } : x,
+                            ),
+                          )
+                        }
+                        size="small"
+                        type="number"
+                        inputProps={{ min: 0, step: 1 }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ width: 190 }}>
+                      <DatePicker
+                        label={undefined}
+                        value={r.importedAt ? new Date(r.importedAt) : null}
+                        onChange={(newValue) => {
+                          setRows((prev) =>
+                            prev.map((x, i) =>
+                              i === idx
+                                ? {
+                                    ...x,
+                                    importedAt: newValue ? new Date(newValue).toISOString().slice(0, 10) : "",
+                                  }
+                                : x,
+                            ),
+                          );
+                        }}
+                        slotProps={{ textField: { size: "small", fullWidth: true } }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ width: 190 }}>
+                      <DatePicker
+                        label={undefined}
+                        value={r.expDate ? new Date(r.expDate) : null}
+                        onChange={(newValue) => {
+                          setRows((prev) =>
+                            prev.map((x, i) =>
+                              i === idx
+                                ? {
+                                    ...x,
+                                    expDate: newValue ? new Date(newValue).toISOString().slice(0, 10) : "",
+                                  }
+                                : x,
+                            ),
+                          );
+                        }}
+                        slotProps={{ textField: { size: "small", fullWidth: true } }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ minWidth: 160 }}>
+                      <TextField
+                        value={r.note || ""}
+                        onChange={(e) =>
+                          setRows((prev) =>
+                            prev.map((x, i) => (i === idx ? { ...x, note: e.target.value } : x)),
+                          )
+                        }
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell align="center" sx={{ width: 150 }}>
+                      {/* Future actions like delete can live here */}
+                      {/* <IconButton
+                        color="error"
+                        onClick={() => removeRow(r)}
+                        disabled={isPending}
+                        title="ลบล็อต"
+                      >
+                        <DeleteIcon />
+                      </IconButton> */}
+                    </TableCell>
+                  </TableRow>
+                ))}
 
-              {/* Add new lot */}
-              <TableRow>
-                <TableCell>
-                  <TextField
-                    placeholder="เลขล็อตใหม่"
-                    value={newLot.lotNumber}
-                    onChange={(e) => setNewLot((v) => ({ ...v, lotNumber: e.target.value }))}
-                    size="small"
-                  />
-                </TableCell>
-                <TableCell align="right">
-                  <TextField
-                    placeholder="0"
-                    value={newLot.qtyOnHand}
-                    onChange={(e) => setNewLot((v) => ({ ...v, qtyOnHand: e.target.value }))}
-                    size="small"
-                    type="number"
-                    inputProps={{ min: 0, step: 1 }}
-                  />
-                </TableCell>
-                <TableCell>
-                  <TextField
-                    type="date"
-                    value={newLot.importedAt}
-                    onChange={(e) => setNewLot((v) => ({ ...v, importedAt: e.target.value }))}
-                    size="small"
-                    InputLabelProps={{ shrink: true }}
-                  />
-                </TableCell>
-                <TableCell>
-                  <TextField
-                    type="date"
-                    value={newLot.expDate}
-                    onChange={(e) => setNewLot((v) => ({ ...v, expDate: e.target.value }))}
-                    size="small"
-                    InputLabelProps={{ shrink: true }}
-                  />
-                </TableCell>
-                <TableCell>
-                  <TextField
-                    placeholder="หมายเหตุ"
-                    value={newLot.note}
-                    onChange={(e) => setNewLot((v) => ({ ...v, note: e.target.value }))}
-                    size="small"
-                  />
-                </TableCell>
-                <TableCell align="center">
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<AddIcon />}
-                    onClick={addNewLot}
-                    disabled={isPending || newLot.lotNumber.trim().length === 0}
-                  >
-                    เพิ่มล็อต
-                  </Button>
-                </TableCell>
-              </TableRow>
+                {/* End rows */}
 
-              {/* Totals */}
-              <TableRow>
-                <TableCell sx={{ fontWeight: 700 }}>รวม</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700 }}>
-                  {totals.onHand}
-                </TableCell>
-                <TableCell></TableCell>
-                <TableCell></TableCell>
-                <TableCell></TableCell>
-                <TableCell align="center"></TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
+                {/* Totals */}
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 700 }}>รวม</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 700 }}>
+                    {totals.onHand}
+                  </TableCell>
+                  <TableCell></TableCell>
+                  <TableCell></TableCell>
+                  <TableCell></TableCell>
+                  <TableCell align="center"></TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </LocalizationProvider>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="flex-start" sx={{ mt: 1 }}>
+            <TextField
+              label="เลขล็อตที่จะสร้าง"
+              value={nextLotNumber}
+              size="small"
+              sx={{ maxWidth: 220 }}
+              InputProps={{ readOnly: true }}
+            />
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<AddCircleOutlineIcon />}
+              onClick={addNewLot}
+              disabled={isPending}
+              sx={{ alignSelf: { xs: "stretch", sm: "center" } }}
+            >
+              เพิ่มล็อต
+            </Button>
+          </Stack>
+          <Divider sx={{ my: 1 }} />
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="flex-end">
+            <Button
+              variant="contained"
+              startIcon={<SaveIcon />}
+              onClick={saveAll}
+              disabled={isPending}
+            >
+              บันทึก
+            </Button>
+          </Stack>
         </Stack>
       </Paper>
     </Stack>
