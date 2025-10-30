@@ -148,32 +148,7 @@ export default async function ProductDetailPage({
                         }
                       />
                     )}
-
-                    {(product.stocks || []).flatMap((s: any) => [
-                      <Info
-                        key={`${s.id}-onhand`}
-                        label="จำนวนสินค้า : "
-                        value={s.qtyOnHand ?? "-"}
-                      />,
-                      <Info
-                        key={`${s.id}-reserved`}
-                        label="สต็อกจอง : "
-                        value={s.qtyReserved ?? "-"}
-                      />,
-                    ])}
-
-                    <Info
-                      label="วันที่ผลิต : "
-                      value={
-                        product.mfgDate ? new Date(product.mfgDate).toISOString().slice(0, 10) : "-"
-                      }
-                    />
-                    <Info
-                      label="วันหมดอายุ : "
-                      value={
-                        product.expDate ? new Date(product.expDate).toISOString().slice(0, 10) : "-"
-                      }
-                    />
+            
                   </Stack>
                 </Stack>
               </Paper>
