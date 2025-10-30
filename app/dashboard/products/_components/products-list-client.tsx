@@ -8,12 +8,9 @@ import { useSession } from "next-auth/react";
 import { hasPermission } from "@/lib/permissions";
 import type { ProductListItem } from "../data";
 import { ProductsTable } from "./products-table";
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 
-export default function ProductsListClient({
-  products,
-}: {
-  products: ProductListItem[];
-}) {
+export default function ProductsListClient({ products }: { products: ProductListItem[] }) {
   const { data: session } = useSession();
   const [query, setQuery] = useState("");
 
@@ -31,18 +28,14 @@ export default function ProductsListClient({
         }}
       >
         {/* 🔎 ค้นหาฝั่งซ้าย */}
-        <Box
-          sx={{ position: "relative", width: { xs: 200, sm: 260, md: 360 } }}
-        >
+        <Box sx={{ position: "relative", width: { xs: 200, sm: 260, md: 360 } }}>
           <TextField
             fullWidth
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="ค้นหา (รหัส/ชื่อ/แบรนด์/จำนวน/พร้อมขาย)"
             InputProps={{
-              startAdornment: (
-                <SearchIcon fontSize="small" style={{ marginRight: 8 }} />
-              ),
+              startAdornment: <SearchIcon fontSize="small" style={{ marginRight: 8 }} />,
             }}
             size="small"
           />
@@ -54,12 +47,8 @@ export default function ProductsListClient({
             component={Link}
             href="/dashboard/products/new"
             variant="contained"
-            sx={{
-              backgroundColor: "#18aa38ff",
-              fontFamily: "Prompt, sans-serif",
-              fontWeight: 500,
-              "&:hover": { backgroundColor: "#0d8527ff" },
-            }}
+            startIcon={<AddCircleOutlineIcon />}
+            sx={{ width: { xs: "100%", sm: "auto" } }}
           >
             เพิ่มสินค้า
           </Button>

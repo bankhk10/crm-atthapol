@@ -295,7 +295,7 @@ export function ProductsTable({ products, query }: Props) {
                             : "#000",
                     bgcolor:
                       p.status === "ACTIVE"
-                        ? "#22C55E"
+                        ? "#1da729ff"
                         : p.status === "INACTIVE"
                           ? "#E0E0E0"
                           : p.status === "EXPIRED"
@@ -475,7 +475,7 @@ export function ProductsTable({ products, query }: Props) {
                                 : "#000",
                         bgcolor:
                           p.status === "ACTIVE"
-                            ? "#22C55E"
+                            ? "#1da729ff"
                             : p.status === "INACTIVE"
                               ? "#E0E0E0"
                               : p.status === "EXPIRED"
