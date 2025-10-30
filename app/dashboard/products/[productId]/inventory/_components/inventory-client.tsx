@@ -67,6 +67,14 @@ export default function InventoryClient({
     return { onHand, available: onHand };
   }, [rows]);
 
+  // The index of the most recently added draft lot (isNew)
+  const lastDraftIndex = useMemo(() => {
+    for (let i = rows.length - 1; i >= 0; i--) {
+      if (rows[i]?.isNew) return i;
+    }
+    return -1;
+  }, [rows]);
+
   // no inline newLot row; we add draft rows directly into `rows` with isNew=true
 
   // Auto-generate next lot number like "Lot.1", "Lot.2"
@@ -197,12 +205,14 @@ export default function InventoryClient({
                   <TableRow
                     key={r.id}
                     hover
-                    sx={{ backgroundColor: r.isNew ? "rgba(25,118,210,0.06)" : undefined }}
+                    sx={{
+                      backgroundColor: r.isNew ? "rgba(25,118,210,0.06)" : undefined,
+                    }}
                   >
                     <TableCell>
                       <TextField value={r.lotNumber} size="small" InputProps={{ readOnly: true }} />
                     </TableCell>
-                    <TableCell >
+                    <TableCell>
                       <TextField
                         value={r.qtyOnHand}
                         onChange={(e) =>
@@ -235,7 +245,9 @@ export default function InventoryClient({
                             ),
                           );
                         }}
-                        slotProps={{ textField: { size: "small", fullWidth: true } }}
+                        slotProps={{
+                          textField: { size: "small", fullWidth: true },
+                        }}
                       />
                     </TableCell>
                     <TableCell sx={{ width: 100 }}>
@@ -256,68 +268,77 @@ export default function InventoryClient({
                             ),
                           );
                         }}
-                        slotProps={{ textField: { size: "small", fullWidth: true } }}
+                        slotProps={{
+                          textField: { size: "small", fullWidth: true },
+                        }}
                       />
                     </TableCell>
                     <TableCell sx={{ minWidth: 300 }}>
-                      <TextField
-                        value={r.note || ""}
-                        onChange={(e) =>
-                          setRows((prev) =>
-                            prev.map((x, i) => (i === idx ? { ...x, note: e.target.value } : x)),
-                          )
-                        }
-                        size="small"
-                        fullWidth
-                      />
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <TextField
+                          value={r.note || ""}
+                          onChange={(e) =>
+                            setRows((prev) =>
+                              prev.map((x, i) => (i === idx ? { ...x, note: e.target.value } : x)),
+                            )
+                          }
+                          size="small"
+                          fullWidth
+                        />
+                        {r.isNew && idx === lastDraftIndex && (
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => setRows((prev) => prev.filter((x) => x.id !== r.id))}
+                            title="ลบล็อตใหม่ล่าสุด"
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        )}
+                      </Stack>
                     </TableCell>
                   </TableRow>
                 ))}
-
                 {/* End rows */}
+
+                {/* *** ปุ่ม "เพิ่มล็อต" ถูกย้ายมาไว้ตรงนี้ *** */}
+                <TableRow>
+                  <TableCell colSpan={5} sx={{ borderBottom: "none", py: 1.5 }}>
+                    <Stack direction="row" spacing={2} justifyContent="center">
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        startIcon={<AddCircleOutlineIcon />}
+                        onClick={addNewLot}
+                        disabled={isPending}
+                      >
+                        เพิ่มล็อต
+                      </Button>
+                    </Stack>
+                  </TableCell>
+                </TableRow>
 
                 {/* Totals */}
                 <TableRow>
                   <TableCell sx={{ fontWeight: 700 }}>รวม</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 700 }}>
+                  <TableCell align="center" sx={{ fontWeight: 700 }}>
                     {totals.onHand}
                   </TableCell>
                   <TableCell></TableCell>
                   <TableCell></TableCell>
                   <TableCell></TableCell>
-                  {/* <TableCell align="center"></TableCell> */}
                 </TableRow>
               </TableBody>
             </Table>
           </LocalizationProvider>
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            spacing={2}
-            justifyContent="flex-start"
-            sx={{ mt: 1 }}
-          >
-            <TextField
-              label="เลขล็อตที่จะสร้าง"
-              value={nextLotNumber}
-              size="small"
-              sx={{ maxWidth: 220 }}
-              InputProps={{ readOnly: true }}
-            />
+
+          {/* *** โค้ดปุ่มที่ถูกย้ายออกไปแล้ว ***
+           */}
+
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="center">
             <Button
               variant="contained"
-              color="primary"
-              startIcon={<AddCircleOutlineIcon />}
-              onClick={addNewLot}
-              disabled={isPending}
-              sx={{ alignSelf: { xs: "stretch", sm: "center" } }}
-            >
-              เพิ่มล็อต
-            </Button>
-          </Stack>
-          <Divider sx={{ my: 1 }} />
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="flex-end">
-            <Button
-              variant="contained"
+              color="success"
               startIcon={<SaveIcon />}
               onClick={saveAll}
               disabled={isPending}
