@@ -145,8 +145,7 @@ export default function ProductGallery({ images, productCode, name }: Props) {
                 width: 72,
                 height: 72,
                 flex: "0 0 auto",
-                border: "2px solid",
-                borderColor: idx === active ? "primary.main" : "transparent",
+                border: 0, // remove blue border highlight on active thumbnail
                 borderRadius: 1,
                 cursor: "pointer",
                 bgcolor: "white",
