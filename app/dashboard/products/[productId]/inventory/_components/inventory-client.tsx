@@ -24,7 +24,6 @@ type ProductInfo = {
   id: string;
   nameTH: string;
   productCode: string;
-  unit?: string;
   price?: number;
 };
 
@@ -32,7 +31,6 @@ type LotRow = {
   id: string;
   lotNumber: string;
   qtyOnHand: number;
-  qtyReserved: number;
   importedAt: string;
   expDate: string;
   note?: string;
@@ -46,15 +44,12 @@ export default function InventoryClient({
   lots: LotRow[];
 }) {
   const [isPending, startTransition] = useTransition();
-  const [price, setPrice] = useState<string>(
-    product.price != null ? String(product.price) : ""
-  );
+  const [price, setPrice] = useState<string>(product.price != null ? String(product.price) : "");
   const [rows, setRows] = useState<LotRow[]>(() => lots);
 
   const totals = useMemo(() => {
     const onHand = rows.reduce((acc, r) => acc + (r.qtyOnHand || 0), 0);
-    const reserved = rows.reduce((acc, r) => acc + (r.qtyReserved || 0), 0);
-    return { onHand, reserved, available: Math.max(0, onHand - reserved) };
+    return { onHand, available: onHand };
   }, [rows]);
 
   const [newLot, setNewLot] = useState<{
@@ -108,7 +103,11 @@ export default function InventoryClient({
   return (
     <Stack spacing={2}>
       <Paper variant="outlined" sx={{ p: 2 }}>
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ xs: "stretch", sm: "center" }}>
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          spacing={2}
+          alignItems={{ xs: "stretch", sm: "center" }}
+        >
           <Box sx={{ flex: 1 }}>
             <Typography variant="subtitle1" fontWeight={700}>
               {product.nameTH}
@@ -146,46 +145,53 @@ export default function InventoryClient({
           </Typography>
           <Table size="small">
             <TableHead>
-          <TableRow>
-            <TableCell>เลขล็อต</TableCell>
-            <TableCell align="right">จำนวนคงเหลือ</TableCell>
-            <TableCell>หน่วย</TableCell>
-            <TableCell>วันที่นำเข้า</TableCell>
-            <TableCell>วันหมดอายุ</TableCell>
-            <TableCell>หมายเหตุ</TableCell>
-            <TableCell align="right">สต็อกจอง</TableCell>
-            <TableCell align="center">การทำงาน</TableCell>
-          </TableRow>
+              <TableRow>
+                <TableCell>เลขล็อต</TableCell>
+                <TableCell align="center">จำนวน</TableCell>
+                <TableCell>วันที่นำเข้า</TableCell>
+                <TableCell>วันหมดอายุ</TableCell>
+                <TableCell>หมายเหตุ</TableCell>
+                <TableCell align="center">บันทึก</TableCell>
+              </TableRow>
             </TableHead>
             <TableBody>
               {rows.map((r, idx) => (
                 <TableRow key={r.id} hover>
-                  <TableCell sx={{ maxWidth: 180 }}>
+                  <TableCell sx={{ minWidth: 150 }}>
                     <TextField
                       value={r.lotNumber}
                       onChange={(e) =>
-                        setRows((prev) => prev.map((x, i) => (i === idx ? { ...x, lotNumber: e.target.value } : x)))
+                        setRows((prev) =>
+                          prev.map((x, i) => (i === idx ? { ...x, lotNumber: e.target.value } : x)),
+                        )
                       }
                       size="small"
                     />
                   </TableCell>
-                  <TableCell align="right" sx={{ width: 100 }}>
+                  <TableCell align="right" sx={{ width: 150 }}>
                     <TextField
                       value={r.qtyOnHand}
                       onChange={(e) =>
-                        setRows((prev) => prev.map((x, i) => (i === idx ? { ...x, qtyOnHand: Number(e.target.value || 0) } : x)))
+                        setRows((prev) =>
+                          prev.map((x, i) =>
+                            i === idx ? { ...x, qtyOnHand: Number(e.target.value || 0) } : x,
+                          ),
+                        )
                       }
                       size="small"
                       type="number"
                       inputProps={{ min: 0, step: 1 }}
                     />
                   </TableCell>
-                  <TableCell sx={{ width: 90 }}>{product.unit || "-"}</TableCell>
                   <TableCell sx={{ width: 170 }}>
                     <TextField
                       value={r.importedAt}
                       onChange={(e) =>
-                        setRows((prev) => prev.map((x, i) => (i === idx ? { ...x, importedAt: e.target.value } : x)))
+                        setRows((prev) =>
+                          prev.map((x, i) =>
+                            i === idx ? { ...x, importedAt: e.target.value } : x,
+                          ),
+                        )
                       }
                       size="small"
                       type="date"
@@ -196,7 +202,9 @@ export default function InventoryClient({
                     <TextField
                       value={r.expDate}
                       onChange={(e) =>
-                        setRows((prev) => prev.map((x, i) => (i === idx ? { ...x, expDate: e.target.value } : x)))
+                        setRows((prev) =>
+                          prev.map((x, i) => (i === idx ? { ...x, expDate: e.target.value } : x)),
+                        )
                       }
                       size="small"
                       type="date"
@@ -207,13 +215,12 @@ export default function InventoryClient({
                     <TextField
                       value={r.note || ""}
                       onChange={(e) =>
-                        setRows((prev) => prev.map((x, i) => (i === idx ? { ...x, note: e.target.value } : x)))
+                        setRows((prev) =>
+                          prev.map((x, i) => (i === idx ? { ...x, note: e.target.value } : x)),
+                        )
                       }
                       size="small"
                     />
-                  </TableCell>
-                  <TableCell align="right" sx={{ width: 120 }}>
-                    {r.qtyReserved}
                   </TableCell>
                   <TableCell align="center" sx={{ width: 150 }}>
                     <IconButton
@@ -224,14 +231,14 @@ export default function InventoryClient({
                     >
                       <SaveIcon />
                     </IconButton>
-                    <IconButton
+                    {/* <IconButton
                       color="error"
                       onClick={() => removeRow(r)}
                       disabled={isPending}
                       title="ลบล็อต"
                     >
                       <DeleteIcon />
-                    </IconButton>
+                    </IconButton> */}
                   </TableCell>
                 </TableRow>
               ))}
@@ -256,7 +263,6 @@ export default function InventoryClient({
                     inputProps={{ min: 0, step: 1 }}
                   />
                 </TableCell>
-                <TableCell>{product.unit || "-"}</TableCell>
                 <TableCell>
                   <TextField
                     type="date"
@@ -283,7 +289,6 @@ export default function InventoryClient({
                     size="small"
                   />
                 </TableCell>
-                <TableCell align="right">-</TableCell>
                 <TableCell align="center">
                   <Button
                     variant="outlined"
@@ -306,10 +311,6 @@ export default function InventoryClient({
                 <TableCell></TableCell>
                 <TableCell></TableCell>
                 <TableCell></TableCell>
-                <TableCell></TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700 }}>
-                  {totals.reserved}
-                </TableCell>
                 <TableCell align="center"></TableCell>
               </TableRow>
             </TableBody>
