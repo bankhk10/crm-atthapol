@@ -61,7 +61,7 @@ export default async function ProductDetailPage({
               variant="contained"
               color="primary"
             >
-              จัดการสต็อก/ล็อต
+              จัดการสต็อก/ราคา
             </Button>
           </Stack>
           <Grid container spacing={3}>

@@ -17,8 +17,8 @@ export default async function ProductInventoryPage({
       <Stack spacing={3} sx={{ width: "100%", maxWidth: 1200 }}>
         <Paper sx={{ p: { xs: 2, md: 3 } }}>
           <Stack spacing={2}>
-            <Typography variant="h5" fontWeight={800}>
-              จัดการสต็อก/ล็อตสินค้า
+           <Typography variant="h4" fontWeight={800} textAlign="center">
+             จัดการคลังสินค้าและราคา
             </Typography>
             <Divider />
             <InventoryClient
