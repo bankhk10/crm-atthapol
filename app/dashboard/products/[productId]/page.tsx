@@ -1,16 +1,7 @@
 import { notFound } from "next/navigation";
-import {
-  Box,
-  Chip,
-  Divider,
-  Paper,
-  Stack,
-  Typography,
-  Grid,
-} from "@mui/material";
+import { Box, Chip, Divider, Paper, Stack, Typography, Grid, Button } from "@mui/material";
 import { getProduct } from "../data";
 import Link from "next/link";
-import { Button } from "@mui/material";
 import ProductGallery from "../_components/product-gallery";
 
 // Define a more accurate type for Plant based on the log
@@ -37,6 +28,17 @@ export default async function ProductDetailPage({
     ? product.plants
     : [];
 
+  // Stock totals summary
+  const totals = (product.stocks || []).reduce(
+    (acc: { onHand: number; reserved: number }, s: any) => {
+      acc.onHand += Number(s.qtyOnHand || 0);
+      acc.reserved += Number(s.qtyReserved || 0);
+      return acc;
+    },
+    { onHand: 0, reserved: 0 },
+  );
+  const available = Math.max(0, totals.onHand - totals.reserved);
+
   return (
     <Box
       sx={{
@@ -53,16 +55,44 @@ export default async function ProductDetailPage({
           maxWidth: 1100,
         }}
       >
-        <Paper sx={{ p: { xs: 2, md: 3 } }}>
-          <Stack direction="row" justifyContent="flex-end" sx={{ mb: 2 }}>
-            <Button
-              component={Link}
-              href={`/dashboard/products/${product.id}/inventory`}
-              variant="contained"
-              color="primary"
-            >
-              จัดการสต็อก/ราคา
-            </Button>
+        <Paper sx={{ p: { xs: 2, md: 3 }, borderRadius: 3 }}>
+          {/* Header */}
+          <Stack spacing={1.25} sx={{ mb: 2 }}>
+            <Stack direction="row" justifyContent="space-between" alignItems={{ xs: "flex-start", md: "center" }}>
+              <Stack spacing={0.75}>
+                <Typography variant="h4" fontWeight={900}>
+                  {product.nameTH}
+                </Typography>
+                <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                  <Chip label={`รหัส: ${product.productCode}`} size="small" sx={{ fontFamily: "monospace" }} />
+                  <StatusChip status={product.status as any} />
+                  {product.category && <Chip label={product.category} size="small" variant="outlined" />}
+                  {product.brand && <Chip label={product.brand} size="small" variant="outlined" />}
+                  {product.unit && <Chip label={product.unit} size="small" variant="outlined" />}
+                </Stack>
+              </Stack>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+                <Button component={Link} href={`/dashboard/products/${product.id}/edit`} variant="outlined">
+                  แก้ไขสินค้า
+                </Button>
+                <Button component={Link} href={`/dashboard/products/${product.id}/inventory`} variant="contained" color="primary">
+                  จัดการสต็อก/ราคา
+                </Button>
+              </Stack>
+            </Stack>
+            <Stack direction="row" spacing={2} alignItems="baseline">
+              <Typography variant="h5" fontWeight={900}>
+                {product.price != null ? `฿${Number(product.price).toLocaleString()}` : "-"}
+              </Typography>
+              {product.unit && (
+                <Typography color="text.secondary">ต่อ {product.unit}</Typography>
+              )}
+            </Stack>
+            <Stack direction="row" spacing={1} flexWrap="wrap">
+              <Chip label={`คงเหลือ: ${totals.onHand}`} variant="outlined" />
+              <Chip label={`จอง: ${totals.reserved}`} color="warning" variant="outlined" />
+              <Chip label={`พร้อมขาย: ${available}`} color="success" variant="outlined" />
+            </Stack>
           </Stack>
           <Grid container spacing={3}>
             {/* Product Gallery & Description Column */}
@@ -112,50 +142,7 @@ export default async function ProductDetailPage({
                 }}
               >
                 <Stack spacing={2}>
-                  <Typography variant="h5" fontWeight={800}>
-                    {product.nameTH}
-                  </Typography>
-
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <Typography variant="h6" fontWeight={800}>
-                      {product.price != null ? `฿${product.price}` : "-"}
-                    </Typography>
-                    <Chip
-                      size="small"
-                      label={
-                        product.status === "ACTIVE"
-                          ? "ใช้งานอยู่"
-                          : product.status === "INACTIVE"
-                          ? "ไม่ใช้งาน"
-                          : product.status === "EXPIRED"
-                          ? "หมดอายุ"
-                          : "ใกล้หมดอายุ"
-                      }
-                      sx={{
-                        fontWeight: 800,
-                        px: 2,
-                        py: 2,
-                        borderRadius: "9999px",
-                        color:
-                          product.status === "ACTIVE"
-                            ? "#fff"
-                            : product.status === "INACTIVE"
-                            ? "#424242"
-                            : product.status === "EXPIRED"
-                            ? "#fff"
-                            : "#000",
-                        bgcolor:
-                          product.status === "ACTIVE"
-                            ? "#22C55E"
-                            : product.status === "INACTIVE"
-                            ? "#E0E0E0"
-                            : product.status === "EXPIRED"
-                            ? "#EF4444"
-                            : "#FACC15",
-                      }}
-                    />
-                  </Stack>
-
+                  <Typography variant="h6" fontWeight={800}>ข้อมูลสินค้า</Typography>
                   <Divider />
 
                   <Stack spacing={1.5}>
@@ -181,7 +168,7 @@ export default async function ProductDetailPage({
                         </Typography>
                       </Grid>
                     </Grid>
-                    {/* --- END: EDIT HERE --- */}
+                    <Info label="Lot/Batch : " value={product.lotNumber ?? "-"} />
 
                     <Info
                       label="หมวดหมู่ : "
@@ -228,28 +215,54 @@ export default async function ProductDetailPage({
                       />,
                     ])}
 
-                    <Info
-                      label="วันที่ผลิต : "
-                      value={
-                        product.mfgDate
-                          ? new Date(product.mfgDate).toISOString().slice(0, 10)
-                          : "-"
-                      }
-                    />
-                    <Info
-                      label="วันหมดอายุ : "
-                      value={
-                        product.expDate
-                          ? new Date(product.expDate).toISOString().slice(0, 10)
-                          : "-"
-                      }
-                    />
-                  </Stack>
+                    <Info label="วันที่ผลิต : " value={product.mfgDate ? new Date(product.mfgDate).toISOString().slice(0, 10) : "-"} />
+                    <Info label="วันหมดอายุ : " value={product.expDate ? new Date(product.expDate).toISOString().slice(0, 10) : "-"} />
                 </Stack>
+              </Stack>
               </Paper>
             </Grid>
           </Grid>
         </Paper>
+
+        {Array.isArray(product.stocks) && product.stocks.length > 0 && (
+          <Paper sx={{ p: { xs: 2, md: 3 }, borderRadius: 3 }}>
+            <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "flex-start", sm: "center" }} sx={{ mb: 1 }}>
+              <Typography variant="h6" fontWeight={800}>ล็อตล่าสุด</Typography>
+              <Button component={Link} href={`/dashboard/products/${product.id}/inventory`} variant="outlined" size="small">ดูทั้งหมด</Button>
+            </Stack>
+            <Grid container sx={{ fontSize: 14, color: "text.secondary", mb: 1, px: 1 }}>
+              <Grid size={{ xs: 4, sm: 2 }}>เลขล็อต</Grid>
+              <Grid size={{ xs: 4, sm: 2 }} sx={{ textAlign: { sm: "center" } }}>คงเหลือ</Grid>
+              <Grid size={{ xs: 4, sm: 3 }} sx={{ display: { xs: "none", sm: "block" } }}>วันที่นำเข้า</Grid>
+              <Grid size={{ xs: 6, sm: 3 }} sx={{ display: { xs: "none", sm: "block" } }}>วันหมดอายุ</Grid>
+              <Grid size={{ xs: 6, sm: 2 }} sx={{ display: { xs: "none", sm: "block" } }}>หมายเหตุ</Grid>
+            </Grid>
+            <Stack spacing={1}>
+              {[...product.stocks]
+                .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                .slice(0, 6)
+                .map((s: any) => (
+                  <Grid key={s.id} container alignItems="center" sx={{ px: 1, py: 1, borderRadius: 2, border: "1px solid", borderColor: "divider" }}>
+                    <Grid size={{ xs: 4, sm: 2 }}>
+                      <Typography fontWeight={700}>{s.lotNumber}</Typography>
+                    </Grid>
+                    <Grid size={{ xs: 4, sm: 2 }} sx={{ textAlign: { sm: "center" } }}>
+                      <Typography>{s.qtyOnHand ?? 0}</Typography>
+                    </Grid>
+                    <Grid size={{ xs: 4, sm: 3 }} sx={{ display: { xs: "none", sm: "block" } }}>
+                      <Typography>{s.createdAt ? new Date(s.createdAt).toISOString().slice(0, 10) : "-"}</Typography>
+                    </Grid>
+                    <Grid size={{ xs: 6, sm: 3 }} sx={{ display: { xs: "none", sm: "block" } }}>
+                      <Typography>{s.expDate ? new Date(s.expDate).toISOString().slice(0, 10) : "-"}</Typography>
+                    </Grid>
+                    <Grid size={{ xs: 6, sm: 2 }} sx={{ display: { xs: "none", sm: "block" } }}>
+                      <Typography noWrap title={s.note || ""}>{s.note || ""}</Typography>
+                    </Grid>
+                  </Grid>
+                ))}
+            </Stack>
+          </Paper>
+        )}
       </Stack>
     </Box>
   );
@@ -275,6 +288,12 @@ function Section({
       </Stack>
     </Paper>
   );
+}
+
+function StatusChip({ status }: { status: "ACTIVE" | "INACTIVE" | "EXPIRED" }) {
+  if (status === "ACTIVE") return <Chip label="ใช้งานอยู่" color="success" variant="outlined" size="small" />;
+  if (status === "INACTIVE") return <Chip label="ไม่ใช้งาน" color="default" variant="outlined" size="small" />;
+  return <Chip label="หมดอายุ" color="warning" variant="outlined" size="small" />;
 }
 
 function Info({ label, value }: { label: string; value: React.ReactNode }) {
