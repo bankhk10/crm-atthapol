@@ -20,6 +20,8 @@ import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 // Date pickers removed from product form; manage dates in inventory page
 import type { ProductFormValues } from "../validation";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import { FillRandomButton } from "@/components/FillRandomButton";
+import { makeRandomProductValues } from "@/lib/random-fill/product";
 
 type Plant = {
   id: string;
@@ -126,6 +128,12 @@ export function ProductForm({
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleFillRandom = () => {
+    setError(null);
+    const rnd = makeRandomProductValues({ plants });
+    setValues((prev) => ({ ...prev, ...rnd }));
   };
 
   // Handle image file selection and preview
@@ -255,6 +263,13 @@ export function ProductForm({
         {title ?? "เพิ่มข้อมูลสินค้าใหม่"}
       </Typography>
       <Divider sx={{ mt: 1, mb: 4 }} />
+
+      {/* ปุ่มกรอกแบบสุ่ม แสดงเฉพาะตอนเพิ่มใหม่ */}
+      {mode === "create" && (
+        <Stack direction="row" justifyContent="flex-end" sx={{ mb: 2 }}>
+          <FillRandomButton onClick={handleFillRandom} disabled={submitting} />
+        </Stack>
+      )}
 
       <Stack spacing={2}>
         {error && <Typography color="error.main">{error}</Typography>}
