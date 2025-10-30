@@ -124,6 +124,12 @@ export default async function ProductDetailPage({
                       </Grid>
                     </Grid>
 
+                    {/* เพิ่มข้อมูลสำคัญ */}
+                    <Info label="ชื่อสินค้า : " value={product.nameTH ?? "-"} />
+                    <Info label="จำนวนสินค้าทั้งหมด : " value={totals.onHand} />
+                    <Info label="พร้อมขาย : " value={Math.max(0, totals.onHand - totals.reserved)} />
+                    <Info label="สต็อกจอง : " value={totals.reserved} />
+
                     <Info label="หมวดหมู่ : " value={product.category ?? "-"} />
                     <Info label="แบรนด์ : " value={product.brand ?? "-"} />
                     <Info label="หน่วยนับ : " value={product.unit ?? "-"} />
