@@ -45,22 +45,32 @@ export function SaveBackButtons({
     if (backHref) router.push(backHref);
   }, [disabled, onBack, backHref, router]);
 
+  const { sx: backSxProp, onClick: _backOnClick, ...backRest } = backButtonProps || {};
+  const { sx: saveSxProp, ...saveRest } = saveButtonProps || {};
+
   return (
-    <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent={justify} sx={stackSx}>
+    <Stack
+      direction={{ xs: "column", sm: "row" }}
+      spacing={2}
+      justifyContent={justify}
+      sx={stackSx}
+    >
       <Button
         variant="contained"
         onClick={handleBack}
         disabled={disabled}
         startIcon={<ArrowBackIcon />}
-        sx={{
-          minWidth: 130,
-          backgroundColor: "#8b8b8bff",
-          color: "#fff",
-          "&:hover": { backgroundColor: "#8a8585ff" },
-          width: { xs: "100%", sm: "auto" },
-          ...(backButtonProps?.sx as any),
-        }}
-        {...backButtonProps}
+        sx={[
+          (theme) => ({
+            minWidth: 130,
+            bgcolor: theme.palette.grey[600],
+            color: theme.palette.getContrastText(theme.palette.grey[700]),
+            "&:hover": { bgcolor: theme.palette.grey[700] },
+            width: { xs: "100%", sm: "auto" },
+          }),
+          backSxProp as any,
+        ]}
+        {...backRest}
       >
         {backLabel}
       </Button>
@@ -71,8 +81,8 @@ export function SaveBackButtons({
         onClick={onSave}
         disabled={disabled}
         startIcon={isSaving ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
-        sx={{ minWidth: 130, width: { xs: "100%", sm: "auto" }, ...(saveButtonProps?.sx as any) }}
-        {...saveButtonProps}
+        sx={[{ minWidth: 130, width: { xs: "100%", sm: "auto" } }, saveSxProp as any]}
+        {...saveRest}
       >
         {isSaving ? "กำลังบันทึก..." : saveLabel}
       </Button>
@@ -98,13 +108,15 @@ export function BackButton({ href, label = "ย้อนกลับ", disabled,
       }}
       disabled={disabled}
       startIcon={<ArrowBackIcon />}
-      sx={{
-        minWidth: 130,
-        backgroundColor: "#8b8b8bff",
-        color: "#fff",
-        "&:hover": { backgroundColor: "#8a8585ff" },
-        ...(sx as any),
-      }}
+      sx={[
+        (theme) => ({
+          minWidth: 130,
+          bgcolor: theme.palette.grey[700],
+          color: theme.palette.getContrastText(theme.palette.grey[700]),
+          "&:hover": { bgcolor: theme.palette.grey[800] },
+        }),
+        sx as any,
+      ]}
       {...rest}
     >
       {label}
@@ -119,7 +131,14 @@ export type SaveButtonProps = {
   disabled?: boolean;
 } & CommonBtnProps;
 
-export function SaveButton({ onClick, label = "บันทึก", saving, disabled, sx, ...rest }: SaveButtonProps) {
+export function SaveButton({
+  onClick,
+  label = "บันทึก",
+  saving,
+  disabled,
+  sx,
+  ...rest
+}: SaveButtonProps) {
   return (
     <Button
       variant="contained"
