@@ -40,10 +40,21 @@ type ProductInfo = {
   unit?: string;
 };
 
-type LotRow = {
+// Row type from DB
+type LotRowDb = {
   id: string;
   lotNumber: string;
   qtyOnHand: number;
+  importedAt: string;
+  expDate: string;
+  note?: string;
+};
+
+// UI state type (keep qty as string to allow blank and input formatting)
+type LotRow = {
+  id: string;
+  lotNumber: string;
+  qtyOnHand: string;
   importedAt: string;
   expDate: string;
   note?: string;
@@ -55,34 +66,67 @@ export default function InventoryClient({
   lots,
 }: {
   product: ProductInfo;
-  lots: LotRow[];
+  lots: LotRowDb[];
 }) {
   const [isPending, startTransition] = useTransition();
   const [price, setPrice] = useState<string>(
     product.price != null ? String(product.price) : ""
   );
-  const [rows, setRows] = useState<LotRow[]>(() => lots);
+  const [rows, setRows] = useState<LotRow[]>(() =>
+    (lots || []).map((r) => ({
+      id: r.id,
+      lotNumber: r.lotNumber,
+      qtyOnHand: r.qtyOnHand != null ? String(r.qtyOnHand) : "",
+      importedAt: r.importedAt,
+      expDate: r.expDate,
+      note: r.note ?? "",
+    })),
+  );
   const router = useRouter();
 
   // Sync incoming lots from server after refresh
   useEffect(() => {
-    setRows(lots);
+    setRows(
+      (lots || []).map((r) => ({
+        id: r.id,
+        lotNumber: r.lotNumber,
+        qtyOnHand: r.qtyOnHand != null ? String(r.qtyOnHand) : "",
+        importedAt: r.importedAt,
+        expDate: r.expDate,
+        note: r.note ?? "",
+      })),
+    );
   }, [lots]);
 
   const totals = useMemo(() => {
-    const onHand = rows.reduce((acc, r) => acc + (r.qtyOnHand || 0), 0);
+    const onHand = rows.reduce((acc, r) => {
+      const n = r.qtyOnHand === "" ? 0 : Number(r.qtyOnHand);
+      return acc + (Number.isFinite(n) ? n : 0);
+    }, 0);
     return { onHand, available: onHand };
   }, [rows]);
 
-  // ให้ลบได้เฉพาะล็อตใหม่ล่าสุด (Draft ตัวท้ายสุดเท่านั้น)
-  const lastDraftIndex = useMemo(() => {
+  // ค้นหา Draft ล่าสุดตามลำดับที่ถูกเพิ่มใน state
+  const latestDraftId = useMemo(() => {
     for (let i = rows.length - 1; i >= 0; i--) {
-      if (rows[i]?.isNew) return i;
+      if (rows[i]?.isNew) return rows[i].id;
     }
-    return -1;
+    return null as string | null;
   }, [rows]);
 
-  // ลบ useMemo lastDraftIndex (ไม่จำเป็นแล้ว)
+  // เรียงลำดับเลขล็อตตามตัวเลขน้อย -> มาก สำหรับการแสดงผล
+  const displayRows = useMemo(() => {
+    const parseNum = (s: string) => {
+      const m = /^.*?(\d+)$/.exec(String(s).trim());
+      return m ? parseInt(m[1], 10) : Number.POSITIVE_INFINITY;
+    };
+    return [...rows].sort((a, b) => {
+      const an = parseNum(a.lotNumber);
+      const bn = parseNum(b.lotNumber);
+      if (an !== bn) return an - bn;
+      return String(a.lotNumber).localeCompare(String(b.lotNumber), "th");
+    });
+  }, [rows]);
 
   // Auto-generate next lot number like "Lot.1", "Lot.2"
   const nextLotNumber = useMemo(() => {
@@ -109,7 +153,7 @@ export default function InventoryClient({
         .map((r) =>
           updateLot(product.id, r.id, {
             lotNumber: r.lotNumber,
-            qtyOnHand: r.qtyOnHand,
+            qtyOnHand: r.qtyOnHand === "" ? 0 : Number(r.qtyOnHand),
             importedAt: r.importedAt,
             expDate: r.expDate,
             note: r.note,
@@ -121,7 +165,7 @@ export default function InventoryClient({
         .map((d) =>
           createLot(product.id, {
             lotNumber: d.lotNumber,
-            qtyOnHand: d.qtyOnHand,
+            qtyOnHand: d.qtyOnHand === "" ? 0 : Number(d.qtyOnHand),
             importedAt: d.importedAt,
             expDate: d.expDate,
             note: d.note,
@@ -160,7 +204,7 @@ export default function InventoryClient({
     const draft: LotRow = {
       id: `tmp-${Math.random().toString(36).slice(2)}`,
       lotNumber: nextLotNumber,
-      qtyOnHand: 0,
+      qtyOnHand: "",
       importedAt: "", // ใช้ "" (string เปล่า) ดีกว่า null/undefined สำหรับ input
       expDate: "",
       note: "",
@@ -232,7 +276,7 @@ export default function InventoryClient({
                 </TableRow>
               </TableHead>
               <TableBody>
-                {rows.map((r, idx) => (
+                {displayRows.map((r) => (
                   <TableRow
                     key={r.id}
                     hover
@@ -253,15 +297,12 @@ export default function InventoryClient({
                     <TableCell sx={{ minWidth: 120 }}>
                       <TextField
                         value={r.qtyOnHand}
-                        onChange={(e) =>
-                          setRows((prev) =>
-                            prev.map((x, i) =>
-                              i === idx
-                                ? { ...x, qtyOnHand: Number(e.target.value || 0) }
-                                : x
-                            )
-                          )
-                        }
+                        onChange={(e) => {
+                          const raw = e.target.value ?? "";
+                          const digits = String(raw).replace(/[^0-9]/g, "");
+                          const normalized = digits.replace(/^0+(?=\d)/, "");
+                          setRows((prev) => prev.map((x) => (x.id === r.id ? { ...x, qtyOnHand: normalized } : x)));
+                        }}
                         size="small"
                         type="number"
                         inputProps={{ min: 0, step: 1 }}
@@ -274,16 +315,16 @@ export default function InventoryClient({
                         value={r.importedAt ? new Date(r.importedAt) : null}
                         onChange={(newValue) => {
                           setRows((prev) =>
-                            prev.map((x, i) =>
-                              i === idx
+                            prev.map((x) =>
+                              x.id === r.id
                                 ? {
                                     ...x,
                                     importedAt: newValue
                                       ? newValue.toISOString().slice(0, 10)
                                       : "",
                                   }
-                                : x
-                            )
+                                : x,
+                            ),
                           );
                         }}
                         slotProps={{
@@ -297,16 +338,16 @@ export default function InventoryClient({
                         value={r.expDate ? new Date(r.expDate) : null}
                         onChange={(newValue) => {
                           setRows((prev) =>
-                            prev.map((x, i) =>
-                              i === idx
+                            prev.map((x) =>
+                              x.id === r.id
                                 ? {
                                     ...x,
                                     expDate: newValue
                                       ? newValue.toISOString().slice(0, 10)
                                       : "",
                                   }
-                                : x
-                            )
+                                : x,
+                            ),
                           );
                         }}
                         slotProps={{
@@ -319,16 +360,12 @@ export default function InventoryClient({
                         <TextField
                           value={r.note || ""}
                           onChange={(e) =>
-                            setRows((prev) =>
-                              prev.map((x, i) =>
-                                i === idx ? { ...x, note: e.target.value } : x,
-                              ),
-                            )
+                            setRows((prev) => prev.map((x) => (x.id === r.id ? { ...x, note: e.target.value } : x)))
                           }
                           size="small"
                           fullWidth
                         />
-                        {r.isNew && idx === lastDraftIndex && (
+                        {r.isNew && latestDraftId === r.id && (
                           <IconButton
                             size="small"
                             color="error"
