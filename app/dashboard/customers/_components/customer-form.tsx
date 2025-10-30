@@ -2,7 +2,7 @@
 
 import type { ChangeEvent, FormEvent } from "react";
 import { useEffect, useState } from "react";
-import Link from "next/link";
+// Link removed; shared buttons will handle navigation
 import { Alert, Button, Paper, Stack, TextField, Typography, Divider } from "@mui/material";
 import Autocomplete from "@mui/material/Autocomplete";
 import { Box } from "@mui/material";
@@ -13,9 +13,7 @@ import DealerFormSection from "./customer-form-dealer";
 import SubDealerFormSection from "./customer-form-subdealer";
 import FarmerFormSection from "./customer-form-farmer";
 import BrokerFormSection from "./customer-form-broker";
-import { blue, red } from "@mui/material/colors";
-import CheckIcon from "@mui/icons-material/Check";
-import CloseIcon from "@mui/icons-material/Close";
+import { SaveBackButtons } from "@/components/SaveBackButtons";
 import Loader from "@/components/Loader";
 
 type CustomerFormProps = {
@@ -235,46 +233,16 @@ export function CustomerForm({
           </Stack>
         )}
 
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="center" alignItems="center">
-          {/* ปุ่มยกเลิก */}
-          <Button
-            component={Link}
-            href="/dashboard/customers"
-            variant="contained"
-            startIcon={<CloseIcon />}
-            sx={{
-              bgcolor: red[600],
-              color: "white",
-              "&:hover": {
-                bgcolor: red[700],
-              },
-              fontWeight: 800,
-              px: 3,
-            }}
-          >
-            ยกเลิก
-          </Button>
-
-          {/* ปุ่มบันทึก */}
-          <Button
-            type="submit"
-            variant="contained"
-            disabled={isSubmitting}
-            startIcon={<CheckIcon />}
-            sx={{
-              bgcolor: blue[600],
-              color: "white",
-              "&:hover": {
-                bgcolor: blue[700],
-              },
-              fontWeight: 800,
-              px: 3,
-            }}
-          >
-            บันทึก
-          </Button>
-          {isSubmitting && <Loader fullscreen />}
-        </Stack>
+        <SaveBackButtons
+          backHref="/dashboard/customers"
+          isSaving={isSubmitting}
+          disabled={isSubmitting}
+          saveLabel={submitLabel}
+          saveButtonProps={{ type: "submit" as any, sx: { fontWeight: 800, px: 3 } }}
+          backButtonProps={{ sx: { fontWeight: 800, px: 3 } }}
+          justify="center"
+        />
+        {isSubmitting && <Loader fullscreen />}
       </Stack>
     </Paper>
   );

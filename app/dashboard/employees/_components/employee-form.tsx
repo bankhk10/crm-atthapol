@@ -2,7 +2,7 @@
 
 import type { ChangeEvent, FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+// Link not needed; using shared buttons
 import {
   Alert,
   Button,
@@ -22,9 +22,7 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { th } from "date-fns/locale";
 import { Box } from "@mui/material";
 import ThaiAddressPicker from "@/components/ThaiAddressPicker";
-import { blue, red } from "@mui/material/colors";
-import CheckIcon from "@mui/icons-material/Check";
-import CloseIcon from "@mui/icons-material/Close";
+import { SaveBackButtons } from "@/components/SaveBackButtons";
 import { FillRandomButton } from "@/components/FillRandomButton";
 import { makeRandomEmployeeValues } from "@/lib/random-fill/employee";
 import Loader from "@/components/Loader";
@@ -592,45 +590,16 @@ export function EmployeeForm({
           </TextField>
         </Stack>
 
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="center" alignItems="center">
-          {/* ปุ่มยกเลิก */}
-          <Button
-            component={Link}
-            href="/dashboard/employees"
-            variant="contained"
-            startIcon={<CloseIcon />}
-            sx={{
-              bgcolor: red[600],
-              color: "white",
-              "&:hover": {
-                bgcolor: red[700],
-              },
-              fontWeight: 800,
-              px: 3,
-            }}
-          >
-            ยกเลิก
-          </Button>
-          {/* ปุ่มบันทึก */}
-          <Button
-            type="submit"
-            variant="contained"
-            disabled={isSubmitting}
-            startIcon={<CheckIcon />}
-            sx={{
-              bgcolor: blue[600],
-              color: "white",
-              "&:hover": {
-                bgcolor: blue[700],
-              },
-              fontWeight: 800,
-              px: 3,
-            }}
-          >
-            บันทึก
-          </Button>
-          {isSubmitting && <Loader fullscreen />}
-        </Stack>
+        <SaveBackButtons
+          backHref="/dashboard/employees"
+          isSaving={isSubmitting}
+          disabled={isSubmitting}
+          saveLabel={submitLabel}
+          saveButtonProps={{ type: "submit" as any, sx: { fontWeight: 800, px: 3 } }}
+          backButtonProps={{ sx: { fontWeight: 800, px: 3 } }}
+          justify="center"
+        />
+        {isSubmitting && <Loader fullscreen />}
       </Stack>
     </Paper>
   );

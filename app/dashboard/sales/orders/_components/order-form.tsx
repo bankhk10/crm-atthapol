@@ -15,7 +15,7 @@ import {
   Checkbox,
   FormControlLabel,
 } from "@mui/material";
-import Link from "next/link";
+// Link removed; using router via shared buttons
 import Autocomplete from "@mui/material/Autocomplete";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
@@ -25,9 +25,7 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { th } from "date-fns/locale";
 import ThaiAddressPicker from "@/components/ThaiAddressPicker";
 import type { Option, ProductOption, OrderItemInput, OrderFormInitial } from "../types";
-import { blue, red } from "@mui/material/colors";
-import CheckIcon from "@mui/icons-material/Check";
-import CloseIcon from "@mui/icons-material/Close";
+import { SaveBackButtons } from "@/components/SaveBackButtons";
 import { FillRandomButton } from "@/components/FillRandomButton";
 import { fillOrderFormRandom } from "@/lib/random-fill/order";
 import Loader from "@/components/Loader";
@@ -965,49 +963,17 @@ export function OrderForm({
         </Stack>
       </Box>
 
-      <Stack
-        direction={{ xs: "column", sm: "row" }}
-        spacing={2}
-        justifyContent="center"
-        alignItems="center"
-      >
-        <Button
-          component={Link}
-          href="/dashboard/sales/orders"
-          variant="contained"
-          startIcon={<CloseIcon />}
-          sx={{
-            bgcolor: red[600],
-            color: "white",
-            "&:hover": {
-              bgcolor: red[700],
-            },
-            fontWeight: 800,
-            px: 3,
-          }}
-        >
-          ยกเลิก
-        </Button>
-
-        <Button
-          onClick={handleSubmit}
-          variant="contained"
-          disabled={!canSubmit || isSubmitting}
-          startIcon={<CheckIcon />}
-          sx={{
-            bgcolor: blue[600],
-            color: "white",
-            "&:hover": {
-              bgcolor: blue[700],
-            },
-            fontWeight: 800,
-            px: 3,
-          }}
-        >
-          {submitLabel}
-        </Button>
-        {isSubmitting && <Loader fullscreen />}
-      </Stack>
+      <SaveBackButtons
+        onSave={handleSubmit}
+        backHref="/dashboard/sales/orders"
+        isSaving={isSubmitting}
+        disabled={!canSubmit || isSubmitting}
+        saveLabel={submitLabel}
+        saveButtonProps={{ sx: { fontWeight: 800, px: 3 } }}
+        backButtonProps={{ sx: { fontWeight: 800, px: 3 } }}
+        justify="center"
+      />
+      {isSubmitting && <Loader fullscreen />}
     </Stack>
   );
 }

@@ -8,7 +8,7 @@ import type { ButtonProps } from "@mui/material/Button";
 import SaveIcon from "@mui/icons-material/Save";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
-type CommonBtnProps = Omit<ButtonProps, "onClick"> & { sx?: SxProps<Theme> };
+type CommonBtnProps = ButtonProps & { sx?: SxProps<Theme> };
 
 export type SaveBackButtonsProps = {
   onSave?: () => void | Promise<void>;
@@ -134,4 +134,3 @@ export function SaveButton({ onClick, label = "บันทึก", saving, disa
     </Button>
   );
 }
-

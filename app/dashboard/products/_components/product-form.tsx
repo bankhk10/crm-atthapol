@@ -20,6 +20,7 @@ import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 // Date pickers removed from product form; manage dates in inventory page
 import type { ProductFormValues } from "../validation";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import { SaveBackButtons } from "@/components/SaveBackButtons";
 import { FillRandomButton } from "@/components/FillRandomButton";
 import { makeRandomProductValues } from "@/lib/random-fill/product";
 
@@ -513,24 +514,16 @@ export function ProductForm({
           )}
         </Stack>
       </Stack>
-      {/* ปุ่มบันทึก */}
-      <Stack
-        justifyContent="center"
-        alignItems="center"
-        sx={{ mt: 4 }} // 👈 เพิ่มระยะห่างด้านบน 32px
-      >
-        <Button
-          type="submit"
-          variant="contained"
-          sx={{
-            bgcolor: "#3797f0ff",
-            color: "#fcf9f9ff",
-            "&:hover": { bgcolor: "#4a8aebff" },
-          }}
-        >
-          {submitting ? "กำลังบันทึก..." : "บันทึกสินค้า"}
-        </Button>
-      </Stack>
+      {/* ปุ่มย้อนกลับ + บันทึก แบบใช้ซ้ำ */}
+      <SaveBackButtons
+        backHref="/dashboard/products"
+        isSaving={submitting}
+        disabled={submitting}
+        saveLabel="บันทึกสินค้า"
+        saveButtonProps={{ type: "submit" as any }}
+        justify="center"
+        stackSx={{ mt: 4 }}
+      />
     </Paper>
   );
 }
