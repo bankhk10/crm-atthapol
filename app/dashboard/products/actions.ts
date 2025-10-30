@@ -144,37 +144,7 @@ export async function updateProduct(productId: string, raw: ProductFormValues) {
     ]);
   }
 
-  const latest = await prisma.stock.findFirst({
-    where: { productId: id, deletedAt: null },
-    orderBy: { updatedAt: "desc" },
-  });
-  if (latest) {
-    await prisma.stock.update({
-      where: { id: latest.id },
-      data: {
-        qtyOnHand: v.qtyOnHand ?? latest.qtyOnHand,
-        qtyReserved: v.qtyReserved ?? latest.qtyReserved,
-        qtyVirtual: v.qtyVirtual ?? latest.qtyVirtual,
-        lotNumber: v.lotNumber ?? latest.lotNumber,
-        mfgDate: v.mfgDate ? new Date(v.mfgDate) : latest.mfgDate,
-        expDate: v.expDate ? new Date(v.expDate) : latest.expDate,
-        note: v.stockNote ?? latest.note,
-      },
-    });
-  } else {
-    await prisma.stock.create({
-      data: {
-        productId: id,
-        qtyOnHand: v.qtyOnHand ?? 0,
-        qtyReserved: v.qtyReserved ?? 0,
-        qtyVirtual: v.qtyVirtual ?? 0,
-        lotNumber: v.lotNumber,
-        mfgDate: v.mfgDate ? new Date(v.mfgDate) : null,
-        expDate: v.expDate ? new Date(v.expDate) : null,
-        note: v.stockNote,
-      },
-    });
-  }
+  // ไม่อัปเดตหรือสร้างสต็อกในหน้ากรอก/แก้ไขสินค้า
 
   revalidatePath("/dashboard/products");
   revalidatePath(`/dashboard/products/${id}/edit`);
