@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ChangeEvent, type FormEvent, type DragEvent } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent, type DragEvent } from "react";
 import {
   Autocomplete,
   Paper,
@@ -226,6 +226,20 @@ export function ProductForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Include current values in select options when not part of defaults
+  const categoryOpts = useMemo(() => {
+    const base = [...CATEGORY_OPTIONS];
+    const current = values.category ?? "";
+    if (current && !base.includes(current as any)) base.unshift(current as any);
+    return base;
+  }, [values.category]);
+  const brandOpts = useMemo(() => {
+    const base = [...BRAND_OPTIONS];
+    const current = values.brand ?? "";
+    if (current && !base.includes(current as any)) base.unshift(current as any);
+    return base;
+  }, [values.brand]);
+
   return (
     <Paper
       component="form"
@@ -265,7 +279,7 @@ export function ProductForm({
 
         {/* ลบช่อง ราคา/จำนวนสินค้า: จัดการผ่านหน้าสต็อก/ล็อต */}
 
-        {/* หมวดหมู่ + แบรนด์ */}
+        {/* กลุ่มสินค้า + แบรนด์ */}
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           <TextField
             select
@@ -277,7 +291,7 @@ export function ProductForm({
             <MenuItem value="">
               <em>-</em>
             </MenuItem>
-            {CATEGORY_OPTIONS.map((o) => (
+            {categoryOpts.map((o) => (
               <MenuItem key={o} value={o}>
                 {o}
               </MenuItem>
@@ -293,7 +307,7 @@ export function ProductForm({
             <MenuItem value="">
               <em>-</em>
             </MenuItem>
-            {BRAND_OPTIONS.map((o) => (
+            {brandOpts.map((o) => (
               <MenuItem key={o} value={o}>
                 {o}
               </MenuItem>

@@ -22,17 +22,13 @@ export default async function ProductEditPage({ params }: { params: Promise<{ pr
 
   const latest = p.stocks?.[0] ?? null;
 
-  const allowedCategories = ["หมวด A", "หมวด B", "หมวด C"] as const;
-
   const initialValues: ProductFormValues = {
     productCode: p.productCode,
     lotNumber: p.lotNumber ?? "",
     nameTH: p.nameTH,
     nameEN: p.nameEN ?? "",
-    category: (allowedCategories as readonly string[]).includes(p.category ?? "")
-      ? (p.category as (typeof allowedCategories)[number])
-      : "",
-    brand: (p.brand as any) || "แบรนด์ A",
+    category: p.category ?? "",
+    brand: p.brand ?? "",
     unit: (p.unit as any) || "ชิ้น",
     price: p.price ?? undefined,
     mfgDate: p.mfgDate ? new Date(p.mfgDate).toISOString().slice(0,10) : undefined,
