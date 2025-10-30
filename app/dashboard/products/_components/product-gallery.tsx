@@ -146,7 +146,8 @@ export default function ProductGallery({ images, productCode, name }: Props) {
                 height: 72,
                 flex: "0 0 auto",
                 border: 0, // remove blue border highlight on active thumbnail
-                borderRadius: 1,
+                borderRadius: 1.5, // มุมโค้งเล็กน้อย
+                overflow: "hidden", // ให้รูปถูกตัดตามมุมโค้ง
                 cursor: "pointer",
                 bgcolor: "white",
               }}
