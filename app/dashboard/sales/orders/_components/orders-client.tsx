@@ -486,7 +486,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
 
   return (
     <Stack spacing={2}>
-      <Paper sx={{ p: { xs: 1.5, sm: 2 }, borderRadius: 2 }} variant="outlined">
+     <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 2 }} variant="outlined">
         {/* [ปรับปรุง] เพิ่ม Stack ครอบด้านนอก
         เพื่อจัดระยะห่างแนวตั้ง (vertical spacing) ระหว่างแต่ละส่วน
       */}

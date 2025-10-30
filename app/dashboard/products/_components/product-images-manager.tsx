@@ -159,8 +159,7 @@ export default function ProductImagesManager({ productId, initialImages }: Props
 
         {/* ข้อความอนุญาต/เงื่อนไขการอัปโหลด */}
         <Typography variant="caption" color="text.secondary">
-          อนุญาตเฉพาะไฟล์: JPG, PNG, WebP, AVIF, SVG ขนาดไม่เกิน 5 MB/ไฟล์ ระบบจะเก็บขนาดต้นฉบับตามที่อัปโหลด
-          การอัปโหลดถือว่ายืนยันว่าคุณมีสิทธิ์ใช้รูปภาพและยินยอมให้จัดเก็บตามเงื่อนไขของระบบ
+          อนุญาตเฉพาะไฟล์: JPG, PNG, WebP, AVIF, SVG ขนาดไม่เกิน 5 MB/ไฟล์
         </Typography>
       </Stack>
     </Paper>
