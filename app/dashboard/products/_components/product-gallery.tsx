@@ -150,6 +150,12 @@ export default function ProductGallery({ images, productCode, name }: Props) {
                 overflow: "hidden", // ให้รูปถูกตัดตามมุมโค้ง
                 cursor: "pointer",
                 bgcolor: "white",
+                transition: "transform 0.15s ease, box-shadow 0.15s ease",
+                boxShadow: 0,
+                "&:hover": {
+                  boxShadow: 3,
+                  transform: "translateY(-2px)",
+                },
               }}
             >
               <Image
