@@ -45,6 +45,7 @@ export function ProductCreateClient({ plants }: Props) {
         title="เพิ่มข้อมูลสินค้าใหม่"
         existingImages={[]}
         plants={plants}
+        mode="create"
         onSubmit={async (values: ProductFormValues) => {
           await createProduct(values);
           router.push("/dashboard/products");

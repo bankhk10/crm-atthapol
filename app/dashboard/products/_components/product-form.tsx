@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  useEffect,
-  useState,
-  type ChangeEvent,
-  type FormEvent,
-  type DragEvent,
-} from "react";
+import { useEffect, useState, type ChangeEvent, type FormEvent, type DragEvent } from "react";
 import {
   Autocomplete,
   Paper,
@@ -23,10 +17,7 @@ import {
 import DeleteIcon from "@mui/icons-material/Close";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import { th } from "date-fns/locale";
+// Date pickers removed from product form; manage dates in inventory page
 import type { ProductFormValues } from "../validation";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 
@@ -41,9 +32,10 @@ type Props = {
   title?: string;
   existingImages?: { id: string; url: string }[];
   plants: Plant[];
+  mode?: "create" | "edit";
 };
 
-const CATEGORY_OPTIONS = ["หมวด A", "หมวด B", "หมวด C"] as const;
+const CATEGORY_OPTIONS = ["กลุ่ม A", "กลุ่ม B", "กลุ่ม C"] as const;
 const BRAND_OPTIONS = ["แบรนด์ A", "แบรนด์ B", "แบรนด์ C"] as const;
 const UNIT_OPTIONS = ["อัน", "ชิ้น", "ถุง"] as const;
 const STATUS_OPTIONS = ["ACTIVE", "INACTIVE"] as const;
@@ -60,12 +52,13 @@ export function ProductForm({
   title,
   existingImages,
   plants,
+  mode = "edit",
 }: Props) {
   const [values, setValues] = useState<ProductFormValues>(initialValues);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [images, setImages] = useState<ImageItem[]>(
-    existingImages?.map((i) => ({ id: i.id, url: i.url })) ?? []
+    existingImages?.map((i) => ({ id: i.id, url: i.url })) ?? [],
   );
   const [imageError, setImageError] = useState<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -92,7 +85,7 @@ export function ProductForm({
 
       if (images.length > 0) {
         const fileItems = images.filter(
-          (i): i is Required<ImageItem> => !!i.file
+          (i): i is Required<ImageItem> => !!i.file,
         ) as Required<ImageItem>[];
         let uploaded: string[] = [];
         if (fileItems.length > 0) {
@@ -114,7 +107,7 @@ export function ProductForm({
           map.set(fileItems[i].id, uploaded[i] ?? "");
         }
         finalUrls = images
-          .map((img) => (img.file ? map.get(img.id) ?? "" : img.url))
+          .map((img) => (img.file ? (map.get(img.id) ?? "") : img.url))
           .filter((u) => !!u);
         firstUrl = finalUrls[0] ?? values.imageUrl;
       } else {
@@ -123,7 +116,7 @@ export function ProductForm({
 
       const payload = {
         ...values,
-        imageUrl: images.length === 0 ? "" : firstUrl ?? values.imageUrl,
+        imageUrl: images.length === 0 ? "" : (firstUrl ?? values.imageUrl),
         imageUrls: finalUrls,
       } as ProductFormValues & { imageUrls?: string[] };
       await onSubmit?.(payload);
@@ -244,12 +237,7 @@ export function ProductForm({
       }}
     >
       {/* หัวข้อฟอร์ม */}
-      <Typography
-        variant="h4"
-        fontWeight={800}
-        align="center"
-        sx={{ mt: 1, mb: 4 }}
-      >
+      <Typography variant="h4" fontWeight={800} align="center" sx={{ mt: 1, mb: 4 }}>
         {title ?? "เพิ่มข้อมูลสินค้าใหม่"}
       </Typography>
       <Divider sx={{ mt: 1, mb: 4 }} />
@@ -275,44 +263,13 @@ export function ProductForm({
           />
         </Stack>
 
-        {/* ราคา + จำนวน */}
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-          <TextField
-            type="number"
-            label="ราคา"
-            value={values.price ?? ""}
-            onChange={handleChange("price")}
-            fullWidth
-            inputProps={{
-              min: 0,
-              onWheel: (e: React.WheelEvent<HTMLInputElement>) => {
-                e.preventDefault();
-                (e.currentTarget as HTMLInputElement).blur();
-              },
-            }}
-          />
-          <TextField
-            type="number"
-            label="จำนวนสินค้า"
-            value={values.qtyOnHand ?? 0}
-            onChange={handleChange("qtyOnHand")}
-            fullWidth
-            inputProps={{
-              min: 0,
-              step: 1,
-              onWheel: (e: React.WheelEvent<HTMLInputElement>) => {
-                e.preventDefault();
-                (e.currentTarget as HTMLInputElement).blur();
-              },
-            }}
-          />
-        </Stack>
+        {/* ลบช่อง ราคา/จำนวนสินค้า: จัดการผ่านหน้าสต็อก/ล็อต */}
 
         {/* หมวดหมู่ + แบรนด์ */}
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           <TextField
             select
-            label="หมวดหมู่สินค้า"
+            label="กลุ่มสินค้า"
             value={values.category}
             onChange={handleChange("category")}
             fullWidth
@@ -344,48 +301,17 @@ export function ProductForm({
           </TextField>
         </Stack>
 
-        {/* วันที่ผลิต + หมดอายุ */}
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-          <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={th}>
-            <DatePicker
-              label="วันที่ผลิต"
-              value={values.mfgDate ? new Date(values.mfgDate) : null}
-              views={['year', 'month', 'day']}
-              onChange={(d) =>
-                setValues((prev) => ({
-                  ...prev,
-                  mfgDate: d ? d.toISOString().slice(0, 10) : undefined,
-                }))
-              }
-              slotProps={{ textField: { fullWidth: true } }}
-            />
-          </LocalizationProvider>
-          <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={th}>
-            <DatePicker
-              label="วันหมดอายุ"
-              value={values.expDate ? new Date(values.expDate) : null}
-              views={['year', 'month', 'day']}
-              onChange={(d) =>
-                setValues((prev) => ({
-                  ...prev,
-                  expDate: d ? d.toISOString().slice(0, 10) : undefined,
-                }))
-              }
-              slotProps={{ textField: { fullWidth: true } }}
-            />
-          </LocalizationProvider>
-        </Stack>
-
-        {/* คุณสมบัติ + ขนาดบรรจุ */}
+        {/* ชื่อสามัญ + ขนาดบรรจุ */}
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           <TextField
-            label="คุณสมบัติ"
-            value={values.features ?? ""}
-            onChange={handleChange("features")}
+            label="ชื่อสามัญ"
+            value={values.nameEN ?? ""}
+            onChange={handleChange("nameEN")}
             fullWidth
           />
+
           <TextField
-            label="ขนาดบรรจุ"
+            label="ขนาดบรรจุต่อลัง"
             value={values.packagingSize ?? ""}
             onChange={handleChange("packagingSize")}
             fullWidth
@@ -438,15 +364,17 @@ export function ProductForm({
             <TextField {...params} label="ใช้กับพืช" placeholder="เลือกพืช" />
           )}
         />
-        {/* รายละเอียด */}
-        <TextField
-          label="รายละเอียดเพิ่มเติม (สินค้า)"
-          value={values.description ?? ""}
-          onChange={handleChange("description")}
-          fullWidth
-          multiline
-          minRows={3}
-        />
+        {/* จุดขายสินค้า */}
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          <TextField
+            label="จุดขายสินค้า"
+            value={values.features ?? ""}
+            onChange={handleChange("features")}
+            fullWidth
+            multiline
+            minRows={3}
+          />
+        </Stack>
 
         {/* รูปภาพสินค้า */}
         <Stack spacing={1}>
@@ -466,13 +394,7 @@ export function ProductForm({
               }}
             >
               เลือกรูปภาพ
-              <input
-                hidden
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleSelectImages}
-              />
+              <input hidden type="file" accept="image/*" multiple onChange={handleSelectImages} />
             </Button>
             <Chip label={`${images.length}/10 รูป`} size="small" />
           </Stack>
@@ -499,8 +421,7 @@ export function ProductForm({
                     borderColor: "divider",
                     backgroundColor: "background.default",
                     cursor: "grab",
-                    outline:
-                      draggingId === img.id ? "2px solid #1976d2" : "none",
+                    outline: draggingId === img.id ? "2px solid #1976d2" : "none",
                   }}
                   draggable
                   onDragStart={(e) => handleDragStart(e, img.id)}

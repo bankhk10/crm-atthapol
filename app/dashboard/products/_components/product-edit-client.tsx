@@ -27,6 +27,7 @@ export function ProductEditClient({ productId, initialValues, existingImages, pl
         title="แก้ไขข้อมูลสินค้า"
         existingImages={existingImages}
         plants={plants}
+        mode="edit"
         onSubmit={async (values) => {
           await updateProduct(productId, values);
           router.push("/dashboard/products");
