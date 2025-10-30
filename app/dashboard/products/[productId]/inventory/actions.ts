@@ -111,6 +111,14 @@ export async function updateLot(productId: string, stockId: string, raw: unknown
     throw new Error(msg);
   }
   const data = parsed.data;
+  // If the stock row no longer exists (or was a client-side draft), skip updating gracefully
+  const exists = await prisma.stock.findUnique({ where: { id: sid } });
+  if (!exists) {
+    // still trigger revalidate for UI consistency
+    revalidatePath(`/dashboard/products/${pid}`);
+    revalidatePath(`/dashboard/products/${pid}/inventory`);
+    return;
+  }
   await prisma.stock.update({
     where: { id: sid },
     data: {

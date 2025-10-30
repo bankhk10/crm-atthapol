@@ -5,7 +5,7 @@ import {
   Box,
   Button,
   IconButton,
-  Paper,
+  Paper, // ยังเก็บไว้เผื่อใช้ แต่ตัวอย่างนี้จะใช้ Card
   Stack,
   TextField,
   Typography,
@@ -16,6 +16,10 @@ import {
   TableBody,
   Divider,
   Chip,
+  Card, // เพิ่ม
+  CardHeader, // เพิ่ม
+  CardContent, // เพิ่ม
+  CircularProgress, // เพิ่ม
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SaveIcon from "@mui/icons-material/Save";
@@ -27,6 +31,7 @@ import { th } from "date-fns/locale";
 import { createLot, deleteLot, updateLot, updateProductPrice } from "../actions";
 import { useRouter } from "next/navigation";
 
+// --- Types (ไม่เปลี่ยนแปลง) ---
 type ProductInfo = {
   id: string;
   nameTH: string;
@@ -53,7 +58,9 @@ export default function InventoryClient({
   lots: LotRow[];
 }) {
   const [isPending, startTransition] = useTransition();
-  const [price, setPrice] = useState<string>(product.price != null ? String(product.price) : "");
+  const [price, setPrice] = useState<string>(
+    product.price != null ? String(product.price) : ""
+  );
   const [rows, setRows] = useState<LotRow[]>(() => lots);
   const router = useRouter();
 
@@ -67,7 +74,7 @@ export default function InventoryClient({
     return { onHand, available: onHand };
   }, [rows]);
 
-  // The index of the most recently added draft lot (isNew)
+  // ให้ลบได้เฉพาะล็อตใหม่ล่าสุด (Draft ตัวท้ายสุดเท่านั้น)
   const lastDraftIndex = useMemo(() => {
     for (let i = rows.length - 1; i >= 0; i--) {
       if (rows[i]?.isNew) return i;
@@ -75,7 +82,7 @@ export default function InventoryClient({
     return -1;
   }, [rows]);
 
-  // no inline newLot row; we add draft rows directly into `rows` with isNew=true
+  // ลบ useMemo lastDraftIndex (ไม่จำเป็นแล้ว)
 
   // Auto-generate next lot number like "Lot.1", "Lot.2"
   const nextLotNumber = useMemo(() => {
@@ -90,53 +97,63 @@ export default function InventoryClient({
     return `Lot.${maxN + 1}`;
   }, [rows]);
 
+  // [ปรับปรุง] - ใช้ Promise.all เพื่อให้บันทึกพร้อมกัน
   const saveAll = () => {
-    const pricePayload = { price: price === "" ? undefined : Number(price) };
-    const existing = rows.filter((r) => !r.isNew);
-    const drafts = rows.filter((r) => r.isNew);
-    const updates = existing.map((r) =>
-      updateLot(product.id, r.id, {
-        lotNumber: r.lotNumber,
-        qtyOnHand: r.qtyOnHand,
-        importedAt: r.importedAt,
-        expDate: r.expDate,
-        note: r.note,
-      }),
-    );
-
     startTransition(async () => {
-      await updateProductPrice(product.id, pricePayload);
-      for (const p of updates) await p;
-      for (const d of drafts) {
-        await createLot(product.id, {
-          lotNumber: d.lotNumber,
-          qtyOnHand: d.qtyOnHand,
-          importedAt: d.importedAt,
-          expDate: d.expDate,
-          note: d.note,
-        });
-      }
+      const priceUpdatePromise = updateProductPrice(product.id, {
+        price: price === "" ? undefined : Number(price),
+      });
+
+      const lotUpdatePromises = rows
+        .filter((r) => !r.isNew) // ล็อตเดิม
+        .map((r) =>
+          updateLot(product.id, r.id, {
+            lotNumber: r.lotNumber,
+            qtyOnHand: r.qtyOnHand,
+            importedAt: r.importedAt,
+            expDate: r.expDate,
+            note: r.note,
+          })
+        );
+
+      const lotCreatePromises = rows
+        .filter((r) => r.isNew) // ล็อตใหม่
+        .map((d) =>
+          createLot(product.id, {
+            lotNumber: d.lotNumber,
+            qtyOnHand: d.qtyOnHand,
+            importedAt: d.importedAt,
+            expDate: d.expDate,
+            note: d.note,
+          })
+        );
+
+      // รอทุกอย่างพร้อมกัน
+      await Promise.all([
+        priceUpdatePromise,
+        ...lotUpdatePromises,
+        ...lotCreatePromises,
+      ]);
+
       router.push(`/dashboard/products`);
     });
   };
 
-  const saveRow = (r: LotRow) => {
-    startTransition(async () => {
-      await updateLot(product.id, r.id, {
-        lotNumber: r.lotNumber,
-        qtyOnHand: r.qtyOnHand,
-        importedAt: r.importedAt,
-        expDate: r.expDate,
-        note: r.note,
-      });
-    });
-  };
+  // ลบ saveRow (ไม่ได้ใช้)
 
-  const removeRow = (r: LotRow) => {
-    startTransition(async () => {
-      await deleteLot(product.id, r.id);
-      setRows((prev) => prev.filter((x) => x.id !== r.id));
-    });
+  // [ปรับปรุง] - ฟังก์ชันเดียวสำหรับจัดการการลบ
+  const handleDeleteRow = (rowToDelete: LotRow) => {
+    if (rowToDelete.isNew) {
+      // 1. ถ้าเป็นแถวใหม่ (Draft) - ลบออกจาก state เลย
+      setRows((prev) => prev.filter((r) => r.id !== rowToDelete.id));
+    } else {
+      // 2. ถ้าเป็นแถวเก่า (จาก DB) - เรียก Server Action
+      startTransition(async () => {
+        await deleteLot(product.id, rowToDelete.id);
+        // เมื่อสำเร็จ ค่อยลบออกจาก state
+        setRows((prev) => prev.filter((r) => r.id !== rowToDelete.id));
+      });
+    }
   };
 
   const addNewLot = () => {
@@ -144,7 +161,7 @@ export default function InventoryClient({
       id: `tmp-${Math.random().toString(36).slice(2)}`,
       lotNumber: nextLotNumber,
       qtyOnHand: 0,
-      importedAt: "",
+      importedAt: "", // ใช้ "" (string เปล่า) ดีกว่า null/undefined สำหรับ input
       expDate: "",
       note: "",
       isNew: true,
@@ -152,45 +169,59 @@ export default function InventoryClient({
     setRows((prev) => [...prev, draft]);
   };
 
+  // [ปรับปรุง] - หุ้มทุกอย่างด้วย LocalizationProvider
   return (
-    <Stack spacing={2}>
-      <Paper variant="outlined" sx={{ p: 2 }}>
-        <Stack
-          direction={{ xs: "column", sm: "row" }}
-          spacing={2}
-          alignItems={{ xs: "stretch", sm: "center" }}
-        >
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="subtitle1" fontWeight={700}>
-              {product.nameTH}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              รหัสสินค้า: {product.productCode}
-            </Typography>
-          </Box>
-          <Stack direction="row" spacing={1} alignItems="center">
+    <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={th}>
+      <Stack spacing={3}>
+        {/* --- การ์ดข้อมูลสินค้าและปุ่มบันทึก --- */}
+        <Card variant="outlined">
+          <CardHeader
+            title={
+              <Typography variant="h6" fontWeight={700}>
+                {product.nameTH}
+              </Typography>
+            }
+            subheader={`รหัสสินค้า: ${product.productCode}`}
+          />
+          <CardContent>
             <TextField
               label="ราคา"
-              size="small"
+              // size="small"
               type="number"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
-              sx={{ minWidth: 140 }}
+              sx={{ minWidth: 240 }}
               inputProps={{ min: 0, step: 1 }}
             />
-          </Stack>
-        </Stack>
-      </Paper>
+          </CardContent>
+        </Card>
 
-      <Paper variant="outlined" sx={{ p: 2 }}>
-        <Stack spacing={1}>
-          <Typography variant="subtitle1" fontWeight={700}>
-            ล็อตสินค้า
-          </Typography>
-          <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={th}>
+        {/* --- การ์ดจัดการล็อต --- */}
+        <Card variant="outlined">
+          <CardHeader
+            title={
+              <Typography variant="subtitle1" fontWeight={700}>
+                ล็อตสินค้า
+              </Typography>
+            }
+            action={
+              // [ปรับปรุง] - ย้ายปุ่ม "เพิ่มล็อต" มาไว้ที่นี่
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<AddCircleOutlineIcon />}
+                onClick={addNewLot}
+                disabled={isPending}
+              >
+                เพิ่มล็อต
+              </Button>
+            }
+          />
+          {/* [ปรับปรุง] - ลบ padding ของ CardContent เพื่อให้ตารางชิดขอบ */}
+          <CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}>
             <Table size="small">
               <TableHead>
-                <TableRow>
+                <TableRow sx={{ backgroundColor: "grey.50" }}>
                   <TableCell sx={{ fontWeight: 700 }}>เลขล็อต</TableCell>
                   <TableCell align="center" sx={{ fontWeight: 700 }}>
                     จำนวน
@@ -206,28 +237,38 @@ export default function InventoryClient({
                     key={r.id}
                     hover
                     sx={{
-                      backgroundColor: r.isNew ? "rgba(25,118,210,0.06)" : undefined,
+                      backgroundColor: r.isNew
+                        ? "rgba(25,118,210,0.06)"
+                        : undefined,
                     }}
                   >
-                    <TableCell>
-                      <TextField value={r.lotNumber} size="small" InputProps={{ readOnly: true }} />
+                    <TableCell sx={{ minWidth: 180 }}>
+                      <TextField
+                        value={r.lotNumber}
+                        size="small"
+                        InputProps={{ readOnly: true }}
+                        fullWidth
+                      />
                     </TableCell>
-                    <TableCell>
+                    <TableCell sx={{ minWidth: 120 }}>
                       <TextField
                         value={r.qtyOnHand}
                         onChange={(e) =>
                           setRows((prev) =>
                             prev.map((x, i) =>
-                              i === idx ? { ...x, qtyOnHand: Number(e.target.value || 0) } : x,
-                            ),
+                              i === idx
+                                ? { ...x, qtyOnHand: Number(e.target.value || 0) }
+                                : x
+                            )
                           )
                         }
                         size="small"
                         type="number"
                         inputProps={{ min: 0, step: 1 }}
+                        fullWidth
                       />
                     </TableCell>
-                    <TableCell sx={{ width: 100 }}>
+                    <TableCell sx={{ minWidth: 180 }}>
                       <DatePicker
                         label={undefined}
                         value={r.importedAt ? new Date(r.importedAt) : null}
@@ -238,11 +279,11 @@ export default function InventoryClient({
                                 ? {
                                     ...x,
                                     importedAt: newValue
-                                      ? new Date(newValue).toISOString().slice(0, 10)
+                                      ? newValue.toISOString().slice(0, 10)
                                       : "",
                                   }
-                                : x,
-                            ),
+                                : x
+                            )
                           );
                         }}
                         slotProps={{
@@ -250,7 +291,7 @@ export default function InventoryClient({
                         }}
                       />
                     </TableCell>
-                    <TableCell sx={{ width: 100 }}>
+                    <TableCell sx={{ minWidth: 180 }}>
                       <DatePicker
                         label={undefined}
                         value={r.expDate ? new Date(r.expDate) : null}
@@ -261,11 +302,11 @@ export default function InventoryClient({
                                 ? {
                                     ...x,
                                     expDate: newValue
-                                      ? new Date(newValue).toISOString().slice(0, 10)
+                                      ? newValue.toISOString().slice(0, 10)
                                       : "",
                                   }
-                                : x,
-                            ),
+                                : x
+                            )
                           );
                         }}
                         slotProps={{
@@ -273,13 +314,15 @@ export default function InventoryClient({
                         }}
                       />
                     </TableCell>
-                    <TableCell sx={{ minWidth: 300 }}>
+                    <TableCell sx={{ minWidth: 200 }}>
                       <Stack direction="row" spacing={1} alignItems="center">
                         <TextField
                           value={r.note || ""}
                           onChange={(e) =>
                             setRows((prev) =>
-                              prev.map((x, i) => (i === idx ? { ...x, note: e.target.value } : x)),
+                              prev.map((x, i) =>
+                                i === idx ? { ...x, note: e.target.value } : x,
+                              ),
                             )
                           }
                           size="small"
@@ -289,7 +332,8 @@ export default function InventoryClient({
                           <IconButton
                             size="small"
                             color="error"
-                            onClick={() => setRows((prev) => prev.filter((x) => x.id !== r.id))}
+                            onClick={() => handleDeleteRow(r)}
+                            disabled={isPending}
                             title="ลบล็อตใหม่ล่าสุด"
                           >
                             <DeleteIcon fontSize="small" />
@@ -297,57 +341,44 @@ export default function InventoryClient({
                         )}
                       </Stack>
                     </TableCell>
+                    {/* คอลัมน์จัดการถูกลบออกตามคำขอ */}
                   </TableRow>
                 ))}
                 {/* End rows */}
 
-                {/* *** ปุ่ม "เพิ่มล็อต" ถูกย้ายมาไว้ตรงนี้ *** */}
-                <TableRow>
-                  <TableCell colSpan={5} sx={{ borderBottom: "none", py: 1.5 }}>
-                    <Stack direction="row" spacing={2} justifyContent="center">
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        startIcon={<AddCircleOutlineIcon />}
-                        onClick={addNewLot}
-                        disabled={isPending}
-                      >
-                        เพิ่มล็อต
-                      </Button>
-                    </Stack>
-                  </TableCell>
-                </TableRow>
+                {/* --- ลบปุ่ม "เพิ่มล็อต" ออกจากตรงนี้ --- */}
 
                 {/* Totals */}
-                <TableRow>
+                <TableRow sx={{ backgroundColor: "grey.100" }}>
                   <TableCell sx={{ fontWeight: 700 }}>รวม</TableCell>
                   <TableCell align="center" sx={{ fontWeight: 700 }}>
                     {totals.onHand}
                   </TableCell>
-                  <TableCell></TableCell>
-                  <TableCell></TableCell>
-                  <TableCell></TableCell>
+                  {/* ปรับ ColSpan ให้ตรงกับจำนวนคอลัมน์ปัจจุบัน */}
+                  <TableCell colSpan={3}></TableCell>
                 </TableRow>
               </TableBody>
             </Table>
-          </LocalizationProvider>
+          </CardContent>
+          {/* --- ลบปุ่ม "บันทึก" ออกจากตรงนี้ --- */}
+        </Card>
 
-          {/* *** โค้ดปุ่มที่ถูกย้ายออกไปแล้ว ***
-           */}
-
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="center">
-            <Button
-              variant="contained"
-              color="success"
-              startIcon={<SaveIcon />}
-              onClick={saveAll}
-              disabled={isPending}
-            >
-              บันทึก
-            </Button>
-          </Stack>
+        {/* ปุ่มบันทึก ล่างสุด */}
+        <Stack direction={{ xs: "column", sm: "row" }} justifyContent="center">
+          <Button
+            variant="contained"
+            color="success"
+            onClick={saveAll}
+            disabled={isPending}
+            startIcon={
+              isPending ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />
+            }
+            sx={{ minWidth: 140 }}
+          >
+            {isPending ? "กำลังบันทึก..." : "บันทึก"}
+          </Button>
         </Stack>
-      </Paper>
-    </Stack>
+      </Stack>
+    </LocalizationProvider>
   );
 }
