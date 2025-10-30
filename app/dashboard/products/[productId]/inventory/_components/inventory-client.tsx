@@ -69,9 +69,7 @@ export default function InventoryClient({
   lots: LotRowDb[];
 }) {
   const [isPending, startTransition] = useTransition();
-  const [price, setPrice] = useState<string>(
-    product.price != null ? String(product.price) : ""
-  );
+  const [price, setPrice] = useState<string>(product.price != null ? String(product.price) : "");
   const [rows, setRows] = useState<LotRow[]>(() =>
     (lots || []).map((r) => ({
       id: r.id,
@@ -157,7 +155,7 @@ export default function InventoryClient({
             importedAt: r.importedAt,
             expDate: r.expDate,
             note: r.note,
-          })
+          }),
         );
 
       const lotCreatePromises = rows
@@ -169,15 +167,11 @@ export default function InventoryClient({
             importedAt: d.importedAt,
             expDate: d.expDate,
             note: d.note,
-          })
+          }),
         );
 
       // รอทุกอย่างพร้อมกัน
-      await Promise.all([
-        priceUpdatePromise,
-        ...lotUpdatePromises,
-        ...lotCreatePromises,
-      ]);
+      await Promise.all([priceUpdatePromise, ...lotUpdatePromises, ...lotCreatePromises]);
 
       router.push(`/dashboard/products`);
     });
@@ -266,13 +260,21 @@ export default function InventoryClient({
             <Table size="small">
               <TableHead>
                 <TableRow sx={{ backgroundColor: "grey.50" }}>
-                  <TableCell sx={{ fontWeight: 700 }}>เลขล็อต</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700 }}>
+                    เลขล็อต
+                  </TableCell>
                   <TableCell align="center" sx={{ fontWeight: 700 }}>
                     จำนวน
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>วันที่นำเข้า</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>วันหมดอายุ</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>หมายเหตุ</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700 }}>
+                    วันที่นำเข้า
+                  </TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700 }}>
+                    วันหมดอายุ
+                  </TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700 }}>
+                    หมายเหตุ
+                  </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -281,12 +283,10 @@ export default function InventoryClient({
                     key={r.id}
                     hover
                     sx={{
-                      backgroundColor: r.isNew
-                        ? "rgba(25,118,210,0.06)"
-                        : undefined,
+                      backgroundColor: r.isNew ? "rgba(25,118,210,0.06)" : undefined,
                     }}
                   >
-                    <TableCell sx={{ minWidth: 180 }}>
+                    <TableCell sx={{ minWidth: 80 }}>
                       <TextField
                         value={r.lotNumber}
                         size="small"
@@ -294,14 +294,16 @@ export default function InventoryClient({
                         fullWidth
                       />
                     </TableCell>
-                    <TableCell sx={{ minWidth: 120 }}>
+                    <TableCell sx={{ minWidth: 80 }}>
                       <TextField
                         value={r.qtyOnHand}
                         onChange={(e) => {
                           const raw = e.target.value ?? "";
                           const digits = String(raw).replace(/[^0-9]/g, "");
                           const normalized = digits.replace(/^0+(?=\d)/, "");
-                          setRows((prev) => prev.map((x) => (x.id === r.id ? { ...x, qtyOnHand: normalized } : x)));
+                          setRows((prev) =>
+                            prev.map((x) => (x.id === r.id ? { ...x, qtyOnHand: normalized } : x)),
+                          );
                         }}
                         size="small"
                         type="number"
@@ -319,9 +321,7 @@ export default function InventoryClient({
                               x.id === r.id
                                 ? {
                                     ...x,
-                                    importedAt: newValue
-                                      ? newValue.toISOString().slice(0, 10)
-                                      : "",
+                                    importedAt: newValue ? newValue.toISOString().slice(0, 10) : "",
                                   }
                                 : x,
                             ),
@@ -342,9 +342,7 @@ export default function InventoryClient({
                               x.id === r.id
                                 ? {
                                     ...x,
-                                    expDate: newValue
-                                      ? newValue.toISOString().slice(0, 10)
-                                      : "",
+                                    expDate: newValue ? newValue.toISOString().slice(0, 10) : "",
                                   }
                                 : x,
                             ),
@@ -355,12 +353,14 @@ export default function InventoryClient({
                         }}
                       />
                     </TableCell>
-                    <TableCell sx={{ minWidth: 200 }}>
+                    <TableCell sx={{ minWidth: 300 }}>
                       <Stack direction="row" spacing={1} alignItems="center">
                         <TextField
                           value={r.note || ""}
                           onChange={(e) =>
-                            setRows((prev) => prev.map((x) => (x.id === r.id ? { ...x, note: e.target.value } : x)))
+                            setRows((prev) =>
+                              prev.map((x) => (x.id === r.id ? { ...x, note: e.target.value } : x)),
+                            )
                           }
                           size="small"
                           fullWidth
@@ -381,23 +381,25 @@ export default function InventoryClient({
                     {/* คอลัมน์จัดการถูกลบออกตามคำขอ */}
                   </TableRow>
                 ))}
-                {/* End rows */}
-
-                {/* --- ลบปุ่ม "เพิ่มล็อต" ออกจากตรงนี้ --- */}
 
                 {/* Totals */}
                 <TableRow sx={{ backgroundColor: "grey.100" }}>
-                  <TableCell sx={{ fontWeight: 700 }}>รวม</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 700 }}>
-                    {totals.onHand}
+                  <TableCell align="center">
+                    {/* ใช้ Typography และกำหนด variant ที่ต้องการ */}
+                    <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
+                      รวม
+                    </Typography>
                   </TableCell>
-                  {/* ปรับ ColSpan ให้ตรงกับจำนวนคอลัมน์ปัจจุบัน */}
+                  <TableCell align="center" sx={{ fontWeight: 700 }}>
+                    <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
+                      {totals.onHand}
+                    </Typography>
+                  </TableCell>
                   <TableCell colSpan={3}></TableCell>
                 </TableRow>
               </TableBody>
             </Table>
           </CardContent>
-          {/* --- ลบปุ่ม "บันทึก" ออกจากตรงนี้ --- */}
         </Card>
 
         {/* ปุ่มบันทึก ล่างสุด */}
@@ -407,9 +409,7 @@ export default function InventoryClient({
             color="success"
             onClick={saveAll}
             disabled={isPending}
-            startIcon={
-              isPending ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />
-            }
+            startIcon={isPending ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
             sx={{ minWidth: 140 }}
           >
             {isPending ? "กำลังบันทึก..." : "บันทึก"}
