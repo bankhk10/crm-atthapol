@@ -30,6 +30,7 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { th } from "date-fns/locale";
 import { createLot, deleteLot, updateLot, updateProductPrice } from "../actions";
 import { useRouter } from "next/navigation";
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 // --- Types (ไม่เปลี่ยนแปลง) ---
 type ProductInfo = {
@@ -402,15 +403,31 @@ export default function InventoryClient({
           </CardContent>
         </Card>
 
-        {/* ปุ่มบันทึก ล่างสุด */}
-        <Stack direction={{ xs: "column", sm: "row" }} justifyContent="center">
+        {/* ปุ่ม ยกเลิก + บันทึก ล่างสุด */}
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="center">
+          <Button
+            variant="contained"
+            onClick={() => router.push("/dashboard/products")}
+            disabled={isPending}
+            startIcon={<ArrowBackIcon />}
+            sx={{
+              minWidth: 130,
+              backgroundColor: "#8b8b8bff", // <-- สีที่คุณต้องการ
+              color: "#fff", // <-- แนะนำให้กำหนดสีตัวอักษรเป็นสีขาว
+              "&:hover": {
+                backgroundColor: "#8a8585ff", // <-- สีตอน hover (เข้มขึ้น)
+              },
+            }}
+          >
+            ย้อนกลับ
+          </Button>
           <Button
             variant="contained"
             color="success"
             onClick={saveAll}
             disabled={isPending}
             startIcon={isPending ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
-            sx={{ minWidth: 140 }}
+            sx={{ minWidth: 130 }}
           >
             {isPending ? "กำลังบันทึก..." : "บันทึก"}
           </Button>
