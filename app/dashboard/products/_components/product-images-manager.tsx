@@ -55,7 +55,39 @@ export default function ProductImagesManager({ productId, initialImages }: Props
       setError("รูปครบ 10 รูปแล้ว");
       return;
     }
-    const picked = files.filter((f) => f.type.startsWith("image/"));
+    const MAX_BYTES = 5 * 1024 * 1024; // 5MB
+    const ALLOWED_MIME = new Set([
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/webp",
+      "image/avif",
+      "image/svg+xml",
+      "image/gif",
+    ]);
+    const ALLOWED_EXT = new Set(["jpg", "jpeg", "png", "webp", "avif", "svg", "gif"]);
+    const invalidNames: string[] = [];
+    const picked = files.filter((f) => {
+      const name = f.name || "(ไม่มีชื่อไฟล์)";
+      const ext = ((name.split(".").pop() || "").toLowerCase());
+      const mimeOk = f.type ? (ALLOWED_MIME.has(f.type) || f.type.startsWith("image/")) : false;
+      const extOk = ext ? ALLOWED_EXT.has(ext) : false;
+      if (!(mimeOk || extOk)) {
+        invalidNames.push(name);
+        return false;
+      }
+      if (typeof f.size === "number" && f.size > MAX_BYTES) {
+        setError("ขนาดไฟล์ต้องไม่เกิน 5MB ต่อไฟล์");
+        return false;
+      }
+      return true;
+    });
+
+    if (invalidNames.length > 0) {
+      const msg = `ไฟล์ไม่รองรับ: ${invalidNames.join(", ")} (รองรับ: JPG, PNG, WebP, AVIF, SVG, GIF)`;
+      setError(msg);
+      try { alert(msg); } catch {}
+    }
     const slice = picked.slice(0, allowed);
     if (slice.length < picked.length) setError("เลือกรูปได้สูงสุด 10 รูป");
     const fd = new FormData();
@@ -119,11 +151,17 @@ export default function ProductImagesManager({ productId, initialImages }: Props
         <Stack direction="row" spacing={1}>
           <Button variant="outlined" component="label" startIcon={<AddPhotoAlternateIcon />}>
             เพิ่มรูป
-            <input hidden type="file" accept="image/*" multiple onChange={handleAddFiles} />
+            <input hidden type="file" accept=".jpg,.jpeg,.png,.webp,.avif,.svg,.gif,image/*" multiple onChange={handleAddFiles} />
           </Button>
           <Button variant="contained" onClick={handleSave} disabled={pending}>บันทึกรูป</Button>
           <Button variant="text" onClick={handleReset} disabled={pending}>รีเซ็ต</Button>
         </Stack>
+
+        {/* ข้อความอนุญาต/เงื่อนไขการอัปโหลด */}
+        <Typography variant="caption" color="text.secondary">
+          อนุญาตเฉพาะไฟล์: JPG, PNG, WebP, AVIF, SVG ขนาดไม่เกิน 5 MB/ไฟล์ ระบบจะปรับขนาดเป็น 400×400 px ก่อนบันทึก
+          การอัปโหลดถือว่ายืนยันว่าคุณมีสิทธิ์ใช้รูปภาพและยินยอมให้จัดเก็บตามเงื่อนไขของระบบ
+        </Typography>
       </Stack>
     </Paper>
   );

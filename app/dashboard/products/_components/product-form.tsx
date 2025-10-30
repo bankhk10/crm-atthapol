@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent, type DragEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+  type DragEvent,
+} from "react";
 import {
   Autocomplete,
   Paper,
@@ -144,8 +151,42 @@ export function ProductForm({
 
     setImageError(null);
 
-    // Filter only images
-    const imageFiles = files.filter((f) => f.type.startsWith("image/"));
+    // Filter by type/extension and size
+    const MAX_BYTES = 5 * 1024 * 1024; // 5MB
+    const ALLOWED_MIME = new Set([
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/webp",
+      "image/avif",
+      "image/svg+xml",
+      "image/gif",
+    ]);
+    const ALLOWED_EXT = new Set(["jpg", "jpeg", "png", "webp", "avif", "svg", "gif"]);
+    const invalidNames: string[] = [];
+    const imageFiles = files.filter((f) => {
+      const name = f.name || "(ไม่มีชื่อไฟล์)";
+      const ext = (name.split(".").pop() || "").toLowerCase();
+      const mimeOk = f.type ? ALLOWED_MIME.has(f.type) || f.type.startsWith("image/") : false;
+      const extOk = ext ? ALLOWED_EXT.has(ext) : false;
+      if (!(mimeOk || extOk)) {
+        invalidNames.push(name);
+        return false;
+      }
+      if (typeof f.size === "number" && f.size > MAX_BYTES) {
+        setImageError("ขนาดไฟล์ต้องไม่เกิน 5MB ต่อไฟล์");
+        return false;
+      }
+      return true;
+    });
+
+    if (invalidNames.length > 0) {
+      const msg = `ไฟล์ไม่รองรับ: ${invalidNames.join(", ")} (รองรับ: JPG, PNG, WebP, AVIF, SVG, GIF)`;
+      setImageError(msg);
+      try {
+        alert(msg);
+      } catch {}
+    }
 
     // Deduplicate by name + size + lastModified
     const existing = new Set(images.map((im) => im.id));
@@ -424,10 +465,19 @@ export function ProductForm({
               }}
             >
               เลือกรูปภาพ
-              <input hidden type="file" accept="image/*" multiple onChange={handleSelectImages} />
+              <input
+                hidden
+                type="file"
+                accept=".jpg,.jpeg,.png,.webp,.avif,.svg,.gif,image/*"
+                multiple
+                onChange={handleSelectImages}
+              />
             </Button>
             <Chip label={`${images.length}/10 รูป`} size="small" />
           </Stack>
+          <Typography variant="caption" color="text.secondary">
+            อนุญาตเฉพาะไฟล์: JPG, PNG, WebP, AVIF, SVG ขนาดไม่เกิน 5 MB/ไฟล์
+          </Typography>
 
           {imageError && (
             <Typography color="error.main" variant="body2">
