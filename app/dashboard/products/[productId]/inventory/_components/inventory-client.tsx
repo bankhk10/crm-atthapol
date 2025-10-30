@@ -199,10 +199,10 @@ export default function InventoryClient({
                     hover
                     sx={{ backgroundColor: r.isNew ? "rgba(25,118,210,0.06)" : undefined }}
                   >
-                    <TableCell sx={{ minWidth: 120 }}>
+                    <TableCell>
                       <TextField value={r.lotNumber} size="small" InputProps={{ readOnly: true }} />
                     </TableCell>
-                    <TableCell align="right" sx={{ width: 150 }}>
+                    <TableCell >
                       <TextField
                         value={r.qtyOnHand}
                         onChange={(e) =>
@@ -217,7 +217,7 @@ export default function InventoryClient({
                         inputProps={{ min: 0, step: 1 }}
                       />
                     </TableCell>
-                    <TableCell sx={{ width: 190 }}>
+                    <TableCell sx={{ width: 100 }}>
                       <DatePicker
                         label={undefined}
                         value={r.importedAt ? new Date(r.importedAt) : null}
@@ -238,7 +238,7 @@ export default function InventoryClient({
                         slotProps={{ textField: { size: "small", fullWidth: true } }}
                       />
                     </TableCell>
-                    <TableCell sx={{ width: 190 }}>
+                    <TableCell sx={{ width: 100 }}>
                       <DatePicker
                         label={undefined}
                         value={r.expDate ? new Date(r.expDate) : null}
@@ -259,7 +259,7 @@ export default function InventoryClient({
                         slotProps={{ textField: { size: "small", fullWidth: true } }}
                       />
                     </TableCell>
-                    <TableCell sx={{ minWidth: 250 }}>
+                    <TableCell sx={{ minWidth: 300 }}>
                       <TextField
                         value={r.note || ""}
                         onChange={(e) =>
@@ -268,6 +268,7 @@ export default function InventoryClient({
                           )
                         }
                         size="small"
+                        fullWidth
                       />
                     </TableCell>
                   </TableRow>

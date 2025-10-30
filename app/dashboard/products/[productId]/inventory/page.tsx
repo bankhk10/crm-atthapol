@@ -14,7 +14,7 @@ export default async function ProductInventoryPage({
 
   return (
     <Box sx={{ display: "flex", justifyContent: "center", py: 4, px: { xs: 2, md: 0 } }}>
-      <Stack spacing={3} sx={{ width: "100%", maxWidth: 1100 }}>
+      <Stack spacing={3} sx={{ width: "100%", maxWidth: 1200 }}>
         <Paper sx={{ p: { xs: 2, md: 3 } }}>
           <Stack spacing={2}>
             <Typography variant="h5" fontWeight={800}>
