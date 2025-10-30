@@ -126,9 +126,9 @@ export default async function ProductDetailPage({
 
                     {/* เพิ่มข้อมูลสำคัญ */}
                     <Info label="ชื่อสินค้า : " value={product.nameTH ?? "-"} />
-                    <Info label="จำนวนสินค้าทั้งหมด : " value={totals.onHand} />
-                    <Info label="พร้อมขาย : " value={Math.max(0, totals.onHand - totals.reserved)} />
-                    <Info label="สต็อกจอง : " value={totals.reserved} />
+                    <Info label="จำนวนสินค้าทั้งหมด : " value={Number(totals.onHand).toLocaleString('th-TH')} />
+                    <Info label="พร้อมขาย : " value={Number(Math.max(0, totals.onHand - totals.reserved)).toLocaleString('th-TH')} />
+                    <Info label="สต็อกจอง : " value={Number(totals.reserved).toLocaleString('th-TH')} />
 
                     <Info label="หมวดหมู่ : " value={product.category ?? "-"} />
                     <Info label="แบรนด์ : " value={product.brand ?? "-"} />
@@ -221,7 +221,7 @@ export default async function ProductDetailPage({
                       <Typography fontWeight={700}>{s.lotNumber}</Typography>
                     </Grid>
                     <Grid size={{ xs: 4, sm: 2 }} sx={{ textAlign: { sm: "center" } }}>
-                      <Typography>{s.qtyOnHand ?? 0}</Typography>
+                      <Typography>{Number(s.qtyOnHand ?? 0).toLocaleString('th-TH')}</Typography>
                     </Grid>
                     <Grid size={{ xs: 4, sm: 3 }} sx={{ display: { xs: "none", sm: "block" } }}>
                       <Typography>
