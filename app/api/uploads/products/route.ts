@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import path from "path";
 import { promises as fs } from "fs";
-import sharp from "sharp";
+// Note: No image resizing; store original bytes as uploaded
 
 export const runtime = "nodejs";
 
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
       }
     }
 
-    // Filter only images that we can reasonably process on the server
+    // Filter only common web image types
     const SUPPORTED_TYPES = new Set([
       "image/jpeg",
       "image/jpg",
@@ -63,21 +63,29 @@ export async function POST(request: Request) {
         }
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
-        // Resize to 400x400 (cover) and convert to JPEG for consistency
-        const out = await sharp(buffer)
-          .rotate()
-          .resize(400, 400, { fit: "cover" })
-          .jpeg({ quality: 85 })
-          .toBuffer();
-
-        const base = (file.name || "image.jpg").replace(/\.[^.]+$/, "");
-        const safeName = base
+        // Keep original size and extension
+        const mimeToExt: Record<string, string> = {
+          "image/jpeg": ".jpg",
+          "image/jpg": ".jpg",
+          "image/png": ".png",
+          "image/webp": ".webp",
+          "image/gif": ".gif",
+          "image/avif": ".avif",
+          "image/svg+xml": ".svg",
+        };
+        const origName = file.name || "image";
+        const extFromName = path.extname(origName).toLowerCase();
+        const baseFromName = path.basename(origName, extFromName);
+        const fallbackExt = mimeToExt[file.type as string] || (extFromName || ".img");
+        const ext = extFromName || fallbackExt;
+        const safeBase = baseFromName
           .toLowerCase()
           .replace(/[^a-z0-9_.-]+/g, "-")
-          .replace(/-+/g, "-");
-        const name = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safeName}.jpg`;
+          .replace(/-+/g, "-")
+          .replace(/^[-_.]+|[-_.]+$/g, "");
+        const name = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safeBase || "file"}${ext}`;
         const filePath = path.join(uploadDir, name);
-        await fs.writeFile(filePath, out);
+        await fs.writeFile(filePath, buffer);
         urls.push(`/uploads/products/${name}`);
       } catch (e) {
         // Skip problematic file but continue others

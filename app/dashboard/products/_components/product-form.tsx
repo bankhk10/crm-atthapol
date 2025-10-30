@@ -476,7 +476,7 @@ export function ProductForm({
             <Chip label={`${images.length}/10 รูป`} size="small" />
           </Stack>
           <Typography variant="caption" color="text.secondary">
-            อนุญาตเฉพาะไฟล์: JPG, PNG, WebP, AVIF, SVG ขนาดไม่เกิน 5 MB/ไฟล์
+            อนุญาตเฉพาะไฟล์: JPG, PNG, WebP, AVIF, SVG ขนาดไม่เกิน 5 MB/ไฟล์ ระบบจะเก็บขนาดต้นฉบับตามที่อัปโหลด
           </Typography>
 
           {imageError && (
