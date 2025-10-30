@@ -21,7 +21,7 @@ export default function ProductGallery({ images, productCode, name }: Props) {
   const imgs =
     images && images.length > 0
       ? images
-      : [{ id: "placeholder", url: "/images/logo.png", alt: name }];
+      : [{ id: "placeholder", url: "/images/product-placeholder.svg", alt: name || "no-image" }];
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const thumbRefs = useRef<(HTMLDivElement | null)[]>([]);

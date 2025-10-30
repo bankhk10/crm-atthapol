@@ -99,11 +99,9 @@ export default async function ProductDetailPage({
             <Grid size={{ xs: 12, md: 6 }}>
               <Stack spacing={3}>
                 <ProductGallery
-                  images={(product.images ?? []).map((img: any) => ({
-                    id: img.id,
-                    url: img.url,
-                    alt: product.nameTH,
-                  }))}
+                  images={(product.images ?? []).map((img: any) => ({ id: img.id, url: img.url, alt: product.nameTH }))}
+                  productCode={product.productCode}
+                  name={product.nameTH}
                 />
                 {product.description && (
                   <Paper
