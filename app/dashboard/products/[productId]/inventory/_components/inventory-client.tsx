@@ -184,11 +184,12 @@ export default function InventoryClient({
               <TableHead>
                 <TableRow>
                   <TableCell sx={{ fontWeight: 700 }}>เลขล็อต</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 700 }}>จำนวน</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700 }}>
+                    จำนวน
+                  </TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>วันที่นำเข้า</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>วันหมดอายุ</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>หมายเหตุ</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 700 }}>ดำเนินการ</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -198,9 +199,9 @@ export default function InventoryClient({
                     hover
                     sx={{ backgroundColor: r.isNew ? "rgba(25,118,210,0.06)" : undefined }}
                   >
-                  <TableCell sx={{ minWidth: 150 }}>
-                    <TextField value={r.lotNumber} size="small" InputProps={{ readOnly: true }} />
-                  </TableCell>
+                    <TableCell sx={{ minWidth: 120 }}>
+                      <TextField value={r.lotNumber} size="small" InputProps={{ readOnly: true }} />
+                    </TableCell>
                     <TableCell align="right" sx={{ width: 150 }}>
                       <TextField
                         value={r.qtyOnHand}
@@ -226,7 +227,9 @@ export default function InventoryClient({
                               i === idx
                                 ? {
                                     ...x,
-                                    importedAt: newValue ? new Date(newValue).toISOString().slice(0, 10) : "",
+                                    importedAt: newValue
+                                      ? new Date(newValue).toISOString().slice(0, 10)
+                                      : "",
                                   }
                                 : x,
                             ),
@@ -245,7 +248,9 @@ export default function InventoryClient({
                               i === idx
                                 ? {
                                     ...x,
-                                    expDate: newValue ? new Date(newValue).toISOString().slice(0, 10) : "",
+                                    expDate: newValue
+                                      ? new Date(newValue).toISOString().slice(0, 10)
+                                      : "",
                                   }
                                 : x,
                             ),
@@ -254,7 +259,7 @@ export default function InventoryClient({
                         slotProps={{ textField: { size: "small", fullWidth: true } }}
                       />
                     </TableCell>
-                    <TableCell sx={{ minWidth: 160 }}>
+                    <TableCell sx={{ minWidth: 250 }}>
                       <TextField
                         value={r.note || ""}
                         onChange={(e) =>
@@ -264,9 +269,6 @@ export default function InventoryClient({
                         }
                         size="small"
                       />
-                    </TableCell>
-                    <TableCell align="center" sx={{ width: 150 }}>
-                      {r.isNew && <Chip label="ใหม่" size="small" color="primary" variant="outlined" />}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -282,12 +284,17 @@ export default function InventoryClient({
                   <TableCell></TableCell>
                   <TableCell></TableCell>
                   <TableCell></TableCell>
-                  <TableCell align="center"></TableCell>
+                  {/* <TableCell align="center"></TableCell> */}
                 </TableRow>
               </TableBody>
             </Table>
           </LocalizationProvider>
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="flex-start" sx={{ mt: 1 }}>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={2}
+            justifyContent="flex-start"
+            sx={{ mt: 1 }}
+          >
             <TextField
               label="เลขล็อตที่จะสร้าง"
               value={nextLotNumber}
