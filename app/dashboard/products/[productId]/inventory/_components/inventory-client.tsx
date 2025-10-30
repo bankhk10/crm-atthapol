@@ -15,6 +15,7 @@ import {
   TableCell,
   TableBody,
   Divider,
+  Chip,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SaveIcon from "@mui/icons-material/Save";
@@ -107,7 +108,7 @@ export default function InventoryClient({
           note: d.note,
         });
       }
-      router.refresh();
+      router.push(`/dashboard/products`);
     });
   };
 
@@ -192,7 +193,11 @@ export default function InventoryClient({
               </TableHead>
               <TableBody>
                 {rows.map((r, idx) => (
-                  <TableRow key={r.id} hover>
+                  <TableRow
+                    key={r.id}
+                    hover
+                    sx={{ backgroundColor: r.isNew ? "rgba(25,118,210,0.06)" : undefined }}
+                  >
                   <TableCell sx={{ minWidth: 150 }}>
                     <TextField value={r.lotNumber} size="small" InputProps={{ readOnly: true }} />
                   </TableCell>
@@ -261,15 +266,7 @@ export default function InventoryClient({
                       />
                     </TableCell>
                     <TableCell align="center" sx={{ width: 150 }}>
-                      {/* Future actions like delete can live here */}
-                      {/* <IconButton
-                        color="error"
-                        onClick={() => removeRow(r)}
-                        disabled={isPending}
-                        title="ลบล็อต"
-                      >
-                        <DeleteIcon />
-                      </IconButton> */}
+                      {r.isNew && <Chip label="ใหม่" size="small" color="primary" variant="outlined" />}
                     </TableCell>
                   </TableRow>
                 ))}
