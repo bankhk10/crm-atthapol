@@ -42,6 +42,7 @@ type SortableKeys =
   | "productCode"
   | "nameTH"
   | "brand"
+  | "price"
   | "status"
   | "stockOnHand"
   | "stockAvailable"
@@ -78,7 +79,7 @@ const visuallyHidden = {
   whiteSpace: "nowrap" as const,
 };
 
-const numericKeys = new Set<SortableKeys>(["stockOnHand", "stockAvailable", "stockReserved"]);
+const numericKeys = new Set<SortableKeys>(["price", "stockOnHand", "stockAvailable", "stockReserved"]);
 
 function descendingComparator(a: ProductListItem, b: ProductListItem, orderBy: SortableKeys) {
   const av = a[orderBy];
@@ -116,6 +117,9 @@ function EnhancedTableHead({
   const createSortHandler = (property: SortableKeys) => (event: React.MouseEvent<unknown>) => {
     onRequestSort(event, property);
   };
+  const cells: readonly HeadCell[] = headCells.map((h) =>
+    h.id === "brand" ? { ...h, id: "price", label: "ราคา" } : h,
+  );
   return (
     <TableHead
       sx={{
@@ -132,11 +136,11 @@ function EnhancedTableHead({
       }}
     >
       <TableRow>
-        {headCells.map((headCell) => (
+        {cells.map((headCell) => (
           <TableCell
             key={headCell.id}
             align={
-              ["brand", "stockOnHand", "stockAvailable", "stockReserved", "status"].includes(
+              ["price", "stockOnHand", "stockAvailable", "stockReserved", "status"].includes(
                 headCell.id,
               )
                 ? "center"
@@ -144,7 +148,7 @@ function EnhancedTableHead({
             }
             sx={{
               width: headCell.width,
-              display: ["brand", "expDate"].includes(headCell.id)
+              display: ["price", "expDate"].includes(headCell.id)
                 ? { xs: "none", md: "table-cell" }
                 : "table-cell",
             }}
@@ -220,7 +224,8 @@ export function ProductsTable({ products, query }: Props) {
     () =>
       [...filtered]
         .sort(getComparator(order, orderBy))
-        .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
+        .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+        .map((p) => ({ ...p, brand: undefined })),
     [filtered, order, orderBy, page, rowsPerPage],
   );
 
@@ -306,6 +311,11 @@ export function ProductsTable({ products, query }: Props) {
               </Stack>
               <Typography variant="body2" color="text.secondary">
                 รหัส: {p.productCode} {p.brand ? `• แบรนด์: ${p.brand}` : ""}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {p.price != null
+                  ? `ราคา: ${p.price.toLocaleString('th-TH', { style: 'currency', currency: 'THB' })}`
+                  : 'ราคา: -'}
               </Typography>
               <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
                 <Chip size="small" label={`จำนวน: ${p.stockOnHand}`} />
@@ -418,8 +428,19 @@ export function ProductsTable({ products, query }: Props) {
                   }}
                   align="center"
                 >
-                  <Tooltip title={p.brand ?? "-"} arrow>
-                    <span>{p.brand ?? "-"}</span>
+                  <Tooltip
+                    title={
+                      p.price != null
+                        ? p.price.toLocaleString('th-TH', { style: 'currency', currency: 'THB' })
+                        : "-"
+                    }
+                    arrow
+                  >
+                    <span>
+                      {p.price != null
+                        ? p.price.toLocaleString('th-TH', { style: 'currency', currency: 'THB' })
+                        : "-"}
+                    </span>
                   </Tooltip>
                 </TableCell>
                 <TableCell sx={{ width: 90 }} align="center">
