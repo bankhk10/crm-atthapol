@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -62,6 +62,12 @@ const PAYMENT_STATUS_OPTIONS = [
   { value: "OVERDUE", label: "เกินกำหนด" },
 ];
 
+// Safely convert any value to a finite number; fallback to 0 for NaN/Infinity
+function toNumberOrZero(v: unknown): number {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
+
 function computeTotals(
   items: OrderItemInput[],
   vatRate: number,
@@ -72,9 +78,9 @@ function computeTotals(
   let discountTotal = 0;
   let taxAmount = 0;
   for (const it of items) {
-    const base = Number(it.qty) * Number(it.unitPrice);
-    const discA = Math.max(0, Number(it.discountAmount ?? 0));
-    const discP = Math.max(0, Math.min(100, Number(it.discountPercent ?? 0)));
+    const base = toNumberOrZero(it.qty) * toNumberOrZero(it.unitPrice);
+    const discA = Math.max(0, toNumberOrZero(it.discountAmount ?? 0));
+    const discP = Math.max(0, Math.min(100, toNumberOrZero(it.discountPercent ?? 0)));
     const discFromPct = base * (discP / 100);
     const disc = Math.min(base, discA + discFromPct);
     const taxable = Math.max(0, base - disc);
@@ -82,7 +88,8 @@ function computeTotals(
     discountTotal += disc;
     taxAmount += taxable * (vatRate / 100);
   }
-  const grandTotal = subTotal + taxAmount + Number(shippingFee || 0) + Number(otherCharges || 0);
+  const grandTotal =
+    subTotal + taxAmount + toNumberOrZero(shippingFee) + toNumberOrZero(otherCharges);
   return { subTotal, discountTotal, taxAmount, grandTotal };
 }
 
@@ -159,6 +166,13 @@ export function OrderForm({
   const [rejectReason, setRejectReason] = useState<string>(initial?.rejectReason ?? "");
   const [cancelReason, setCancelReason] = useState<string>(initial?.cancelReason ?? "");
   const [autoPromotion, setAutoPromotion] = useState(false);
+
+  // Raw input buffers for decimal fields to allow intermediate values like "12."
+  const [promotionAmountInput, setPromotionAmountInput] = useState<string | null>(null);
+  const [shippingFeeInput, setShippingFeeInput] = useState<string | null>(null);
+  const [otherChargesInput, setOtherChargesInput] = useState<string | null>(null);
+  const [orderDiscountInput, setOrderDiscountInput] = useState<string | null>(null);
+  const [itemDiscountInput, setItemDiscountInput] = useState<Record<number, string | undefined>>({});
 
   const totals = useMemo(
     () =>
@@ -490,11 +504,43 @@ export function OrderForm({
           <TextField
             label="ใช้วงเงิน (บาท)"
             type="text"
-            inputMode="numeric"
-            value={promotionAmount}
-            onChange={(e) =>
-              setPromotionAmount(e.target.value === "" ? "" : Number(e.target.value))
+            inputMode="decimal"
+            value={
+              promotionAmountInput ?? (promotionAmount === "" ? "" : String(promotionAmount))
             }
+            onFocus={(e) => {
+              setPromotionAmountInput(
+                promotionAmount === "" ? e.target.value : String(promotionAmount),
+              );
+            }}
+            onChange={(e) => {
+              const raw = e.target.value ?? "";
+              let val = raw.replace(/[^0-9.]/g, "");
+              const firstDot = val.indexOf(".");
+              if (firstDot !== -1) {
+                val = val.slice(0, firstDot + 1) + val.slice(firstDot + 1).replace(/\./g, "");
+              }
+              if (val.startsWith("0") && val.length > 1 && val[1] !== ".") {
+                val = String(parseInt(val, 10));
+              }
+              setPromotionAmountInput(val);
+              if (val !== "" && val !== ".") {
+                const num = Number(val);
+                if (!Number.isNaN(num)) setPromotionAmount(num);
+              }
+            }}
+            onBlur={(e) => {
+              const raw = e.target.value ?? "";
+              if (raw === "") {
+                setPromotionAmount("");
+                setPromotionAmountInput(null);
+                return;
+              }
+              const [i, f = ""] = raw.replace(/[^0-9.]/g, "").split(".");
+              const out = i + (f ? "." + f.slice(0, 2) : "");
+              setPromotionAmount(out === "" ? "" : Number(out));
+              setPromotionAmountInput(null);
+            }}
             disabled={!usePromotion}
             error={
               usePromotion &&
@@ -548,7 +594,9 @@ export function OrderForm({
             onChange={(e) => {
               const rawValue = e.target.value;
               let val = rawValue.replace(/[^0-9]/g, "");
-              val = val.replace(/^0+(?=\\d)/, "");
+                    if (val.startsWith('0') && val.length > 1 && val[1] !== '.') {
+                      val = String(parseInt(val, 10));
+                    }
               setCreditTermDays(val === "" ? "" : Number(val));
             }}
             fullWidth
@@ -839,7 +887,9 @@ export function OrderForm({
                     let val = rawValue.replace(/[^0-9]/g, "");
 
                     // ลบ 0 นำหน้า (อันเดิมของคุณ)
-                    val = val.replace(/^0+(?=\d)/, "");
+                    if (val.startsWith('0') && val.length > 1 && val[1] !== '.') {
+                      val = String(parseInt(val, 10));
+                    }
 
                     const next = [...items];
                     next[idx] = {
@@ -871,13 +921,52 @@ export function OrderForm({
                 />
                 <TextField
                   label="ส่วนลด (บาท)"
-                  type="number"
-                  value={it.discountAmount ?? 0}
+                  type="text"
+                  inputMode="decimal"
+                  value={
+                    itemDiscountInput[idx] ?? (it.discountAmount === "" ? "" : String(it.discountAmount ?? ""))
+                  }
+                  onFocus={(e) => {
+                    setItemDiscountInput((prev) => ({
+                      ...prev,
+                      [idx]: it.discountAmount === "" ? e.target.value : String(it.discountAmount ?? ""),
+                    }));
+                  }}
                   onChange={(e) => {
-                    const v = Number(e.target.value || 0);
+                    const raw = e.target.value ?? "";
+                    let val = raw.replace(/[^0-9.]/g, "");
+                    const firstDot = val.indexOf(".");
+                    if (firstDot !== -1) {
+                      val = val.slice(0, firstDot + 1) + val.slice(firstDot + 1).replace(/\./g, "");
+                    }
+                    if (val.startsWith("0") && val.length > 1 && val[1] !== ".") {
+                      val = String(parseInt(val, 10));
+                    }
+                    setItemDiscountInput((prev) => ({ ...prev, [idx]: val }));
+                    if (val !== "" && val !== ".") {
+                      const num = Number(val);
+                      if (!Number.isNaN(num)) {
+                        const next = [...items];
+                        next[idx] = { ...next[idx], discountAmount: num };
+                        setItems(next);
+                      }
+                    }
+                  }}
+                  onBlur={(e) => {
+                    const raw = e.target.value ?? "";
+                    if (raw === "") {
+                      const next = [...items];
+                      next[idx] = { ...next[idx], discountAmount: "" };
+                      setItems(next);
+                      setItemDiscountInput((prev) => ({ ...prev, [idx]: undefined }));
+                      return;
+                    }
+                    const [intPart, fracPart = ""] = raw.replace(/[^0-9.]/g, "").split(".");
+                    const out = intPart + (fracPart ? "." + fracPart.slice(0, 2) : "");
                     const next = [...items];
-                    next[idx] = { ...next[idx], discountAmount: v };
+                    next[idx] = { ...next[idx], discountAmount: out === "" ? "" : Number(out) };
                     setItems(next);
+                    setItemDiscountInput((prev) => ({ ...prev, [idx]: undefined }));
                   }}
                   sx={{ width: { xs: "100%", md: 130 } }}
                 />
@@ -925,31 +1014,119 @@ export function OrderForm({
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           <TextField
             label="ค่าขนส่ง"
-            type="number"
-            value={shippingFee}
+            type="text"
+            inputMode="decimal"
+            value={shippingFeeInput ?? (shippingFee === "" ? "" : String(shippingFee))}
+            onFocus={(e) => {
+              setShippingFeeInput(shippingFee === "" ? e.target.value : String(shippingFee));
+            }}
             onChange={(e) => {
-              const val = e.target.value.replace(/^0+(?=\d)/, "");
-              setShippingFee(val === "" ? "" : Number(val));
+              const raw = e.target.value ?? "";
+              let val = raw.replace(/[^0-9.]/g, "");
+              const firstDot = val.indexOf(".");
+              if (firstDot !== -1) {
+                val = val.slice(0, firstDot + 1) + val.slice(firstDot + 1).replace(/\./g, "");
+              }
+              if (val.startsWith("0") && val.length > 1 && val[1] !== ".") {
+                val = String(parseInt(val, 10));
+              }
+              setShippingFeeInput(val);
+              if (val !== "" && val !== ".") {
+                const num = Number(val);
+                if (!Number.isNaN(num)) setShippingFee(num);
+              }
+            }}
+            onBlur={(e) => {
+              const raw = e.target.value ?? "";
+              if (raw === "") {
+                setShippingFee("");
+                setShippingFeeInput(null);
+                return;
+              }
+              const [i, f = ""] = raw.replace(/[^0-9.]/g, "").split(".");
+              const out = i + (f ? "." + f.slice(0, 2) : "");
+              setShippingFee(out === "" ? "" : Number(out));
+              setShippingFeeInput(null);
             }}
             fullWidth
           />
           <TextField
             label="ค่าใช้จ่ายอื่น"
-            type="number"
-            value={otherCharges}
+            type="text"
+            inputMode="decimal"
+            value={otherChargesInput ?? (otherCharges === "" ? "" : String(otherCharges))}
+            onFocus={(e) => {
+              setOtherChargesInput(
+                otherCharges === "" ? e.target.value : String(otherCharges),
+              );
+            }}
             onChange={(e) => {
-              const val = e.target.value.replace(/^0+(?=\d)/, "");
-              setOtherCharges(val === "" ? "" : Number(val));
+              const raw = e.target.value ?? "";
+              let val = raw.replace(/[^0-9.]/g, "");
+              const firstDot = val.indexOf(".");
+              if (firstDot !== -1) {
+                val = val.slice(0, firstDot + 1) + val.slice(firstDot + 1).replace(/\./g, "");
+              }
+              if (val.startsWith("0") && val.length > 1 && val[1] !== ".") {
+                val = String(parseInt(val, 10));
+              }
+              setOtherChargesInput(val);
+              if (val !== "" && val !== ".") {
+                const num = Number(val);
+                if (!Number.isNaN(num)) setOtherCharges(num);
+              }
+            }}
+            onBlur={(e) => {
+              const raw = e.target.value ?? "";
+              if (raw === "") {
+                setOtherCharges("");
+                setOtherChargesInput(null);
+                return;
+              }
+              const [i, f = ""] = raw.replace(/[^0-9.]/g, "").split(".");
+              const out = i + (f ? "." + f.slice(0, 2) : "");
+              setOtherCharges(out === "" ? "" : Number(out));
+              setOtherChargesInput(null);
             }}
             fullWidth
           />
           <TextField
             label="ส่วนลดทั้งออเดอร์ (บาท)"
-            type="number"
-            value={orderDiscount}
+            type="text"
+            inputMode="decimal"
+            value={orderDiscountInput ?? (orderDiscount === "" ? "" : String(orderDiscount))}
+            onFocus={(e) => {
+              setOrderDiscountInput(
+                orderDiscount === "" ? e.target.value : String(orderDiscount),
+              );
+            }}
             onChange={(e) => {
-              const val = e.target.value.replace(/^0+(?=\d)/, "");
-              setOrderDiscount(val === "" ? "" : Math.max(0, Number(val)));
+              const raw = e.target.value ?? "";
+              let val = raw.replace(/[^0-9.]/g, "");
+              const firstDot = val.indexOf(".");
+              if (firstDot !== -1) {
+                val = val.slice(0, firstDot + 1) + val.slice(firstDot + 1).replace(/\./g, "");
+              }
+              if (val.startsWith("0") && val.length > 1 && val[1] !== ".") {
+                val = String(parseInt(val, 10));
+              }
+              setOrderDiscountInput(val);
+              if (val !== "" && val !== ".") {
+                const num = Number(val);
+                if (!Number.isNaN(num)) setOrderDiscount(Math.max(0, num));
+              }
+            }}
+            onBlur={(e) => {
+              const raw = e.target.value ?? "";
+              if (raw === "") {
+                setOrderDiscount("");
+                setOrderDiscountInput(null);
+                return;
+              }
+              const [i, f = ""] = raw.replace(/[^0-9.]/g, "").split(".");
+              const out = i + (f ? "." + f.slice(0, 2) : "");
+              setOrderDiscount(out === "" ? "" : Math.max(0, Number(out)));
+              setOrderDiscountInput(null);
             }}
             fullWidth
           />
@@ -1015,3 +1192,9 @@ export function OrderForm({
     </Stack>
   );
 }
+
+
+
+
+
+
