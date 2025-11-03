@@ -162,6 +162,7 @@ export function OrderForm({
   );
   const [promotionAvailable, setPromotionAvailable] = useState<number | null>(null);
   const [promotionLoading, setPromotionLoading] = useState(false);
+  const [promotionSupported, setPromotionSupported] = useState<boolean | null>(null);
   const [orderDiscount, setOrderDiscount] = useState<number | "">(initial?.orderDiscount ?? 0);
   const [rejectReason, setRejectReason] = useState<string>(initial?.rejectReason ?? "");
   const [cancelReason, setCancelReason] = useState<string>(initial?.cancelReason ?? "");
@@ -236,6 +237,7 @@ export function OrderForm({
   useEffect(() => {
     if (!customerId) {
       setPromotionAvailable(null);
+      setPromotionSupported(null);
       return;
     }
     let cancelled = false;
@@ -243,10 +245,16 @@ export function OrderForm({
     fetch(`/api/customers/${customerId}/promotion-budget`)
       .then((r) => r.json())
       .then((d) => {
-        if (!cancelled) setPromotionAvailable(Number(d?.promotionBudget ?? 0));
+        if (!cancelled) {
+          setPromotionAvailable(Number(d?.promotionBudget ?? 0));
+          setPromotionSupported(Boolean(d?.promotionSupported ?? false));
+        }
       })
       .catch(() => {
-        if (!cancelled) setPromotionAvailable(0);
+        if (!cancelled) {
+          setPromotionAvailable(0);
+          setPromotionSupported(false);
+        }
       })
       .finally(() => {
         if (!cancelled) setPromotionLoading(false);
@@ -255,6 +263,15 @@ export function OrderForm({
       cancelled = true;
     };
   }, [customerId]);
+
+  // If promotion is not supported, force disable related states
+  useEffect(() => {
+    if (promotionSupported === false) {
+      setUsePromotion(false);
+      setAutoPromotion(false);
+      setPromotionAmount("");
+    }
+  }, [promotionSupported]);
 
   useEffect(() => {
     if (!autoPromotion || !usePromotion) return;
@@ -479,6 +496,7 @@ export function OrderForm({
             control={
               <Checkbox
                 checked={usePromotion}
+                disabled={promotionSupported === false}
                 onChange={(e) => {
                   const checked = e.target.checked;
                   setUsePromotion(checked);
@@ -493,7 +511,9 @@ export function OrderForm({
           />
           <Box sx={{ color: "text.secondary", fontSize: 14, minWidth: 200 }}>
             คงเหลือ:{" "}
-            {promotionLoading
+            {promotionSupported === false
+              ? "-"
+              : promotionLoading
               ? "..."
               : (promotionAvailable ?? 0).toLocaleString(undefined, {
                   minimumFractionDigits: 2,
@@ -541,7 +561,7 @@ export function OrderForm({
               setPromotionAmount(out === "" ? "" : Number(out));
               setPromotionAmountInput(null);
             }}
-            disabled={!usePromotion}
+            disabled={!usePromotion || promotionSupported === false}
             error={
               usePromotion &&
               typeof promotionAmount === "number" &&

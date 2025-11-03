@@ -11,14 +11,16 @@ export default async function EditSalesOrderPage({ params }: { params: Promise<{
     getProducts(),
   ]);
 
-  const customerOptions = customers.map((c) => ({
-    id: c.id,
-    label: c.name,
-    address: (c as any).address ?? null,
-    province: (c as any).province ?? null,
-    district: (c as any).district ?? null,
-    subdistrict: (c as any).subdistrict ?? null,
-    postalCode: (c as any).postalCode ?? null,
+  const customerOptions = customers
+    .filter((c) => c.type === "DEALER")
+    .map((c) => ({
+      id: c.id,
+      label: c.name,
+      address: (c as any).address ?? null,
+      province: (c as any).province ?? null,
+      district: (c as any).district ?? null,
+      subdistrict: (c as any).subdistrict ?? null,
+      postalCode: (c as any).postalCode ?? null,
   }));
   const employeeOptions = employees.map((e) => ({
     id: e.id,
