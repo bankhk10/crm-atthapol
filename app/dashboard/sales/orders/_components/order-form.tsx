@@ -251,6 +251,19 @@ export function OrderForm({
     setAutoPromotion(false);
   }, [autoPromotion, usePromotion, promotionAvailable, netGrandTotal]);
 
+  // Auto-calculate due date when credit days are filled
+  useEffect(() => {
+    if (paymentCondition !== "POSTPAID") return;
+    if (creditTermDays === "") return;
+    const days = Number(creditTermDays);
+    if (!Number.isFinite(days) || days <= 0) return;
+    const base = orderDate ? new Date(orderDate) : new Date();
+    const computed = new Date(base);
+    computed.setDate(computed.getDate() + days);
+    const iso = computed.toISOString().slice(0, 10);
+    setDueDate(iso);
+  }, [creditTermDays, orderDate, paymentCondition]);
+
   const applyWorkflowMapping = (wf: string) => {
     setWorkflowStatus(wf);
     switch (wf) {
@@ -533,6 +546,29 @@ export function OrderForm({
             fullWidth
             disabled={paymentCondition !== "POSTPAID"}
           />
+          <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={th}>
+            <DatePicker
+              label="ครบกำหนดชำระ"
+              value={dueDate ? new Date(dueDate) : null}
+              views={["year", "month", "day"]}
+              onChange={(v) => setDueDate(v ? v.toISOString().slice(0, 10) : null)}
+              slotProps={{ textField: { fullWidth: true } }}
+              disabled={paymentCondition !== "POSTPAID"}
+            />
+          </LocalizationProvider>
+          <TextField
+            select
+            label="สถานะชำระเงิน"
+            value={paymentStatus}
+            onChange={(e) => setPaymentStatus(e.target.value)}
+            fullWidth
+          >
+            {PAYMENT_STATUS_OPTIONS.map((s) => (
+              <MenuItem key={s.value} value={s.value}>
+                {s.label}
+              </MenuItem>
+            ))}
+          </TextField>
         </Stack>
       </Box>
 
@@ -551,21 +587,6 @@ export function OrderForm({
               views={["year", "month", "day"]}
               onChange={(v) => setOrderDate(v ? v.toISOString().slice(0, 10) : null)}
               slotProps={{ textField: { fullWidth: true } }}
-            />
-            <DatePicker
-              label="ครบกำหนดชำระ"
-              value={dueDate ? new Date(dueDate) : null}
-              views={["year", "month", "day"]}
-              onChange={(v) => setDueDate(v ? v.toISOString().slice(0, 10) : null)}
-              slotProps={{ textField: { fullWidth: true } }}
-            />
-          </Stack>
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mt: 2 }}>
-            <TextField
-              label="เลขที่ PO ลูกค้า"
-              value={poNumber}
-              onChange={(e) => setPoNumber(e.target.value)}
-              fullWidth
             />
             <DatePicker
               label="วันที่จัดส่ง"
@@ -681,19 +702,6 @@ export function OrderForm({
             fullWidth
           >
             {allowedStatusOptions.map((s) => (
-              <MenuItem key={s.value} value={s.value}>
-                {s.label}
-              </MenuItem>
-            ))}
-          </TextField>
-          <TextField
-            select
-            label="สถานะชำระเงิน"
-            value={paymentStatus}
-            onChange={(e) => setPaymentStatus(e.target.value)}
-            fullWidth
-          >
-            {PAYMENT_STATUS_OPTIONS.map((s) => (
               <MenuItem key={s.value} value={s.value}>
                 {s.label}
               </MenuItem>
