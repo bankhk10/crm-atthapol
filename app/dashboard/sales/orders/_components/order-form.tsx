@@ -489,7 +489,8 @@ export function OrderForm({
           </Box>
           <TextField
             label="ใช้วงเงิน (บาท)"
-            type="number"
+            type="text"
+            inputMode="numeric"
             value={promotionAmount}
             onChange={(e) =>
               setPromotionAmount(e.target.value === "" ? "" : Number(e.target.value))
@@ -541,9 +542,15 @@ export function OrderForm({
           </TextField>
           <TextField
             label="เครดิต (วัน)"
-            type="number"
+            type="text"
+            inputMode="numeric"
             value={creditTermDays}
-            onChange={(e) => setCreditTermDays(e.target.value === "" ? "" : Number(e.target.value))}
+            onChange={(e) => {
+              const rawValue = e.target.value;
+              let val = rawValue.replace(/[^0-9]/g, "");
+              val = val.replace(/^0+(?=\\d)/, "");
+              setCreditTermDays(val === "" ? "" : Number(val));
+            }}
             fullWidth
             disabled={paymentCondition !== "POSTPAID"}
           />
@@ -810,10 +817,19 @@ export function OrderForm({
                 />
                 <TextField
                   label="จำนวน"
-                  type="number"
+                  type="text" // 1. เปลี่ยนเป็น "text"
+                  inputMode="numeric" // 2. (แนะนำ) เพิ่ม inputMode เพื่อให้มือถือแสดงแป้นตัวเลข
                   value={it.qty}
                   onChange={(e) => {
-                    const val = e.target.value.replace(/^0+(?=\d)/, "");
+                    // 3. ปรับ Logic ใน onChange
+                    const rawValue = e.target.value;
+
+                    // กรองเอาเฉพาะตัวเลข
+                    let val = rawValue.replace(/[^0-9]/g, "");
+
+                    // ลบ 0 นำหน้า (อันเดิมของคุณ)
+                    val = val.replace(/^0+(?=\d)/, "");
+
                     const next = [...items];
                     next[idx] = {
                       ...next[idx],
@@ -822,6 +838,7 @@ export function OrderForm({
                     setItems(next);
                   }}
                   onBlur={(e) => {
+                    // (คงเดิม) จัดการตอนที่ผู้ใช้กดออกจากช่อง
                     if (e.target.value === "") {
                       const next = [...items];
                       next[idx] = { ...next[idx], qty: 0 };
