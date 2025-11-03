@@ -644,10 +644,36 @@ export function OrderForm({
       </Box>
 
       {/* ที่อยู่จัดส่ง */}
-      <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
+      <Box
+        sx={{
+          backgroundColor: "#d9d9dbff",
+          borderRadius: 2,
+          px: 2,
+          py: 2,
+          // 1. เพิ่ม CSS 3 บรรทัดนี้
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
         <Typography variant="h6" fontWeight={960}>
           ที่อยู่จัดส่ง
         </Typography>
+
+        {/* 2. ย้าย Button ออกมาไว้นอก Typography */}
+        <Button
+          size="small"
+          variant="outlined"
+          onClick={() => {
+            setShipAddressLine(billAddressLine);
+            setShipProvince(billProvince);
+            setShipDistrict(billDistrict);
+            setShipSubdistrict(billSubdistrict);
+            setShipPostalCode(billPostalCode);
+          }}
+        >
+          คัดลอกจากที่อยู่วางบิล
+        </Button>
       </Box>
       <Box
         sx={{
@@ -656,21 +682,6 @@ export function OrderForm({
           gap: 2,
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "end", justifyContent: "flex-end" }}>
-          <Button
-            size="small"
-            variant="outlined"
-            onClick={() => {
-              setShipAddressLine(billAddressLine);
-              setShipProvince(billProvince);
-              setShipDistrict(billDistrict);
-              setShipSubdistrict(billSubdistrict);
-              setShipPostalCode(billPostalCode);
-            }}
-          >
-            คัดลอกจากที่อยู่วางบิล
-          </Button>
-        </Box>
         <TextField
           label="ที่อยู่ (บ้านเลขที่, หมู่, ซอย, ถนน)"
           value={shipAddressLine}
