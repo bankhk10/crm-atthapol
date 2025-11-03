@@ -668,14 +668,14 @@ export function OrderForm({
       {/* สถานะเอกสาร */}
       <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
         <Typography variant="h6" fontWeight={960}>
-          สถานะเอกสาร
+          สถานะ
         </Typography>
       </Box>
       <Box>
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           <TextField
             select
-            label="สถานะเอกสาร"
+            label="สถานะ"
             value={workflowStatus}
             onChange={(e) => applyWorkflowMapping(e.target.value)}
             fullWidth
