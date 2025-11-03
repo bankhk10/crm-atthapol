@@ -340,6 +340,7 @@ export function OrderForm({
         return parts.join(" ");
       };
 
+      const statusForSubmit = mode === "create" ? "CONFIRMED" : status;
       const payload: any = {
         customerId,
         salespersonId: salespersonId || undefined,
@@ -367,7 +368,7 @@ export function OrderForm({
             shipSubdistrict,
             shipPostalCode,
           ) || undefined,
-        status,
+        status: statusForSubmit,
         paymentStatus,
         shippingFee: Number(shippingFee || 0),
         otherCharges: Number(otherCharges || 0),
@@ -697,9 +698,10 @@ export function OrderForm({
           <TextField
             select
             label="สถานะ"
-            value={workflowStatus}
+            value={mode === "create" ? "PENDING_APPROVAL" : (workflowStatus as any)}
             onChange={(e) => applyWorkflowMapping(e.target.value)}
             fullWidth
+            disabled
           >
             {allowedStatusOptions.map((s) => (
               <MenuItem key={s.value} value={s.value}>
