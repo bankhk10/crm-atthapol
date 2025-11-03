@@ -14,6 +14,10 @@ import {
   Typography,
   Checkbox,
   FormControlLabel,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 // Link removed; using router via shared buttons
 import Autocomplete from "@mui/material/Autocomplete";
@@ -167,6 +171,8 @@ export function OrderForm({
   const [rejectReason, setRejectReason] = useState<string>(initial?.rejectReason ?? "");
   const [cancelReason, setCancelReason] = useState<string>(initial?.cancelReason ?? "");
   const [autoPromotion, setAutoPromotion] = useState(false);
+  const [customerChangeDialogOpen, setCustomerChangeDialogOpen] = useState(false);
+  const [pendingCustomer, setPendingCustomer] = useState<Option | null>(null);
 
   // Raw input buffers for decimal fields to allow intermediate values like "12."
   const [promotionAmountInput, setPromotionAmountInput] = useState<string | null>(null);
@@ -459,7 +465,14 @@ export function OrderForm({
             getOptionLabel={(option) => option.label}
             value={customerOptions.find((c) => c.id === customerId) || null}
             onChange={(_, newValue) => {
-              setCustomerId(newValue ? newValue.id : "");
+              const currentlyUsingPromo = Boolean(usePromotion) && Number(promotionAmount || 0) > 0;
+              const nextId = newValue?.id || "";
+              if (newValue && currentlyUsingPromo && nextId !== customerId) {
+                setPendingCustomer(newValue as Option);
+                setCustomerChangeDialogOpen(true);
+                return;
+              }
+              setCustomerId(nextId);
               if (newValue) {
                 setBillAddressLine(newValue.address ?? "");
                 setBillProvince(newValue.province ?? undefined);
@@ -1209,6 +1222,36 @@ export function OrderForm({
         justify="center"
       />
       {isSubmitting && <Loader fullscreen />}
+
+      {/* Confirm customer change while using promotion */}
+      <Dialog open={customerChangeDialogOpen} onClose={() => setCustomerChangeDialogOpen(false)}>
+        <DialogTitle>ยืนยันการเปลี่ยนลูกค้า</DialogTitle>
+        <DialogContent>
+          คุณกำลังใช้งบส่งเสริมการขายอยู่เป็นจำนวน {Number(promotionAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท หากเปลี่ยนลูกค้า ระบบจะคืนงบให้ลูกค้าเดิมและตัดงบจากลูกค้าใหม่ตามจำนวนที่ใช้เมื่อบันทึก คุณต้องการเปลี่ยนลูกค้าหรือไม่?
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => { setCustomerChangeDialogOpen(false); setPendingCustomer(null); }}>ยกเลิก</Button>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => {
+              const next = pendingCustomer;
+              if (next) {
+                setCustomerId(next.id);
+                setBillAddressLine(next.address ?? "");
+                setBillProvince(next.province ?? undefined);
+                setBillDistrict(next.district ?? undefined);
+                setBillSubdistrict(next.subdistrict ?? undefined);
+                setBillPostalCode(next.postalCode ?? undefined);
+              }
+              setCustomerChangeDialogOpen(false);
+              setPendingCustomer(null);
+            }}
+          >
+            เปลี่ยนลูกค้า
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Stack>
   );
 }
