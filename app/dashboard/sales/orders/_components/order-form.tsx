@@ -18,6 +18,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Snackbar,
 } from "@mui/material";
 // Link removed; using router via shared buttons
 import Autocomplete from "@mui/material/Autocomplete";
@@ -447,9 +448,16 @@ export function OrderForm({
       </Stack>
 
       {error && (
-        <Alert severity="error" onClose={() => setError(null)}>
-          {error}
-        </Alert>
+        <Snackbar
+          open={Boolean(error)}
+          autoHideDuration={4000}
+          onClose={() => setError(null)}
+          anchorOrigin={{ vertical: "top", horizontal: "right" }}
+        >
+          <Alert onClose={() => setError(null)} severity="error" variant="filled" sx={{ width: "100%" }}>
+            {error}
+          </Alert>
+        </Snackbar>
       )}
 
       {/* ข้อมูลลูกค้า/พนักงานขาย */}

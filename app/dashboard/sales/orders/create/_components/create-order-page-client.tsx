@@ -32,8 +32,10 @@ export function CreateOrderPageClient({ customerOptions, employeeOptions, produc
           const data = await res.json().catch(() => ({}));
           throw new Error(data?.error || "บันทึกใบสั่งขายไม่สำเร็จ");
         }
-        const created = await res.json();
-        router.push(`/dashboard/sales/orders/${created.id}`);
+        // const created = await res.json();
+        // After save, go back to orders list
+        await res.json();
+        router.push(`/dashboard/sales/orders?saved=1`);
       }}
     />
   );

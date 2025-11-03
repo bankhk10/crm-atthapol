@@ -24,6 +24,8 @@ import {
   TextField,
   Pagination,
   PaginationItem,
+  Alert,
+  Snackbar,
 } from "@mui/material";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
@@ -161,6 +163,21 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [showSaved, setShowSaved] = useState(false);
+
+  useEffect(() => {
+    const saved = searchParams.get("saved");
+    if (saved && !showSaved) {
+      setShowSaved(true);
+      // Clean the URL to remove the flag
+      const sp = new URLSearchParams(searchParams as any);
+      sp.delete("saved");
+      const next = `${pathname}${sp.toString() ? `?${sp.toString()}` : ""}`;
+      router.replace(next);
+      const t = setTimeout(() => setShowSaved(false), 3000);
+      return () => clearTimeout(t);
+    }
+  }, [searchParams, pathname, router, showSaved]);
   const { data: session } = useSession();
   const [items, setItems] = useState<OrderItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -486,6 +503,16 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
 
   return (
     <Stack spacing={2}>
+      <Snackbar
+        open={showSaved}
+        autoHideDuration={3000}
+        onClose={() => setShowSaved(false)}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        <Alert onClose={() => setShowSaved(false)} severity="success" variant="filled" sx={{ width: "100%" }}>
+          บันทึกสำเร็จ
+        </Alert>
+      </Snackbar>
      <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 2 }} variant="outlined">
         {/* [ปรับปรุง] เพิ่ม Stack ครอบด้านนอก
         เพื่อจัดระยะห่างแนวตั้ง (vertical spacing) ระหว่างแต่ละส่วน

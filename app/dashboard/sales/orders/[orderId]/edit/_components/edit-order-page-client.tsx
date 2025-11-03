@@ -100,8 +100,10 @@ export function EditOrderPageClient({ orderId, customerOptions, employeeOptions,
           const data = await res.json().catch(() => ({}));
           throw new Error(data?.error || "บันทึกไม่สำเร็จ");
         }
-        const updated = await res.json();
-        router.push(`/dashboard/sales/orders/${updated.id}`);
+        // const updated = await res.json();
+        // After save, go back to orders list
+        await res.json();
+        router.push(`/dashboard/sales/orders?saved=1`);
       }}
     />
   );
