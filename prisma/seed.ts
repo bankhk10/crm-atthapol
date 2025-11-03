@@ -469,6 +469,97 @@ async function main() {
   await prisma.interaction.createMany({ data: interactionsData });
 
   console.log(`🌾 Seeded monthly Sales (${salesData.length}) and Interactions (${interactionsData.length}) for year ${year}.`);
+
+  // ---------------------------
+  // 7️⃣ ตัวอย่าง Sales Notes เพื่อจำลอง workflow
+  // ---------------------------
+  // รองรับกรณี client ยังไม่ regenerate โดยใช้ (prisma as any) และ fallback เป็น RAW SQL
+  const snDelegate = (prisma as any).salesNote as
+    | { deleteMany: (args: any) => Promise<any>; create: (args: any) => Promise<any> }
+    | undefined;
+
+  if (snDelegate) {
+    await snDelegate.deleteMany({ where: { noteNumber: { startsWith: "SN-SEED-" } } });
+  } else {
+    try {
+      await prisma.$executeRawUnsafe(`DELETE FROM "SalesNote" WHERE "noteNumber" LIKE 'SN-SEED-%'`);
+    } catch {}
+  }
+
+  const staffEmpId = employees["sales.staff@csone.local"]; // ผู้สร้าง
+  const mgrEmpId = employees["sales.manager@csone.local"]; // ผู้จัดการผู้พิจารณา
+  const mgrUserId = usersByEmail["sales.manager@csone.local"]; // สำหรับ approvedByUserId
+
+  const notesData = [
+    {
+      noteNumber: "SN-SEED-0001",
+      customerId: dealerCustomer.id,
+      creatorEmployeeId: staffEmpId,
+      managerEmployeeId: mgrEmpId,
+      title: "เสนอขายผลิตภัณฑ์ทดลอง ชุด A",
+      content: "ทดลองนำเสนอสินค้าโปรโมชันสำหรับดีลเลอร์หลัก",
+      amount: 125000,
+      status: "DRAFT",
+    },
+    {
+      noteNumber: "SN-SEED-0002",
+      customerId: subDealerCustomer.id,
+      creatorEmployeeId: staffEmpId,
+      managerEmployeeId: mgrEmpId,
+      title: "บันทึกยอดขายย่อย เดือนนี้",
+      content: "รายการขายย่อยที่ต้องการอนุมัติส่วนลด",
+      amount: 38000,
+      status: "SUBMITTED",
+      submittedAt: new Date(),
+    },
+    {
+      noteNumber: "SN-SEED-0003",
+      customerId: farmerCustomer.id,
+      creatorEmployeeId: staffEmpId,
+      managerEmployeeId: mgrEmpId,
+      title: "ทดลองขายให้เกษตรกรรายใหญ่",
+      content: "สรุปรายละเอียดและขออนุมัติ",
+      amount: 21000,
+      status: "APPROVED",
+      submittedAt: new Date(Date.now() - 1000 * 60 * 60),
+      approvedAt: new Date(),
+      approvedByUserId: mgrUserId,
+    },
+    {
+      noteNumber: "SN-SEED-0004",
+      customerId: subDealerCustomer.id,
+      creatorEmployeeId: staffEmpId,
+      managerEmployeeId: mgrEmpId,
+      title: "ส่วนลดพิเศษ",
+      content: "ขออนุมัติส่วนลดมากกว่าปกติ",
+      amount: 98000,
+      status: "REJECTED",
+      submittedAt: new Date(Date.now() - 1000 * 60 * 60 * 2),
+      rejectReason: "วงเงินเกินเกณฑ์ ไม่ผ่านการอนุมัติ",
+    },
+  ] as any[];
+
+  for (const n of notesData) {
+    if (snDelegate) {
+      await snDelegate.create({ data: n });
+    } else {
+      const cols = [
+        'noteNumber','customerId','creatorEmployeeId','managerEmployeeId','title','content','amount','status','submittedAt','approvedAt','approvedByUserId','rejectReason','createdAt','updatedAt','deletedAt'
+      ];
+      const vals = [
+        n.noteNumber, n.customerId ?? null, n.creatorEmployeeId ?? null, n.managerEmployeeId ?? null,
+        n.title ?? null, n.content ?? null, n.amount ?? null, n.status ?? 'DRAFT',
+        n.submittedAt ?? null, n.approvedAt ?? null, n.approvedByUserId ?? null, n.rejectReason ?? null,
+        new Date(), new Date(), null
+      ];
+      const placeholders = vals.map((_, i) => `$${i+1}`).join(',');
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO "SalesNote" (${cols.map(c=>`"${c}"`).join(',')}) VALUES (${placeholders})`,
+        ...vals,
+      );
+    }
+  }
+  console.log(`📝 Seeded Sales Notes (${notesData.length}) for demo workflow.`);
 }
 
 main()

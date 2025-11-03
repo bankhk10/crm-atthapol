@@ -87,6 +87,8 @@ pnpm prisma:migrate
 
 npx prisma db push
 
+pnpm run seed
+
 <!-- ล้าง -->
 npx prisma migrate reset
  
@@ -111,3 +113,53 @@ Notes:
 รัน production server: npm run start
 เปิดใช้งานที่: http://localhost:3000
 ถ้าต้องการเปิดกลับในอนาคต ลบหรือแก้ next.config.mjs ให้เอา ignoreDuringBuilds ออก
+
+## Sales Notes (บันทึกการขาย)
+
+- Models: เพิ่ม `SalesNote` + `SalesNoteStatus` ใน `prisma/schema.prisma` สำหรับ flow: ร่าง → ส่งอนุมัติ → อนุมัติ/ปฏิเสธ
+- API Endpoints:
+  - `GET /api/sales/notes` รายการ พร้อมกรอง `status`, `customerId`, `q`, รองรับสิทธิ์การมองเห็น (own/department/all)
+  - `POST /api/sales/notes` สร้างบันทึก การกำหนด `status=APPROVED/REJECTED` ต้องมีสิทธิ์อนุมัติ/ปฏิเสธ
+  - `GET /api/sales/notes/:id` ดูรายละเอียด
+  - `PUT /api/sales/notes/:id` แก้ไขได้ก่อนถูกอนุมัติ/ปฏิเสธ
+  - `POST /api/sales/notes/:id/submit` ส่งเพื่ออนุมัติ (จากสถานะ `DRAFT`)
+  - `POST /api/sales/notes/:id/approve` อนุมัติ (ต้องมีสิทธิ์ `sales:approve`)
+  - `POST /api/sales/notes/:id/reject` ปฏิเสธ (ต้องมีสิทธิ์ `sales:reject`)
+
+- เลขที่เอกสาร: ระบบออกเลขแบบ `SN-YYYYMM-xxxxxx` ด้วยตาราง `DocSequence` (atomic) เมื่อสร้างผ่าน API
+- Seed: เพิ่มตัวอย่าง 4 รายการ (`SN-SEED-0001..4`) ใน `prisma/seed.ts` สำหรับสถานะ DRAFT / SUBMITTED / APPROVED / REJECTED
+
+ตัวอย่างทดสอบด้วยบัญชี seed:
+
+- ผู้จัดการฝ่ายขาย: `sales.manager@csone.local` / `SalesManager@123`
+- พนักงานฝ่ายขาย: `sales.staff@csone.local` / `SalesStaff@123`
+
+ตัวอย่างเรียกใช้งาน (หลัง login ได้ cookie/session แล้ว):
+
+```bash
+# สร้างบันทึก (พนักงาน) -> DRAFT
+curl -X POST http://localhost:3000/api/sales/notes \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "customerId": "seed-dealer-1",
+    "title": "เสนอขายสินค้า",
+    "content": "รายละเอียด...",
+    "amount": 25000
+  }'
+
+# ส่งเพื่ออนุมัติ (จาก DRAFT)
+curl -X POST http://localhost:3000/api/sales/notes/<NOTE_ID>/submit
+
+# อนุมัติ (ผู้จัดการ)
+curl -X POST http://localhost:3000/api/sales/notes/<NOTE_ID>/approve
+
+# หรือปฏิเสธ (ใส่เหตุผล)
+curl -X POST http://localhost:3000/api/sales/notes/<NOTE_ID>/reject \
+  -H 'Content-Type: application/json' \
+  -d '{ "reason": "ข้อมูลยังไม่ครบ" }'
+```
+
+การกำหนดสิทธิ์:
+
+- ใช้สิทธิ์ `sales:view|create|edit|delete|approve|reject` จาก role seed (`admin`, `sales_manager`, `sales_staff`)
+- ขอบเขตการมองเห็น: `sales_scope:own|department|all` กำกับว่าดูได้เฉพาะของตัวเอง, ของแผนก, หรือทั้งหมด

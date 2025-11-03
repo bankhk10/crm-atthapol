@@ -112,6 +112,17 @@ enum QuoteStatus {
 }
 
 // ====================
+// SALES NOTES
+// ====================
+// Simple employee-created note that goes through submit -> approve/reject
+enum SalesNoteStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+// ====================
 // PRODUCT & STOCK
 // ====================
 model Product {
@@ -243,6 +254,7 @@ model User {
   performedAuditLogs  AuditLog[]      @relation("AuditPerformedByUser")
   createdInteractions Interaction[]   @relation("UserCreatedInteractions")
   approvedSaleOrders  SaleOrder[]     @relation("UserApprovedSaleOrders")
+  approvedSalesNotes  SalesNote[]     @relation("UserApprovedSalesNotes")
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -320,6 +332,9 @@ model Employee {
   // Sale orders created/owned by this employee
   saleOrders           SaleOrder[]
   quotes               Quote[]
+  // Sales notes created/managed by this employee
+  createdSalesNotes    SalesNote[] @relation("SalesNoteCreator")
+  managedSalesNotes    SalesNote[] @relation("SalesNoteManager")
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -408,6 +423,7 @@ model Customer {
   relationshipScore     Int?
   saleOrders            SaleOrder[]
   quotes                Quote[]
+  salesNotes            SalesNote[]
   prefix                String?
   firstName             String?
   lastName              String?
@@ -604,6 +620,42 @@ model Interaction {
 }
 
 // ====================
+// SALES NOTES
+// ====================
+model SalesNote {
+  id                String          @id @default(cuid())
+  noteNumber        String          @unique
+  customerId        String?
+  creatorEmployeeId String?
+  managerEmployeeId String?
+  title             String?
+  content           String?
+  amount            Float?
+  status            SalesNoteStatus @default(DRAFT)
+
+  // approval metadata
+  approvedAt       DateTime?
+  approvedByUserId String?
+  approvedBy       User?     @relation("UserApprovedSalesNotes", fields: [approvedByUserId], references: [id])
+
+  rejectReason String?
+  submittedAt  DateTime?
+
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  creator  Employee? @relation("SalesNoteCreator", fields: [creatorEmployeeId], references: [id])
+  manager  Employee? @relation("SalesNoteManager", fields: [managerEmployeeId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([customerId])
+  @@index([creatorEmployeeId])
+  @@index([managerEmployeeId])
+  @@index([status])
+}
+
+// ====================
 // SALES ORDERS
 // ====================
 model SaleOrder {
@@ -718,11 +770,11 @@ model SaleOrderStockReservation {
 // QUOTES
 // ====================
 model Quote {
-  id               String         @id @default(cuid())
-  quoteNumber      String         @unique
+  id               String           @id @default(cuid())
+  quoteNumber      String           @unique
   customerId       String
   salespersonId    String?
-  quoteDate        DateTime       @default(now())
+  quoteDate        DateTime         @default(now())
   validUntil       DateTime?
   paymentCondition PaymentCondition @default(PREPAID)
   creditTermDays   Int?
@@ -735,17 +787,17 @@ model Quote {
   note           String?
   status         QuoteStatus @default(DRAFT)
 
-  subTotal      Float  @default(0)
-  discountTotal Float  @default(0)
-  orderDiscount Float  @default(0)
-  taxAmount     Float  @default(0)
-  shippingFee   Float  @default(0)
-  otherCharges  Float  @default(0)
-  grandTotal    Float  @default(0)
+  subTotal      Float @default(0)
+  discountTotal Float @default(0)
+  orderDiscount Float @default(0)
+  taxAmount     Float @default(0)
+  shippingFee   Float @default(0)
+  otherCharges  Float @default(0)
+  grandTotal    Float @default(0)
 
-  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  salesperson Employee? @relation(fields: [salespersonId], references: [id])
-  items      QuoteItem[]
+  customer    Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  salesperson Employee?   @relation(fields: [salespersonId], references: [id])
+  items       QuoteItem[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -766,9 +818,9 @@ model QuoteItem {
   unit                String?
   qty                 Float
   unitPrice           Float
-  discountPercent     Float? @default(0)
-  discountAmount      Float? @default(0)
-  amount              Float  @default(0)
+  discountPercent     Float?  @default(0)
+  discountAmount      Float?  @default(0)
+  amount              Float   @default(0)
 
   quote   Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
   product Product? @relation(fields: [productId], references: [id])

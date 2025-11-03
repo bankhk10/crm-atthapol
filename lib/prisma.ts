@@ -49,6 +49,7 @@ const SOFT_DELETE_MODELS = new Set<string>([
   "SaleOrder",
   "SaleOrderStockReservation",
   "Interaction",
+  "SalesNote",
   "Product",
   "Stock",
 ]);
