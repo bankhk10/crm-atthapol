@@ -88,8 +88,6 @@ type OrderItem = {
 type Order = "asc" | "desc";
 type SortableKeys =
   | "soNumber"
-  | "orderDate"
-  | "shippingDate"
   | "customerName"
   // | "salespersonName"
   | "grandTotal"
@@ -198,7 +196,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
 
   // Sorting & Pagination (match products table UX)
   const [order, setOrder] = useState<Order>("asc");
-  const [orderBy, setOrderBy] = useState<SortableKeys>("orderDate");
+  const [orderBy, setOrderBy] = useState<SortableKeys>("soNumber");
   const [page, setPage] = useState(0); // 0-based for TablePagination
   const [rowsPerPage, setRowsPerPage] = useState(10);
   // Search states
@@ -389,10 +387,6 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
         //   return (o.salesperson ? displayEmployeeName(o.salesperson as any) : "").toString().toLowerCase();
         case "grandTotal":
           return Number(o.grandTotal ?? 0);
-        case "orderDate":
-          return o.orderDate ? new Date(o.orderDate).getTime() : 0;
-        case "shippingDate":
-          return o.shippingDate ? new Date(o.shippingDate).getTime() : 0;
         default:
           return ((o as any)[k] ?? "").toString().toLowerCase();
       }
@@ -418,8 +412,6 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
     align?: "left" | "center" | "right";
   }[] = [
     { id: "soNumber", label: "เลขที่ SO", width: 150 },
-    { id: "orderDate", label: "วันที่", width: 90 },
-    { id: "shippingDate", label: "วันที่จัดส่ง", width: 90 },
     { id: "customerName", label: "ลูกค้า", width: 150 },
     // { id: "salespersonName", label: "พนักงานขาย", width: 200 },
     { id: "grandTotal", label: "ยอดรวม", width: 100, align: "right" },
@@ -651,11 +643,6 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
                   ลูกค้า: {displayCustomerName(o.customer)}
                 </Typography>
                 <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-                  <Chip size="small" label={`วันที่: ${dayjs(o.orderDate).format("DD/MM/YYYY")}`} />
-                  <Chip
-                    size="small"
-                    label={`จัดส่ง: ${o.shippingDate ? dayjs(o.shippingDate).format("DD/MM/YYYY") : "-"}`}
-                  />
                   <Chip
                     size="small"
                     label={`ยอดรวม: ${o.grandTotal?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
@@ -754,7 +741,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
             order={order}
             orderBy={orderBy}
             onRequestSort={handleRequestSort}
-            showActions={canView || canEdit || canCancel || canDelete}
+            showActions={canView || canEdit || canCancel || canDelete || canApprove}
           />
           <TableBody>
             {sortedItems.map((o, idx) => {
@@ -781,21 +768,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
                       <span>{o.soNumber}</span>
                     </Tooltip>
                   </TableCell>
-                  <TableCell sx={{ width: 110 }}>
-                    <Tooltip title={dayjs(o.orderDate).format("DD/MM/YYYY")} arrow>
-                      <span>{dayjs(o.orderDate).format("DD/MM/YYYY")}</span>
-                    </Tooltip>
-                  </TableCell>
-                  <TableCell sx={{ width: 120 }}>
-                    <Tooltip
-                      title={o.shippingDate ? dayjs(o.shippingDate).format("DD/MM/YYYY") : "-"}
-                      arrow
-                    >
-                      <span>
-                        {o.shippingDate ? dayjs(o.shippingDate).format("DD/MM/YYYY") : "-"}
-                      </span>
-                    </Tooltip>
-                  </TableCell>
+                  {/* วันที่ และ วันที่จัดส่ง ไม่แสดงในรายการตามคำขอ */}
                   <TableCell
                     sx={{
                       width: 220,
@@ -894,23 +867,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
                             </span>
                           </Tooltip>
                         )}
-                        {!isTerminal && canCancel && (
-                          <Tooltip
-                            title={o.status === "CANCELLED" ? "ถูกยกเลิกแล้ว" : "ยกเลิก"}
-                            arrow
-                          >
-                            <span>
-                              <IconButton
-                                size="small"
-                                color="warning"
-                                disabled={o.status === "CANCELLED" || busyId === o.id}
-                                onClick={() => setConfirm({ type: "cancel", order: o })}
-                              >
-                                <CancelOutlinedIcon fontSize="small" />
-                              </IconButton>
-                            </span>
-                          </Tooltip>
-                        )}
+                      
                         {!isTerminal && canDelete && (
                           <Tooltip title="ลบ" arrow>
                             <span>
