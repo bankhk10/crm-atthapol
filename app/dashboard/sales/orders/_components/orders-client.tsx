@@ -27,9 +27,7 @@ import {
   Alert,
   Snackbar,
 } from "@mui/material";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+// Date pickers not used on this page
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
@@ -47,9 +45,7 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import thLocale from "dayjs/locale/th";
 import { useSession } from "next-auth/react";
 import { hasPermission } from "@/lib/permissions";
-import { th } from "date-fns/locale";
-import { useTheme } from "@mui/material/styles";
-import useMediaQuery from "@mui/material/useMediaQuery";
+// Removed date-fns locale and media query imports
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Loader from "@/components/Loader";
 import type { Option, ProductOption } from "../types";
@@ -183,8 +179,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
   const [items, setItems] = useState<OrderItem[]>([]);
   const [total, setTotal] = useState(0);
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
-  const [shippingFrom, setShippingFrom] = useState<string | null>(null);
-  const [shippingTo, setShippingTo] = useState<string | null>(null);
+  // Shipping date range filters removed per request
   const [paymentFilter, setPaymentFilter] = useState<string>("ALL");
 
   const [loading, setLoading] = useState(false);
@@ -205,8 +200,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
   const [soQuery, setSoQuery] = useState("");
   const [customerQuery, setCustomerQuery] = useState("");
 
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  // removed unused media query
 
   const canCreate = hasPermission(session?.user?.permissions, "sales", "create");
   const canView = hasPermission(session?.user?.permissions, "sales", "view");
@@ -240,8 +234,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
       params.set("pageSize", String(rowsPerPage));
       if (statusFilter !== "ALL") params.set("workflow", statusFilter);
       if (paymentFilter !== "ALL") params.set("paymentStatus", paymentFilter);
-      if (shippingFrom) params.set("shippingDateFrom", new Date(shippingFrom).toISOString());
-      if (shippingTo) params.set("shippingDateTo", new Date(shippingTo).toISOString());
+      // removed shipping date filters
       if (soQuery.trim()) params.set("so", soQuery.trim());
       if (customerQuery.trim()) params.set("customerQ", customerQuery.trim());
       const res = await fetch(`/api/sales/orders?${params.toString()}`);
@@ -262,8 +255,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
   }, [
     statusFilter,
     paymentFilter,
-    shippingFrom,
-    shippingTo,
+    // removed shipping date filters
     page,
     rowsPerPage,
     soQuery,
@@ -929,10 +921,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
                 else sp.delete("workflow");
                 if (paymentFilter !== "ALL") sp.set("paymentStatus", paymentFilter);
                 else sp.delete("paymentStatus");
-                if (shippingFrom) sp.set("shippingDateFrom", new Date(shippingFrom).toISOString());
-                else sp.delete("shippingDateFrom");
-                if (shippingTo) sp.set("shippingDateTo", new Date(shippingTo).toISOString());
-                else sp.delete("shippingDateTo");
+                // removed shipping date filters
                 if (soQuery.trim()) sp.set("so", soQuery.trim());
                 else sp.delete("so");
                 if (customerQuery.trim()) sp.set("customerQ", customerQuery.trim());

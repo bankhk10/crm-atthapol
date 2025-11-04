@@ -19,37 +19,62 @@ export function EditOrderPageClient({ orderId, customerOptions, employeeOptions,
   const [error, setError] = useState<string | null>(null);
 
   const parseThaiAddress = (input?: string | null) => {
-    const res: {
+    // Robust parser for strings built like: "<line> ต.<sub> อ.<dist> จ.<prov> <zip>"
+    // Supports spaces within names and synonyms: ต./ตำบล/แขวง, อ./อำเภอ/เขต, จ./จังหวัด
+    type Parts = {
       line: string;
       province?: string;
       district?: string;
       subdistrict?: string;
       postalCode?: string;
-    } = { line: (input || "").trim() };
-    if (!input) return res;
-    let s = String(input);
+    };
+    const result: Parts = { line: (input || "").trim() };
+    if (!input) return result;
+
+    let s = String(input).trim();
+
+    // Normalize synonyms to standard tokens
+    s = s
+      .replace(/ตำบล/g, "ต.")
+      .replace(/แขวง/g, "ต.")
+      .replace(/อำเภอ/g, "อ.")
+      .replace(/เขต/g, "อ.")
+      .replace(/จังหวัด/g, "จ.");
+
+    // Extract postal code (last 5 digits in string)
     const pc = s.match(/(\d{5})(?!.*\d)/);
     if (pc) {
-      res.postalCode = pc[1];
+      result.postalCode = pc[1];
       s = s.replace(pc[1], "");
     }
-    const prov = s.match(/จ\.\s*([^\s]+)/);
-    if (prov) {
-      res.province = prov[1];
-      s = s.replace(prov[0], "");
-    }
-    const dist = s.match(/อ\.\s*([^\s]+)/);
-    if (dist) {
-      res.district = dist[1];
-      s = s.replace(dist[0], "");
-    }
-    const subd = s.match(/ต\.\s*([^\s]+)/);
+
+    // Helper to match token with flexible content up to next token or end
+    const matchToken = (token: string, from: string) => {
+      const re = new RegExp(`${token}\\s*(.+?)(?=\\s*(ต\\.|อ\\.|จ\\.|\\d{5}|$))`);
+      const m = from.match(re);
+      if (!m) return undefined;
+      return { full: m[0], val: m[1].trim() };
+    };
+
+    const subd = matchToken("ต\\.", s);
     if (subd) {
-      res.subdistrict = subd[1];
-      s = s.replace(subd[0], "");
+      result.subdistrict = subd.val;
+      s = s.replace(subd.full, "");
     }
-    res.line = s.replace(/\s{2,}/g, " ").trim();
-    return res;
+    const dist = matchToken("อ\\.", s);
+    if (dist) {
+      result.district = dist.val;
+      s = s.replace(dist.full, "");
+    }
+    const prov = matchToken("จ\\.", s);
+    if (prov) {
+      result.province = prov.val;
+      s = s.replace(prov.full, "");
+    }
+
+    // Remaining becomes the address line
+    result.line = s.replace(/\s{2,}/g, " ").replace(/[\s,]+$/g, "").trim();
+    return result;
   };
 
   useEffect(() => {
