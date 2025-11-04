@@ -98,8 +98,8 @@ enum PaymentStatus {
 
 // Payment condition for Sale Orders
 enum PaymentCondition {
-  PREPAID // โอนเงินก่อนแล้วค่อยส่งของ
-  POSTPAID // ส่งของก่อนแล้วค่อยโอนเงิน
+  PREPAID // โอนเงินก่อน
+  POSTPAID // ส่งของก่อน
 }
 
 // Quote enums

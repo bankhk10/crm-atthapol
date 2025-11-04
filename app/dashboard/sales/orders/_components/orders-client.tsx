@@ -844,16 +844,12 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
                   <TableCell sx={{ width: 140 }}>
                     <Tooltip
                       title={
-                        o.paymentCondition === "POSTPAID"
-                          ? "ส่งก่อน-โอนทีหลัง"
-                          : "โอนก่อน-ส่งทีหลัง"
+                        o.paymentCondition === "POSTPAID" ? "ส่งของก่อน" : "โอนเงินก่อน"
                       }
                       arrow
                     >
                       <span>
-                        {o.paymentCondition === "POSTPAID"
-                          ? "ส่งก่อน-โอนทีหลัง"
-                          : "โอนก่อน-ส่งทีหลัง"}
+                        {o.paymentCondition === "POSTPAID" ? "ส่งของก่อน" : "โอนเงินก่อน"}
                       </span>
                     </Tooltip>
                   </TableCell>

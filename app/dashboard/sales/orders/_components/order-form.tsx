@@ -624,8 +624,8 @@ export function OrderForm({
             }}
             fullWidth
           >
-            <MenuItem value="PREPAID">โอนเงินก่อนแล้วค่อยส่งของ</MenuItem>
-            <MenuItem value="POSTPAID">ส่งของก่อนแล้วค่อยโอนเงิน</MenuItem>
+            <MenuItem value="PREPAID">โอนเงินก่อน</MenuItem>
+            <MenuItem value="POSTPAID">ส่งของก่อน</MenuItem>
           </TextField>
           <TextField
             label="เครดิต (วัน)"
