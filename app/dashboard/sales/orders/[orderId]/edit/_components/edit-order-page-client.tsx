@@ -18,12 +18,48 @@ export function EditOrderPageClient({ orderId, customerOptions, employeeOptions,
   const [initial, setInitial] = useState<OrderFormInitial | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const parseThaiAddress = (input?: string | null) => {
+    const res: {
+      line: string;
+      province?: string;
+      district?: string;
+      subdistrict?: string;
+      postalCode?: string;
+    } = { line: (input || "").trim() };
+    if (!input) return res;
+    let s = String(input);
+    const pc = s.match(/(\d{5})(?!.*\d)/);
+    if (pc) {
+      res.postalCode = pc[1];
+      s = s.replace(pc[1], "");
+    }
+    const prov = s.match(/จ\.\s*([^\s]+)/);
+    if (prov) {
+      res.province = prov[1];
+      s = s.replace(prov[0], "");
+    }
+    const dist = s.match(/อ\.\s*([^\s]+)/);
+    if (dist) {
+      res.district = dist[1];
+      s = s.replace(dist[0], "");
+    }
+    const subd = s.match(/ต\.\s*([^\s]+)/);
+    if (subd) {
+      res.subdistrict = subd[1];
+      s = s.replace(subd[0], "");
+    }
+    res.line = s.replace(/\s{2,}/g, " ").trim();
+    return res;
+  };
+
   useEffect(() => {
     (async () => {
       try {
         const res = await fetch(`/api/sales/orders/${orderId}`);
         if (!res.ok) throw new Error("โหลดข้อมูลไม่สำเร็จ");
         const so = await res.json();
+        const bill = parseThaiAddress(so.billTo as string | undefined);
+        const ship = parseThaiAddress(so.shipTo as string | undefined);
         const items = (so.items || []).map((it: any) => ({
           productId: it.productId ?? undefined,
           productCodeSnapshot: it.productCodeSnapshot ?? undefined,
@@ -45,16 +81,16 @@ export function EditOrderPageClient({ orderId, customerOptions, employeeOptions,
           currency: so.currency || "THB",
           vatIncluded: Boolean(so.vatIncluded),
           vatRate: Number(so.vatRate || 0),
-          billAddressLine: (so.billTo as string) || "",
-          billProvince: (so as any)?.customer?.province ?? undefined,
-          billDistrict: (so as any)?.customer?.district ?? undefined,
-          billSubdistrict: (so as any)?.customer?.subdistrict ?? undefined,
-          billPostalCode: (so as any)?.customer?.postalCode ?? undefined,
-          shipAddressLine: (so.shipTo as string) || "",
-          shipProvince: (so as any)?.customer?.province ?? undefined,
-          shipDistrict: (so as any)?.customer?.district ?? undefined,
-          shipSubdistrict: (so as any)?.customer?.subdistrict ?? undefined,
-          shipPostalCode: (so as any)?.customer?.postalCode ?? undefined,
+          billAddressLine: bill.line,
+          billProvince: bill.province,
+          billDistrict: bill.district,
+          billSubdistrict: bill.subdistrict,
+          billPostalCode: bill.postalCode,
+          shipAddressLine: ship.line,
+          shipProvince: ship.province,
+          shipDistrict: ship.district,
+          shipSubdistrict: ship.subdistrict,
+          shipPostalCode: ship.postalCode,
           status: String(so.status || "DRAFT"),
           paymentStatus: String(so.paymentStatus || "UNPAID"),
           shippingFee: Number(so.shippingFee ?? 0),
