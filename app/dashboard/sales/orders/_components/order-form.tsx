@@ -48,15 +48,17 @@ const DEFAULT_ITEM: OrderItemInput = {
   discountAmount: "",
 };
 
-const STATUS_OPTIONS = [
+const WORKFLOW_STATUS_OPTIONS = [
   { value: "DRAFT", label: "ร่าง" },
-  { value: "PENDING_APPROVAL", label: "รออนุมัติ" },
+  { value: "WAITING_MANAGER_APPROVAL", label: "รออนุมัติผู้จัดการ" },
+  { value: "WAITING_PAYMENT_CONFIRMATION", label: "รอตรวจสอบการชำระเงิน" },
+  { value: "WAITING_CREDIT_EXTENSION", label: "รอเพิ่มวงเงินเครดิต" },
+  { value: "AUTO_APPROVED", label: "ระบบอนุมัติอัตโนมัติ" },
   { value: "APPROVED", label: "อนุมัติ" },
+  { value: "PENDING_SHIPMENT", label: "รอจัดส่ง" },
+  { value: "SHIPPED", label: "จัดส่งแล้ว" },
   { value: "REJECTED", label: "ปฏิเสธ" },
-  { value: "AWAITING_STOCK", label: "รอสินค้า" },
-  { value: "READY_TO_SHIP", label: "รอจัดส่ง" },
-  { value: "IN_TRANSIT", label: "อยู่ระหว่างจัดส่ง" },
-  { value: "COMPLETED", label: "สำเร็จ" },
+  { value: "EXPIRED", label: "หมดอายุ" },
   { value: "CANCELLED", label: "ยกเลิก" },
 ];
 
@@ -151,7 +153,9 @@ export function OrderForm({
   const [shipPostalCode, setShipPostalCode] = useState<string | undefined>(initial?.shipPostalCode);
   const [status, setStatus] = useState(initial?.status ?? "DRAFT");
   const [paymentStatus, setPaymentStatus] = useState(initial?.paymentStatus ?? "UNPAID");
-  const [workflowStatus, setWorkflowStatus] = useState<string>(initial?.status ?? "DRAFT");
+  const [workflowStatus, setWorkflowStatus] = useState<string>(
+    initial?.workflowStatus ?? initial?.status ?? "DRAFT",
+  );
   const [shippingFee, setShippingFee] = useState<number | "">(initial?.shippingFee ?? 0);
   const [otherCharges, setOtherCharges] = useState<number | "">(initial?.otherCharges ?? 0);
   const [poNumber, setPoNumber] = useState(initial?.poNumber ?? "");
@@ -181,6 +185,14 @@ export function OrderForm({
   const [otherChargesInput, setOtherChargesInput] = useState<string | null>(null);
   const [orderDiscountInput, setOrderDiscountInput] = useState<string | null>(null);
   const [itemDiscountInput, setItemDiscountInput] = useState<Record<number, string | undefined>>({});
+  const [upfrontPercentInput, setUpfrontPercentInput] = useState<string | null>(null);
+  const [upfrontPaymentPercent, setUpfrontPaymentPercent] = useState<number | "">(
+    initial?.upfrontPaymentPercent ?? "",
+  );
+
+  const shippingLocked = Boolean(initial?.shippingLocked ?? false);
+  const shippingUpdateCount = Number(initial?.shippingUpdateCount ?? 0);
+  const creditEvaluationNote = initial?.creditEvaluationNote ?? "";
 
   const totals = useMemo(
     () =>
@@ -198,7 +210,7 @@ export function OrderForm({
     return net;
   }, [totals, orderDiscount]);
 
-  const allowedStatusOptions = STATUS_OPTIONS;
+  const allowedStatusOptions = WORKFLOW_STATUS_OPTIONS;
 
   const needRejectReason = mode === "edit" && workflowStatus === "REJECTED";
   const needCancelReason = mode === "edit" && workflowStatus === "CANCELLED";
@@ -303,41 +315,45 @@ export function OrderForm({
   }, [creditTermDays, orderDate, paymentCondition]);
 
   const applyWorkflowMapping = (wf: string) => {
-    setWorkflowStatus(wf);
+    setWorkflowStatus((prev) => (prev === wf ? prev : wf));
     switch (wf) {
       case "DRAFT":
         setStatus("DRAFT");
         setPaymentStatus("UNPAID");
         break;
-      case "PENDING_APPROVAL":
+      case "WAITING_MANAGER_APPROVAL":
         setStatus("CONFIRMED");
         break;
-      case "APPROVED":
+      case "WAITING_PAYMENT_CONFIRMATION":
         setStatus("APPROVED");
+        break;
+      case "WAITING_CREDIT_EXTENSION":
+        setStatus("CONFIRMED");
+        break;
+      case "AUTO_APPROVED":
+      case "APPROVED":
+      case "PENDING_SHIPMENT":
+        setStatus("APPROVED");
+        break;
+      case "SHIPPED":
+        setStatus("SHIPPED");
         break;
       case "REJECTED":
+      case "CANCELLED":
         setStatus("CANCELLED");
         break;
-      case "AWAITING_STOCK":
-        setStatus("CONFIRMED");
-        break;
-      case "READY_TO_SHIP":
-        setStatus("APPROVED");
-        break;
-      case "IN_TRANSIT":
-        setStatus("SHIPPED");
-        break;
-      case "COMPLETED":
-        setStatus("SHIPPED");
-        setPaymentStatus("PAID");
-        break;
-      case "CANCELLED":
+      case "EXPIRED":
         setStatus("CANCELLED");
         break;
       default:
         break;
     }
   };
+
+  useEffect(() => {
+    applyWorkflowMapping(workflowStatus);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const canSubmit =
     customerId &&
@@ -378,7 +394,7 @@ export function OrderForm({
         return parts.join(" ");
       };
 
-      const statusForSubmit = mode === "create" ? "CONFIRMED" : status;
+      const statusForSubmit = status;
       const payload: any = {
         customerId,
         salespersonId: salespersonId || undefined,
@@ -408,6 +424,7 @@ export function OrderForm({
           ) || undefined,
         status: statusForSubmit,
         paymentStatus,
+        workflowStatus: mode === "edit" ? workflowStatus : undefined,
         shippingFee: Number(shippingFee || 0),
         otherCharges: Number(otherCharges || 0),
         orderDiscount: orderDiscount === "" ? 0 : Number(orderDiscount || 0),
@@ -428,6 +445,9 @@ export function OrderForm({
           discountAmount: Number(it.discountAmount || 0),
         })),
       };
+
+      payload.upfrontPaymentPercent =
+        upfrontPaymentPercent === "" ? 0 : Number(upfrontPaymentPercent);
 
       await onSubmit(payload);
     } catch (err: any) {
@@ -620,6 +640,10 @@ export function OrderForm({
               if (val === "PREPAID") {
                 setCreditTermDays("");
                 setDueDate(null);
+                setUpfrontPaymentPercent("");
+              }
+              if (val === "POSTPAID" && upfrontPaymentPercent === "") {
+                setUpfrontPaymentPercent(0);
               }
             }}
             fullWidth
@@ -666,6 +690,49 @@ export function OrderForm({
               </MenuItem>
             ))}
           </TextField>
+          <TextField
+            label="เปอร์เซ็นต์ชำระล่วงหน้า (%)"
+            value={
+              upfrontPercentInput !== null
+                ? upfrontPercentInput
+                : upfrontPaymentPercent === ""
+                ? ""
+                : String(upfrontPaymentPercent)
+            }
+            onChange={(e) => {
+              const raw = e.target.value;
+              setUpfrontPercentInput(raw);
+              if (raw.trim() === "") {
+                setUpfrontPaymentPercent("");
+                return;
+              }
+              const sanitized = raw.replace(/[^0-9.]/g, "");
+              if (!sanitized) {
+                setUpfrontPaymentPercent("");
+                return;
+              }
+              const [intPart, fracPart] = sanitized.split(".");
+              const normalized =
+                intPart.slice(0, 3) + (fracPart !== undefined ? `.${fracPart.slice(0, 2)}` : "");
+              const numeric = Number(normalized);
+              if (!Number.isNaN(numeric)) {
+                setUpfrontPaymentPercent(Math.min(100, Math.max(0, numeric)));
+              }
+            }}
+            onBlur={() => {
+              setUpfrontPercentInput(null);
+              if (upfrontPaymentPercent === "") return;
+              const numeric = Number(upfrontPaymentPercent);
+              if (Number.isNaN(numeric)) {
+                setUpfrontPaymentPercent(0);
+              } else if (numeric > 100) {
+                setUpfrontPaymentPercent(100);
+              }
+            }}
+            disabled={paymentCondition !== "POSTPAID"}
+            helperText="ใช้สำหรับประเมินการอนุมัติอัตโนมัติ"
+            fullWidth
+          />
         </Stack>
       </Box>
 
@@ -805,7 +872,7 @@ export function OrderForm({
           <TextField
             select
             label="สถานะ"
-            value={mode === "create" ? "PENDING_APPROVAL" : (workflowStatus as any)}
+            value={workflowStatus as any}
             onChange={(e) => applyWorkflowMapping(e.target.value)}
             fullWidth
             disabled
@@ -818,6 +885,17 @@ export function OrderForm({
           </TextField>
         </Stack>
       </Box>
+
+      {creditEvaluationNote && (
+        <Alert severity="info" sx={{ mt: 1 }}>
+          {creditEvaluationNote}
+        </Alert>
+      )}
+      {shippingLocked && (
+        <Alert severity="warning" sx={{ mt: 1 }}>
+          {`ปิดการแก้ไขวันที่จัดส่ง (อัปเดตแล้ว ${shippingUpdateCount} ครั้ง)`}
+        </Alert>
+      )}
 
       {needRejectReason && (
         <TextField

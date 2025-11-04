@@ -66,8 +66,10 @@ type OrderItem = {
   shippingDate?: string | null;
   grandTotal: number;
   status: string;
+  workflowStatus?: string | null;
   paymentCondition?: string;
   paymentStatus: string;
+  autoApprovedBySystem?: boolean;
   customer?: {
     id: string;
     name?: string;
@@ -113,24 +115,45 @@ const visuallyHidden = {
 const WORKFLOW_STATUS_OPTIONS = [
   { value: "ALL", label: "ทั้งหมด" },
   { value: "DRAFT", label: "ร่าง" },
-  { value: "PENDING_APPROVAL", label: "รออนุมัติ" },
+  { value: "WAITING_MANAGER_APPROVAL", label: "รออนุมัติผู้จัดการ" },
+  { value: "WAITING_PAYMENT_CONFIRMATION", label: "รอตรวจสอบการชำระเงิน" },
+  { value: "WAITING_CREDIT_EXTENSION", label: "รอเพิ่มวงเงินเครดิต" },
+  { value: "AUTO_APPROVED", label: "ระบบอนุมัติอัตโนมัติ" },
   { value: "APPROVED", label: "อนุมัติ" },
+  { value: "PENDING_SHIPMENT", label: "รอจัดส่ง" },
+  { value: "SHIPPED", label: "จัดส่งแล้ว" },
   { value: "REJECTED", label: "ปฏิเสธ" },
-  { value: "AWAITING_STOCK", label: "รอสินค้า" },
-  { value: "READY_TO_SHIP", label: "รอจัดส่ง" },
-  { value: "IN_TRANSIT", label: "อยู่ระหว่างจัดส่ง" },
-  { value: "COMPLETED", label: "สำเร็จ" },
+  { value: "EXPIRED", label: "หมดอายุ" },
   { value: "CANCELLED", label: "ยกเลิก" },
 ];
 
-function workflowFromBackend(status: string, paymentStatus: string): string {
-  if (status === "DRAFT") return "DRAFT";
-  if (status === "CANCELLED") return "CANCELLED"; // could also represent REJECTED
-  if (status === "INVOICED") return "READY_TO_SHIP"; // move payment-related labels to payment status
-  if (status === "SHIPPED") return paymentStatus === "PAID" ? "COMPLETED" : "IN_TRANSIT";
-  if (status === "APPROVED") return "APPROVED"; // or READY_TO_SHIP
-  if (status === "CONFIRMED") return "PENDING_APPROVAL"; // or AWAITING_STOCK
-  return status || "DRAFT";
+const WORKFLOW_STATUS_SET = new Set(WORKFLOW_STATUS_OPTIONS.filter((o) => o.value !== "ALL").map((o) => o.value));
+const TERMINAL_WORKFLOW_SET = new Set(["CANCELLED", "REJECTED", "EXPIRED", "SHIPPED"]);
+
+function workflowFromBackend(status: string, paymentStatus: string, workflowStatus?: string | null): string {
+  const normalized = (workflowStatus || "").toUpperCase();
+  if (normalized && WORKFLOW_STATUS_SET.has(normalized)) {
+    return normalized;
+  }
+
+  switch ((status || "").toUpperCase()) {
+    case "DRAFT":
+      return "DRAFT";
+    case "CONFIRMED":
+      return "WAITING_MANAGER_APPROVAL";
+    case "APPROVED":
+      return "APPROVED";
+    case "INVOICED":
+      return "PENDING_SHIPMENT";
+    case "SHIPPED":
+      return "SHIPPED";
+    case "CANCELLED":
+      return "CANCELLED";
+    default:
+      // fall back to payment-derived hints for legacy rows
+      if (paymentStatus === "PAID") return "WAITING_PAYMENT_CONFIRMATION";
+      return "DRAFT";
+  }
 }
 
 // Server now supports workflow filter directly via `workflow` query param
@@ -368,11 +391,13 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
   };
 
   function workflowChipSx(wf: string) {
-    if (wf === "COMPLETED") return { color: "common.white", bgcolor: "success.main" } as const;
-    if (wf === "CANCELLED" || wf === "REJECTED")
-      return { color: "common.white", bgcolor: "error.main" } as const;
-    if (wf === "IN_TRANSIT" || wf === "READY_TO_SHIP" || wf === "AWAITING_STOCK")
+    if (wf === "SHIPPED") return { color: "common.white", bgcolor: "success.dark" } as const;
+    if (["APPROVED", "AUTO_APPROVED", "WAITING_PAYMENT_CONFIRMATION"].includes(wf))
+      return { color: "common.white", bgcolor: "success.main" } as const;
+    if (["WAITING_MANAGER_APPROVAL", "WAITING_CREDIT_EXTENSION", "PENDING_SHIPMENT"].includes(wf))
       return { color: "grey.900", bgcolor: "warning.light" } as const;
+    if (["REJECTED", "CANCELLED", "EXPIRED"].includes(wf))
+      return { color: "common.white", bgcolor: "error.main" } as const;
     return { color: "text.primary", bgcolor: "grey.200" } as const;
   }
 
@@ -628,20 +653,30 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
       {/* Mobile cards layout */}
       <Stack spacing={1.25} sx={{ p: 1.5, display: { xs: "block", md: "none" } }}>
         {sortedItems.map((o) => {
-          const rawWf = workflowFromBackend(o.status, o.paymentStatus);
-          const wf = o.status === "CANCELLED" && (o as any)?.rejectReason ? "REJECTED" : rawWf;
-          const isTerminal = wf === "COMPLETED" || wf === "CANCELLED";
+          const wf = workflowFromBackend(o.status, o.paymentStatus, o.workflowStatus);
+          const isTerminal = TERMINAL_WORKFLOW_SET.has(wf);
           const wfLabel = WORKFLOW_STATUS_OPTIONS.find((x) => x.value === wf)?.label || o.status;
+          const autoApproved = Boolean(o.autoApprovedBySystem);
           return (
             <Paper key={o.id} variant="outlined" sx={{ p: 1.25, borderRadius: 2 }}>
               <Stack spacing={1}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
                   <Typography fontWeight={700}>SO {o.soNumber}</Typography>
-                  <Chip
-                    size="small"
-                    label={wfLabel}
-                    sx={{ fontWeight: 600, px: 1.2, borderRadius: "9999px", ...workflowChipSx(wf) }}
-                  />
+                  <Stack direction="row" spacing={0.5} alignItems="center">
+                    <Chip
+                      size="small"
+                      label={wfLabel}
+                      sx={{ fontWeight: 600, px: 1.2, borderRadius: "9999px", ...workflowChipSx(wf) }}
+                    />
+                    {autoApproved && (
+                      <Chip
+                        size="small"
+                        color="secondary"
+                        label="อนุมัติอัตโนมัติ"
+                        sx={{ fontWeight: 600, borderRadius: "9999px" }}
+                      />
+                    )}
+                  </Stack>
                 </Stack>
                 <Typography variant="body2" color="text.secondary">
                   ลูกค้า: {displayCustomerName(o.customer)}
@@ -677,15 +712,11 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
                     )}
                     \n{" "}
                     {!isTerminal && canEdit && (
-                      <Tooltip
-                        title={wf === "COMPLETED" ? "แก้ไขไม่ได้ (เสร็จสิ้น)" : "แก้ไข"}
-                        arrow
-                      >
+                      <Tooltip title="แก้ไข" arrow>
                         <span>
                           <IconButton
                             size="small"
                             color="secondary"
-                            disabled={wf === "COMPLETED"}
                             onClick={() => router.push(`/dashboard/sales/orders/${o.id}/edit`)}
                           >
                             <EditOutlinedIcon fontSize="small" />
@@ -754,8 +785,8 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
           />
           <TableBody>
             {sortedItems.map((o, idx) => {
-              const wf = workflowFromBackend(o.status, o.paymentStatus);
-              const isTerminal = wf === "COMPLETED" || wf === "CANCELLED";
+              const wf = workflowFromBackend(o.status, o.paymentStatus, o.workflowStatus);
+              const isTerminal = TERMINAL_WORKFLOW_SET.has(wf);
               return (
                 <TableRow
                   key={o.id}
@@ -826,20 +857,28 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
                     </Tooltip>
                   </TableCell>
                   <TableCell sx={{ width: 120 }}>
-                    <Tooltip
-                      title={
-                        WORKFLOW_STATUS_OPTIONS.find(
-                          (x) => x.value === workflowFromBackend(o.status, o.paymentStatus),
-                        )?.label || o.status
-                      }
-                      arrow
-                    >
-                      <span>
-                        {WORKFLOW_STATUS_OPTIONS.find(
-                          (x) => x.value === workflowFromBackend(o.status, o.paymentStatus),
-                        )?.label || o.status}
-                      </span>
-                    </Tooltip>
+                    <Stack direction="row" spacing={0.5} alignItems="center">
+                      <Tooltip
+                        title={
+                          WORKFLOW_STATUS_OPTIONS.find(
+                            (x) => x.value === wf,
+                          )?.label || o.status
+                        }
+                        arrow
+                      >
+                        <span>
+                          {
+                            WORKFLOW_STATUS_OPTIONS.find((x) => x.value === wf)?.label ||
+                            o.status
+                          }
+                        </span>
+                      </Tooltip>
+                      {o.autoApprovedBySystem && (
+                        <Tooltip title="ระบบอนุมัติอัตโนมัติ" arrow>
+                          <Chip size="small" color="secondary" label="AUTO" sx={{ height: 22 }} />
+                        </Tooltip>
+                      )}
+                    </Stack>
                   </TableCell>
                   <TableCell sx={{ width: 140 }}>
                     <Tooltip
@@ -874,21 +913,11 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
                           </Tooltip>
                         )}
                         {!isTerminal && canEdit && (
-                          <Tooltip
-                            title={
-                              workflowFromBackend(o.status, o.paymentStatus) === "COMPLETED"
-                                ? "แก้ไขไม่ได้ (เสร็จสิ้น)"
-                                : "แก้ไข"
-                            }
-                            arrow
-                          >
+                          <Tooltip title="แก้ไข" arrow>
                             <span>
                               <IconButton
                                 size="small"
                                 color="secondary"
-                                disabled={
-                                  workflowFromBackend(o.status, o.paymentStatus) === "COMPLETED"
-                                }
                                 onClick={() => router.push(`/dashboard/sales/orders/${o.id}/edit`)}
                               >
                                 <EditOutlinedIcon fontSize="small" />

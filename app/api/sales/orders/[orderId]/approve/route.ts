@@ -4,6 +4,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
 import { buildSaleOrderVisibilityWhere } from "@/lib/sales-visibility";
+import { mapWorkflowStatusToBaseStatus, shouldCommitStock } from "@/lib/sales-approval";
+import { rebuildOrderStockCommit } from "@/lib/sale-order-stock";
 
 export const runtime = "nodejs";
 
@@ -18,27 +20,61 @@ export async function POST(_req: NextRequest, context: { params: Promise<{ order
 
     const updated = await prisma.$transaction(async (tx) => {
       const scopeWhere = await buildSaleOrderVisibilityWhere();
-      const exists = await tx.saleOrder.findFirst({ where: { id: orderId, ...(scopeWhere as any) } });
+      const exists = await tx.saleOrder.findFirst({
+        where: { id: orderId, ...(scopeWhere as any) },
+      });
       if (!exists || (exists as any).deletedAt) throw new Error("NOT_FOUND");
 
-      const status = String((exists as any).status || "");
-      if (status === "CANCELLED") throw new Error("LOCKED");
-      if (status === "SHIPPED") throw new Error("LOCKED");
-      if (status !== "CONFIRMED" && status !== "DRAFT") throw new Error("INVALID_STATE");
+      const prevWorkflow = String((exists as any).workflowStatus ?? "DRAFT");
+      if (["CANCELLED", "REJECTED", "EXPIRED"].includes(prevWorkflow)) {
+        throw new Error("LOCKED");
+      }
+      if (["WAITING_PAYMENT_CONFIRMATION", "APPROVED", "AUTO_APPROVED", "SHIPPED"].includes(prevWorkflow)) {
+        throw new Error("INVALID_STATE");
+      }
 
-      // ตรวจสอบว่า user id ใน session มีอยู่จริงในตาราง User เพื่อเลี่ยง FK violation
+      const paymentCondition =
+        ((exists as any).paymentCondition as any) ?? "PREPAID";
+      const nextWorkflow =
+        paymentCondition === "PREPAID"
+          ? "WAITING_PAYMENT_CONFIRMATION"
+          : "APPROVED";
+      const nextBaseStatus = mapWorkflowStatusToBaseStatus(nextWorkflow as any);
+      const shouldApply = shouldCommitStock(nextWorkflow as any);
+
       const actorId = session?.user?.id as string | undefined;
-      const actor = actorId ? await tx.user.findUnique({ where: { id: actorId }, select: { id: true } }) : null;
+      const actor = actorId
+        ? await tx.user.findUnique({ where: { id: actorId }, select: { id: true } })
+        : null;
 
       const order = await tx.saleOrder.update({
         where: { id: orderId },
         data: {
-          status: "APPROVED" as any,
+          status: nextBaseStatus as any,
+          workflowStatus: nextWorkflow as any,
+          autoApprovedBySystem: false,
           approvedAt: new Date(),
           approvedByUserId: actor?.id ?? null,
+          creditEvaluationNote:
+            paymentCondition === "PREPAID"
+              ? "ผู้จัดการอนุมัติแล้ว รอตรวจสอบการชำระเงิน"
+              : "ผู้จัดการอนุมัติแล้ว",
         },
-        include: { items: true, reservations: true },
+        include: { items: true },
       });
+
+      if (shouldApply) {
+        await rebuildOrderStockCommit(tx as any, {
+          id: order.id,
+          shippingDate: order.shippingDate,
+          items: order.items.map((it: any) => ({
+            id: it.id,
+            productId: it.productId ?? null,
+            qty: it.qty ?? 0,
+          })),
+        });
+      }
+
       return order;
     });
 

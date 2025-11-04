@@ -51,6 +51,7 @@ export type OrderFormInitial = {
   shipPostalCode?: string;
   status: string;
   paymentStatus: string;
+  workflowStatus?: string;
   shippingFee: number | "";
   otherCharges: number | "";
   orderDiscount: number | "";
@@ -61,4 +62,9 @@ export type OrderFormInitial = {
   items: OrderItemInput[];
   rejectReason?: string;
   cancelReason?: string;
+  upfrontPaymentPercent?: number | string;
+  autoApprovedBySystem?: boolean;
+  shippingUpdateCount?: number;
+  shippingLocked?: boolean;
+  creditEvaluationNote?: string;
 };
