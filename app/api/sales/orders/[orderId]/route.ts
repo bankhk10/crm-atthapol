@@ -5,26 +5,17 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
 import { buildSaleOrderVisibilityWhere } from "@/lib/sales-visibility";
+import {
+  evaluateSaleOrderWorkflow,
+  mapWorkflowStatusToBaseStatus,
+  shouldCommitStock,
+} from "@/lib/sales-approval";
+import {
+  rebuildOrderStockCommit,
+  releaseOrderReservations,
+} from "@/lib/sale-order-stock";
 
 export const runtime = "nodejs";
-
-async function releaseReservations(tx: any, saleOrderId: string) {
-  const reservations = await (tx as any).saleOrderStockReservation.findMany({
-    where: { saleOrderId, releasedAt: null, deletedAt: null },
-  });
-
-  for (const r of reservations as any[]) {
-    const stock = await tx.stock.findUnique({ where: { id: r.stockId }, select: { qtyReserved: true } });
-    const current = Number(stock?.qtyReserved ?? 0);
-    const qty = Math.max(0, Math.floor(Number(r.qty ?? 0)));
-    const releaseQty = Math.min(current, qty);
-    if (releaseQty > 0) {
-      await tx.stock.update({ where: { id: r.stockId }, data: { qtyReserved: { decrement: releaseQty } } });
-      await (tx as any).stockMovement.create({ data: { stockId: r.stockId, productId: (await tx.stock.findUnique({ where: { id: r.stockId }, select: { productId: true } })).productId, saleOrderId: saleOrderId, type: 'RELEASE', qty: releaseQty } });
-    }
-    await (tx as any).saleOrderStockReservation.update({ where: { id: r.id }, data: { releasedAt: new Date() } });
-  }
-}
 
 export async function DELETE(_req: NextRequest, context: { params: Promise<{ orderId: string }> }) {
   const { orderId } = await context.params;
@@ -42,7 +33,7 @@ export async function DELETE(_req: NextRequest, context: { params: Promise<{ ord
         throw new Error("NOT_FOUND");
       }
 
-      await releaseReservations(tx, orderId);
+      await releaseOrderReservations(tx as any, orderId);
       // Soft delete via client extension
       await tx.saleOrder.delete({ where: { id: orderId } });
     });
@@ -106,6 +97,7 @@ const UpdateOrderSchema = z.object({
   shippingDate: z.string().datetime().optional(),
   creditTermDays: z.number().int().optional(),
   paymentCondition: z.enum(["PREPAID","POSTPAID"]).optional(),
+  upfrontPaymentPercent: z.number().min(0).max(100).optional().default(0),
   currency: z.string().default("THB"),
   vatIncluded: z.boolean().default(true),
   vatRate: z.number().min(0).default(7),
@@ -122,6 +114,22 @@ const UpdateOrderSchema = z.object({
   note: z.string().optional(),
   rejectReason: z.string().optional(),
   cancelReason: z.string().optional(),
+  workflowStatus: z
+    .enum([
+      "DRAFT",
+      "WAITING_MANAGER_APPROVAL",
+      "WAITING_PAYMENT_CONFIRMATION",
+      "WAITING_CREDIT_EXTENSION",
+      "AUTO_APPROVED",
+      "APPROVED",
+      "REJECTED",
+      "EXPIRED",
+      "PENDING_SHIPMENT",
+      "SHIPPED",
+      "CANCELLED",
+    ])
+    .optional(),
+  autoApprovedBySystem: z.boolean().optional(),
   items: z.array(OrderItemSchema).min(1),
 }).superRefine((val, ctx) => {
   if (val.usePromotion) {
@@ -166,170 +174,306 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ orderId
     if (!hasPermission(perms, "sales", "edit")) {
       return NextResponse.json({ error: "ไม่มีสิทธิ์แก้ไขใบสั่งขาย" }, { status: 403 });
     }
+
     const json = await req.json();
     const parsed = UpdateOrderSchema.safeParse(json);
     if (!parsed.success) {
       return NextResponse.json({ error: "ข้อมูลไม่ถูกต้อง", issues: parsed.error.format() }, { status: 400 });
     }
+
     const data = parsed.data;
     const totals = computeTotals(data);
 
-    // Credit check when editing if payment condition is POSTPAID
-    try {
-      const existsHeader = await (prisma as any).saleOrder.findUnique({ where: { id: orderId }, select: { paymentCondition: true } });
-      const effectivePaymentCondition = (data as any).paymentCondition ?? (existsHeader?.paymentCondition ?? 'PREPAID');
-      if (effectivePaymentCondition === 'POSTPAID') {
-        const customer = await (prisma as any).customer.findUnique({ where: { id: data.customerId }, include: { dealerDetail: true } });
-        if (!customer) {
-          return NextResponse.json({ error: 'ไม่พบลูกค้า' }, { status: 400 });
-        }
-        const creditLimit = (customer as any)?.dealerDetail?.creditLimit as number | null | undefined;
-        if (typeof creditLimit === 'number') {
-          const relationshipScore = (customer as any)?.relationshipScore as number | null | undefined;
-          const enoughCredit = (totals.grandTotal ?? 0) <= creditLimit;
-          if (!enoughCredit) {
-            const canOverride = typeof relationshipScore === 'number' && relationshipScore > 3;
-            if (!canOverride) {
-              return NextResponse.json({ error: 'วงเงินเครดิตไม่พอ และคะแนนความสัมพันธ์ไม่ถึงเกณฑ์' }, { status: 400 });
-            }
-          }
-        }
-      }
-    } catch (checkErr) {
-      // If credit check fails unexpectedly, treat as server error
-      if (checkErr instanceof Response) return checkErr as any;
-      // fallthrough to continue; actual DB ops will run, but conservative approach would fail.
-    }
+    const scopeWhere = await buildSaleOrderVisibilityWhere();
 
     const updated = await prisma.$transaction(async (tx) => {
-      const scopeWhere = await buildSaleOrderVisibilityWhere();
-      const exists = await tx.saleOrder.findFirst({ where: { id: orderId, ...(scopeWhere as any) } });
+      const exists = await tx.saleOrder.findFirst({
+        where: { id: orderId, ...(scopeWhere as any) },
+      });
       if (!exists || (exists as any).deletedAt) throw new Error("NOT_FOUND");
-      if ((exists as any).status === "SHIPPED") throw new Error("LOCKED");
 
-      // Approval and status change gating
-      const prevStatus = String((exists as any).status || "");
-      const nextStatus = String((data as any).status ?? prevStatus);
-      const changingStatus = nextStatus !== prevStatus;
-      if (changingStatus) {
-        if (nextStatus === "APPROVED" && !hasPermission(perms, "sales", "approve")) {
-          throw new Error("NO_APPROVE");
+      const prevWorkflowStatus = String((exists as any).workflowStatus ?? "DRAFT");
+      const prevBaseStatus = mapWorkflowStatusToBaseStatus(prevWorkflowStatus as any);
+      if (["CANCELLED", "REJECTED", "EXPIRED"].includes(prevWorkflowStatus)) {
+        throw new Error("LOCKED");
+      }
+      if (prevBaseStatus === "SHIPPED") {
+        throw new Error("LOCKED");
+      }
+
+      let shippingLocked = Boolean((exists as any).shippingLocked);
+      let shippingUpdateCount = Number((exists as any).shippingUpdateCount ?? 0);
+
+      const prevShippingDate = exists.shippingDate
+        ? new Date(exists.shippingDate)
+        : null;
+      const shippingDateValue =
+        data.shippingDate !== undefined && data.shippingDate !== null
+          ? new Date(data.shippingDate)
+          : prevShippingDate;
+      const shippingDateChanged =
+        (prevShippingDate?.getTime() || 0) !== (shippingDateValue?.getTime() || 0);
+      if (shippingLocked && shippingDateChanged) {
+        throw new Error("SHIPPING_LOCKED");
+      }
+
+      const dueDateValue =
+        data.dueDate !== undefined && data.dueDate !== null
+          ? new Date(data.dueDate)
+          : exists.dueDate;
+      const expiresAt = dueDateValue ?? null;
+
+      const paymentCondition =
+        (data.paymentCondition as any) ??
+        ((exists as any).paymentCondition as any) ??
+        "PREPAID";
+
+      const upfrontPaymentPercent = (() => {
+        if (
+          data.upfrontPaymentPercent !== undefined &&
+          data.upfrontPaymentPercent !== null
+        ) {
+          const raw = Number(data.upfrontPaymentPercent);
+          return Number.isFinite(raw) ? Math.min(100, Math.max(0, raw)) : 0;
         }
-        if (nextStatus === "CANCELLED" && !hasPermission(perms, "sales", "reject")) {
-          throw new Error("NO_REJECT");
+        const existingPercent = Number((exists as any).upfrontPaymentPercent ?? 0);
+        return Number.isFinite(existingPercent) ? existingPercent : 0;
+      })();
+
+      let creditLimit: number | null = null;
+      let relationshipScore: number | null = null;
+      if (paymentCondition === "POSTPAID") {
+        const customer = await tx.customer.findUnique({
+          where: { id: data.customerId },
+          include: { dealerDetail: true },
+        });
+        if (!customer) {
+          throw new Error("CUSTOMER_NOT_FOUND");
         }
-        // Allow non-approvers to move between DRAFT and CONFIRMED (submit/recall)
-        const isFreeChange = (prevStatus === "DRAFT" && nextStatus === "CONFIRMED") || (prevStatus === "CONFIRMED" && nextStatus === "DRAFT");
-        if (!isFreeChange) {
-          const needsApprove = ["SHIPPED", "INVOICED", "APPROVED"].includes(nextStatus);
-          if (needsApprove && !hasPermission(perms, "sales", "approve")) {
-            throw new Error("NO_APPROVE");
-          }
+        creditLimit =
+          ((customer as any)?.dealerDetail?.creditLimit as number | undefined | null) ??
+          null;
+        relationshipScore = (customer as any)?.relationshipScore ?? null;
+      }
+
+      const evaluation = evaluateSaleOrderWorkflow({
+        paymentCondition,
+        grandTotal: totals.grandTotal,
+        upfrontPaymentPercent,
+        creditLimit,
+        relationshipScore,
+      });
+
+      let nextWorkflowStatus =
+        ((data as any).workflowStatus as any) ?? evaluation.workflowStatus;
+      let autoApprovedBySystem = Boolean(
+        (data as any).autoApprovedBySystem ?? evaluation.autoApprovedBySystem,
+      );
+      let creditEvaluationNote = evaluation.creditEvaluationNote;
+
+      const requestedStatus = String((data as any).status ?? exists.status ?? "DRAFT");
+      const wantsCancel =
+        requestedStatus === "CANCELLED" || nextWorkflowStatus === "CANCELLED";
+      const wantsApprove =
+        requestedStatus === "APPROVED" ||
+        nextWorkflowStatus === "APPROVED" ||
+        nextWorkflowStatus === "WAITING_PAYMENT_CONFIRMATION" ||
+        nextWorkflowStatus === "AUTO_APPROVED";
+
+      if (wantsCancel && !hasPermission(perms, "sales", "reject")) {
+        throw new Error("NO_REJECT");
+      }
+
+      if (
+        wantsApprove &&
+        !autoApprovedBySystem &&
+        !hasPermission(perms, "sales", "approve")
+      ) {
+        throw new Error("NO_APPROVE");
+      }
+
+      if (wantsCancel) {
+        nextWorkflowStatus = "CANCELLED";
+        autoApprovedBySystem = false;
+        creditEvaluationNote =
+          data.cancelReason || data.rejectReason || creditEvaluationNote || "ยกเลิกรายการ";
+      } else if (wantsApprove) {
+        if (nextWorkflowStatus === "AUTO_APPROVED" && !autoApprovedBySystem) {
+          autoApprovedBySystem = true;
+        }
+        if (nextWorkflowStatus !== "AUTO_APPROVED") {
+          nextWorkflowStatus =
+            paymentCondition === "PREPAID"
+              ? "WAITING_PAYMENT_CONFIRMATION"
+              : "APPROVED";
+          autoApprovedBySystem = false;
+        }
+        if (!creditEvaluationNote) {
+          creditEvaluationNote =
+            paymentCondition === "PREPAID"
+              ? "ผู้จัดการอนุมัติแล้ว รอตรวจสอบการชำระเงิน"
+              : "ผู้จัดการอนุมัติแล้ว";
+        }
+      } else if (!(data as any).workflowStatus) {
+        nextWorkflowStatus = evaluation.workflowStatus;
+        autoApprovedBySystem = evaluation.autoApprovedBySystem;
+      }
+
+      if (nextWorkflowStatus !== "AUTO_APPROVED") {
+        autoApprovedBySystem = false;
+      }
+
+      if (expiresAt && expiresAt.getTime() < Date.now() && !shippingDateValue) {
+        nextWorkflowStatus = "EXPIRED";
+        autoApprovedBySystem = false;
+        shippingLocked = true;
+      }
+
+      if (shippingDateChanged) {
+        shippingUpdateCount += 1;
+        if (shippingUpdateCount >= 3 && nextWorkflowStatus !== "SHIPPED") {
+          nextWorkflowStatus = "PENDING_SHIPMENT";
+          shippingLocked = true;
         }
       }
-      // If already approved and user wants to edit without reopening, block
-      if (prevStatus === "APPROVED" && nextStatus === "APPROVED") {
-        throw new Error("LOCKED_APPROVED");
+
+      if (
+        ["REJECTED", "EXPIRED", "CANCELLED"].includes(nextWorkflowStatus) &&
+        !hasPermission(perms, "sales", "reject")
+      ) {
+        throw new Error("NO_REJECT");
       }
+
+      const nextBaseStatus = mapWorkflowStatusToBaseStatus(nextWorkflowStatus as any);
+      const shouldApplyStock = shouldCommitStock(nextWorkflowStatus as any);
 
       // --- Promotion budget adjustment (difference-based and customer-change aware) ---
       const currentSpent = Number((exists as any).promotionSpent ?? 0);
-      const requestedSpent = (data as any).usePromotion ? Number((data as any).promotionAmount ?? 0) : 0;
+      const requestedSpent = (data as any).usePromotion
+        ? Number((data as any).promotionAmount ?? 0)
+        : 0;
       const oldCustomerId = (exists as any).customerId as string;
       const newCustomerId = data.customerId as string;
       if (oldCustomerId !== newCustomerId) {
-        // Refund full current to old customer (if any)
         if (currentSpent > 0) {
-          const oldCust = await (tx as any).customer.findUnique({ where: { id: oldCustomerId }, include: { dealerDetail: true } });
+          const oldCust = await (tx as any).customer.findUnique({
+            where: { id: oldCustomerId },
+            include: { dealerDetail: true },
+          });
           const oldDd = (oldCust as any)?.dealerDetail;
           if (oldDd?.id) {
-            await (tx as any).dealerDetail.update({ where: { id: oldDd.id }, data: { promotionBudget: { increment: currentSpent } } });
+            await (tx as any).dealerDetail.update({
+              where: { id: oldDd.id },
+              data: { promotionBudget: { increment: currentSpent } },
+            });
           } else {
-            // If cannot refund to old, block to avoid budget loss
-            throw new Error('PROMO_REFUND_TARGET_MISSING');
+            throw new Error("PROMO_REFUND_TARGET_MISSING");
           }
         }
-        // Deduct full requested from new customer (if any)
         if (requestedSpent > 0) {
-          const newCust = await (tx as any).customer.findUnique({ where: { id: newCustomerId }, include: { dealerDetail: true } });
+          const newCust = await (tx as any).customer.findUnique({
+            where: { id: newCustomerId },
+            include: { dealerDetail: true },
+          });
           const newDd = (newCust as any)?.dealerDetail;
           if (!newDd?.id) {
-            throw new Error('PROMO_NOT_SUPPORTED');
+            throw new Error("PROMO_NOT_SUPPORTED");
           }
           const result = await (tx as any).dealerDetail.updateMany({
             where: { id: newDd.id, promotionBudget: { gte: requestedSpent } },
             data: { promotionBudget: { decrement: requestedSpent } },
           });
           if (!result || (result.count ?? 0) !== 1) {
-            throw new Error('PROMO_BUDGET_NOT_ENOUGH');
+            throw new Error("PROMO_BUDGET_NOT_ENOUGH");
           }
         }
       } else {
-        // Same customer: apply delta change only
         const delta = requestedSpent - currentSpent;
         if (delta > 0) {
-          const cust = await (tx as any).customer.findUnique({ where: { id: newCustomerId }, include: { dealerDetail: true } });
+          const cust = await (tx as any).customer.findUnique({
+            where: { id: newCustomerId },
+            include: { dealerDetail: true },
+          });
           const dd = (cust as any)?.dealerDetail;
           if (!dd?.id) {
-            throw new Error('PROMO_NOT_SUPPORTED');
+            throw new Error("PROMO_NOT_SUPPORTED");
           }
           const result = await (tx as any).dealerDetail.updateMany({
             where: { id: dd.id, promotionBudget: { gte: delta } },
             data: { promotionBudget: { decrement: delta } },
           });
           if (!result || (result.count ?? 0) !== 1) {
-            throw new Error('PROMO_BUDGET_NOT_ENOUGH');
+            throw new Error("PROMO_BUDGET_NOT_ENOUGH");
           }
         } else if (delta < 0) {
           const refund = Math.abs(delta);
-          const cust = await (tx as any).customer.findUnique({ where: { id: newCustomerId }, include: { dealerDetail: true } });
+          const cust = await (tx as any).customer.findUnique({
+            where: { id: newCustomerId },
+            include: { dealerDetail: true },
+          });
           const dd = (cust as any)?.dealerDetail;
           if (!dd?.id) {
-            throw new Error('PROMO_REFUND_TARGET_MISSING');
+            throw new Error("PROMO_REFUND_TARGET_MISSING");
           }
-          await (tx as any).dealerDetail.update({ where: { id: dd.id }, data: { promotionBudget: { increment: refund } } });
+          await (tx as any).dealerDetail.update({
+            where: { id: dd.id },
+            data: { promotionBudget: { increment: refund } },
+          });
         }
       }
 
-      // release all existing reservations
-      await releaseReservations(tx, orderId);
-
-      // soft-delete existing items
+      await releaseOrderReservations(tx as any, orderId);
       await tx.saleOrderItem.deleteMany({ where: { saleOrderId: orderId } });
 
-      // If approving, ensure approver user exists to avoid FK violation
-      const actorId = nextStatus === "APPROVED" && session?.user?.id ? session.user.id : undefined;
-      const approver = actorId ? await tx.user.findUnique({ where: { id: actorId }, select: { id: true } }) : null;
+      const willBeApproved = nextBaseStatus === "APPROVED";
+      const wasApproved = prevBaseStatus === "APPROVED";
+      const actorId = willBeApproved && session?.user?.id ? session.user.id : undefined;
+      const approver = actorId
+        ? await tx.user.findUnique({ where: { id: actorId }, select: { id: true } })
+        : null;
+      const approvedAtValue = willBeApproved
+        ? (wasApproved && (exists as any).approvedAt
+            ? (exists as any).approvedAt
+            : new Date())
+        : null;
+      const approvedByUserId = willBeApproved
+        ? approver?.id ?? ((exists as any).approvedByUserId ?? null)
+        : null;
 
-      // update order header and recreate items
       const order = await (tx as any).saleOrder.update({
         where: { id: orderId },
         data: {
           customerId: data.customerId,
           salespersonId: data.salespersonId,
           orderDate: data.orderDate ? new Date(data.orderDate) : exists.orderDate,
-          dueDate: data.dueDate ? new Date(data.dueDate) : null,
-          shippingDate: data.shippingDate ? new Date(data.shippingDate) : null,
+          dueDate: dueDateValue ?? null,
+          shippingDate: shippingDateValue,
           creditTermDays: data.creditTermDays,
           currency: data.currency ?? "THB",
           vatIncluded: data.vatIncluded ?? true,
           vatRate: data.vatRate ?? 7,
           billTo: data.billTo,
           shipTo: data.shipTo,
-          status: (data.status as any) ?? exists.status,
+          status: nextBaseStatus as any,
+          workflowStatus: nextWorkflowStatus as any,
+          autoApprovedBySystem,
           paymentStatus: (data.paymentStatus as any) ?? exists.paymentStatus,
-          paymentCondition: (data.paymentCondition as any) ?? (exists as any).paymentCondition,
+          paymentCondition: paymentCondition as any,
           shippingFee: data.shippingFee ?? 0,
           otherCharges: data.otherCharges ?? 0,
           orderDiscount: (data as any).orderDiscount ?? 0,
           promotionSpent: requestedSpent || 0,
           poNumber: data.poNumber,
           note: data.note,
-          rejectReason: (data as any).rejectReason,
-          cancelReason: (data as any).cancelReason,
-          // Approval metadata update
-          approvedAt: nextStatus === "APPROVED" ? new Date() : (prevStatus === "APPROVED" && nextStatus !== "APPROVED" ? null : (exists as any).approvedAt),
-          approvedByUserId: nextStatus === "APPROVED" ? (approver?.id ?? null) : (prevStatus === "APPROVED" && nextStatus !== "APPROVED" ? null : (exists as any).approvedByUserId),
+          rejectReason: data.rejectReason,
+          cancelReason: data.cancelReason,
+          creditEvaluationNote,
+          upfrontPaymentPercent,
+          shippingUpdateCount,
+          shippingLocked,
+          expiresAt,
+          approvedAt: approvedAtValue,
+          approvedByUserId,
           subTotal: totals.subTotal,
           discountTotal: totals.discountTotal,
           taxAmount: totals.taxAmount,
@@ -353,39 +497,24 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ orderId
                 expDate: it.expDate ? new Date(it.expDate) : null,
                 note: it.note,
               };
-            })
-          }
+            }),
+          },
         },
         include: { items: true },
       });
 
-      // Reserve or deduct stock per items depending on shippingDate or status
-      for (const item of (order.items as any[])) {
-        if (!item.productId || !item.qty) continue;
-        let remaining = Math.max(0, Math.floor(Number(item.qty)));
-        if (!Number.isFinite(remaining) || remaining <= 0) continue;
-        const stocks = await tx.stock.findMany({ where: { productId: item.productId, deletedAt: null }, orderBy: [{ expDate: "asc" }, { mfgDate: "asc" }, { createdAt: "asc" }] });
-        // Issue immediately if there is a shipping date OR order status is SHIPPED (COMPLETED in UI)
-        const isImmediateIssue = Boolean(order.shippingDate) || (order.status === "SHIPPED");
-        for (const s of stocks as any[]) {
-          if (remaining <= 0) break;
-          const onHand = Number(s.qtyOnHand || 0);
-          const reserved = Number(s.qtyReserved || 0);
-          const available = Math.max(0, onHand - reserved);
-          if (available <= 0) continue;
-          const alloc = Math.min(available, remaining);
-          if (alloc <= 0) continue;
-          if (isImmediateIssue) {
-            await tx.stock.update({ where: { id: s.id }, data: { qtyOnHand: { decrement: alloc } } });
-            await (tx as any).stockMovement.create({ data: { stockId: s.id, productId: s.productId, saleOrderId: order.id, type: 'ISSUE', qty: alloc } });
-          } else {
-            await tx.stock.update({ where: { id: s.id }, data: { qtyReserved: { increment: alloc } } });
-            await (tx as any).saleOrderStockReservation.create({ data: { saleOrderId: order.id, stockId: s.id, qty: alloc } });
-            await (tx as any).stockMovement.create({ data: { stockId: s.id, productId: s.productId, saleOrderId: order.id, type: 'RESERVE', qty: alloc } });
-          }
-          remaining -= alloc;
-        }
+      if (shouldApplyStock) {
+        await rebuildOrderStockCommit(tx as any, {
+          id: order.id,
+          shippingDate: order.shippingDate,
+          items: order.items.map((it: any) => ({
+            id: it.id,
+            productId: it.productId ?? null,
+            qty: it.qty ?? 0,
+          })),
+        });
       }
+
       return order;
     });
 
@@ -395,10 +524,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ orderId
       return NextResponse.json({ error: "ไม่พบใบสั่งขาย" }, { status: 404 });
     }
     if (err instanceof Error && err.message === "LOCKED") {
-      return NextResponse.json({ error: "เอกสารสถานะสำเร็จ ไม่สามารถแก้ไขได้" }, { status: 400 });
-    }
-    if (err instanceof Error && err.message === "LOCKED_APPROVED") {
-      return NextResponse.json({ error: "เอกสารถูกอนุมัติแล้ว ต้องเปลี่ยนสถานะเป็นรออนุมัติจึงจะแก้ไขได้" }, { status: 400 });
+      return NextResponse.json({ error: "เอกสารสถานะนี้ไม่สามารถแก้ไขได้" }, { status: 400 });
     }
     if (err instanceof Error && err.message === "NO_APPROVE") {
       return NextResponse.json({ error: "ไม่มีสิทธิ์เปลี่ยนแปลงสถานะ/อนุมัติเอกสาร" }, { status: 403 });
@@ -406,13 +532,19 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ orderId
     if (err instanceof Error && err.message === "NO_REJECT") {
       return NextResponse.json({ error: "ไม่มีสิทธิ์ปฏิเสธ/ยกเลิกเอกสาร" }, { status: 403 });
     }
-    if (err instanceof Error && err.message === 'PROMO_NOT_SUPPORTED') {
+    if (err instanceof Error && err.message === "CUSTOMER_NOT_FOUND") {
+      return NextResponse.json({ error: "ไม่พบข้อมูลลูกค้า" }, { status: 400 });
+    }
+    if (err instanceof Error && err.message === "SHIPPING_LOCKED") {
+      return NextResponse.json({ error: "อัปเดตวันส่งของเกินจำนวนครั้งที่กำหนดแล้ว" }, { status: 400 });
+    }
+    if (err instanceof Error && err.message === "PROMO_NOT_SUPPORTED") {
       return NextResponse.json({ error: "ลูกค้ารายนี้ไม่รองรับวงเงินส่งเสริมการขาย" }, { status: 400 });
     }
-    if (err instanceof Error && err.message === 'PROMO_BUDGET_NOT_ENOUGH') {
+    if (err instanceof Error && err.message === "PROMO_BUDGET_NOT_ENOUGH") {
       return NextResponse.json({ error: "วงเงินส่งเสริมการขายคงเหลือไม่พอ" }, { status: 400 });
     }
-    if (err instanceof Error && err.message === 'PROMO_REFUND_TARGET_MISSING') {
+    if (err instanceof Error && err.message === "PROMO_REFUND_TARGET_MISSING") {
       return NextResponse.json({ error: "ไม่สามารถคืนวงเงินส่งเสริมการขายเดิมได้" }, { status: 400 });
     }
     console.error("[PUT /api/sales/orders/:id] error", err);

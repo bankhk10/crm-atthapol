@@ -5,6 +5,12 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
 import { buildSaleOrderVisibilityWhere, getVisibilityScope } from "@/lib/sales-visibility";
+import {
+  evaluateSaleOrderWorkflow,
+  mapWorkflowStatusToBaseStatus,
+  shouldCommitStock,
+} from "@/lib/sales-approval";
+import { rebuildOrderStockCommit } from "@/lib/sale-order-stock";
 
 export const runtime = "nodejs";
 
@@ -32,6 +38,7 @@ const CreateOrderSchema = z.object({
   shippingDate: z.string().datetime().optional(),
   creditTermDays: z.number().int().optional(),
   paymentCondition: z.enum(["PREPAID","POSTPAID"]).optional(),
+  upfrontPaymentPercent: z.number().min(0).max(100).optional().default(0),
   currency: z.string().default("THB"),
   vatIncluded: z.boolean().default(true),
   vatRate: z.number().min(0).default(7),
@@ -176,40 +183,28 @@ export async function GET(req: NextRequest) {
 
     // Apply workflow mapping to where when provided
     if (workflow && workflow !== "ALL") {
-      switch (workflow) {
-        case "DRAFT":
-          where.status = "DRAFT";
-          break;
-        case "PENDING_APPROVAL":
-        case "AWAITING_STOCK":
-          where.status = "CONFIRMED";
-          break;
-        case "APPROVED":
-        case "READY_TO_SHIP":
-          where.status = "APPROVED";
-          break;
-        case "REJECTED":
-        case "CANCELLED":
-          where.status = "CANCELLED";
-          break;
-        case "AWAITING_PAYMENT":
-          where.status = "INVOICED";
-          where.paymentStatus = { in: ["UNPAID", "PARTIAL", "OVERDUE"] };
-          break;
-        case "PAID":
-          where.status = "INVOICED";
-          where.paymentStatus = "PAID";
-          break;
-        case "IN_TRANSIT":
-          where.status = "SHIPPED";
-          where.paymentStatus = { in: ["UNPAID", "PARTIAL", "OVERDUE"] };
-          break;
-        case "COMPLETED":
-          where.status = "SHIPPED";
-          where.paymentStatus = "PAID";
-          break;
-        default:
-          break;
+      const wfMap: Record<string, string | string[]> = {
+        DRAFT: "DRAFT",
+        PENDING_APPROVAL: "WAITING_MANAGER_APPROVAL",
+        WAITING_MANAGER_APPROVAL: "WAITING_MANAGER_APPROVAL",
+        WAITING_PAYMENT_CONFIRMATION: "WAITING_PAYMENT_CONFIRMATION",
+        WAITING_CREDIT_EXTENSION: "WAITING_CREDIT_EXTENSION",
+        AUTO_APPROVED: ["AUTO_APPROVED", "APPROVED"],
+        APPROVED: ["APPROVED", "AUTO_APPROVED"],
+        REJECTED: "REJECTED",
+        CANCELLED: "CANCELLED",
+        EXPIRED: "EXPIRED",
+        PENDING_SHIPMENT: "PENDING_SHIPMENT",
+        READY_TO_SHIP: "PENDING_SHIPMENT",
+        SHIPPED: "SHIPPED",
+        IN_TRANSIT: "SHIPPED",
+        COMPLETED: "SHIPPED",
+      };
+      const wfTarget = wfMap[workflow] ?? workflow;
+      if (Array.isArray(wfTarget)) {
+        where.workflowStatus = { in: wfTarget } as any;
+      } else {
+        where.workflowStatus = wfTarget as any;
       }
     }
 
@@ -278,8 +273,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "ไม่มีสิทธิ์ปฏิเสธ/ยกเลิกเอกสาร" }, { status: 403 });
     }
 
-    // Pre-check credit if POSTPAID
-    if ((data.paymentCondition ?? "PREPAID") === "POSTPAID") {
+    const paymentCondition = (data.paymentCondition as any) ?? "PREPAID";
+    const upfrontRaw = Number(data.upfrontPaymentPercent ?? 0);
+    const upfrontPaymentPercent = Number.isFinite(upfrontRaw)
+      ? Math.min(100, Math.max(0, upfrontRaw))
+      : 0;
+    let creditLimit: number | null = null;
+    let relationshipScore: number | null = null;
+    if (paymentCondition === "POSTPAID") {
       const customer = await prisma.customer.findUnique({
         where: { id: data.customerId },
         include: { dealerDetail: true },
@@ -287,18 +288,44 @@ export async function POST(req: NextRequest) {
       if (!customer) {
         return NextResponse.json({ error: "ไม่พบลูกค้า" }, { status: 400 });
       }
-      const creditLimit = (customer as any)?.dealerDetail?.creditLimit as number | null | undefined;
-      if (typeof creditLimit === 'number') {
-        const relationshipScore = (customer as any)?.relationshipScore as number | null | undefined;
-        const enoughCredit = totals.grandTotal <= creditLimit;
-        if (!enoughCredit) {
-          const canOverride = typeof relationshipScore === 'number' && relationshipScore > 3;
-          if (!canOverride) {
-            return NextResponse.json({ error: "วงเงินเครดิตไม่พอ และคะแนนความสัมพันธ์ไม่ถึงเกณฑ์" }, { status: 400 });
-          }
-        }
-      }
+      creditLimit = ((customer as any)?.dealerDetail?.creditLimit as number | undefined | null) ?? null;
+      relationshipScore = (customer as any)?.relationshipScore ?? null;
     }
+
+    const evaluation = evaluateSaleOrderWorkflow({
+      paymentCondition,
+      grandTotal: totals.grandTotal,
+      upfrontPaymentPercent,
+      creditLimit,
+      relationshipScore,
+    });
+
+    let workflowStatus = evaluation.workflowStatus;
+    let baseStatus = evaluation.baseStatus;
+    let autoApprovedBySystem = evaluation.autoApprovedBySystem;
+    let creditEvaluationNote = evaluation.creditEvaluationNote;
+
+    if (wantsCancel) {
+      workflowStatus = "CANCELLED";
+      baseStatus = "CANCELLED";
+      autoApprovedBySystem = false;
+      creditEvaluationNote = "ยกเลิกรายการตามคำสั่งผู้ใช้";
+    } else if (wantsApprove) {
+      workflowStatus =
+        paymentCondition === "PREPAID"
+          ? "WAITING_PAYMENT_CONFIRMATION"
+          : "APPROVED";
+      baseStatus = mapWorkflowStatusToBaseStatus(workflowStatus);
+      autoApprovedBySystem = false;
+      creditEvaluationNote =
+        paymentCondition === "PREPAID"
+          ? "ผู้จัดการอนุมัติแล้ว รอตรวจสอบการชำระเงิน"
+          : "ผู้จัดการอนุมัติแล้ว";
+    }
+
+    const shouldApplyStock = shouldCommitStock(workflowStatus);
+    const expiresAt = data.dueDate ? new Date(data.dueDate) : null;
+    const shippingDateValue = data.shippingDate ? new Date(data.shippingDate) : null;
 
     let created: any | null = null;
     for (let attempt = 0; attempt < 5; attempt++) {
@@ -347,32 +374,45 @@ export async function POST(req: NextRequest) {
           const actorId = wantsApprove && session?.user?.id ? session.user.id : undefined;
           const approver = actorId ? await tx.user.findUnique({ where: { id: actorId }, select: { id: true } }) : null;
 
+          const approvedAtValue =
+            baseStatus === "APPROVED" && (autoApprovedBySystem || wantsApprove)
+              ? new Date()
+              : null;
+          const approvedById = wantsApprove && approver?.id ? approver.id : null;
+
           const order = await (tx as any).saleOrder.create({
             data: {
               soNumber,
               customerId: data.customerId,
               salespersonId,
               orderDate: data.orderDate ? new Date(data.orderDate) : new Date(),
-              dueDate: data.dueDate ? new Date(data.dueDate) : null,
-              shippingDate: data.shippingDate ? new Date(data.shippingDate) : null,
+              dueDate: expiresAt,
+              shippingDate: shippingDateValue,
               creditTermDays: data.creditTermDays,
-          currency: data.currency ?? "THB",
-          vatIncluded: data.vatIncluded ?? true,
-          vatRate: data.vatRate ?? 7,
-          billTo: data.billTo,
-          shipTo: data.shipTo,
-          status: (data.status as any) ?? "DRAFT",
-          paymentStatus: (data.paymentStatus as any) ?? "UNPAID",
-          paymentCondition: (data.paymentCondition as any) ?? "PREPAID",
-          shippingFee: data.shippingFee ?? 0,
-          otherCharges: data.otherCharges ?? 0,
-          orderDiscount: data.orderDiscount ?? 0,
-          promotionSpent: promoUsed || 0,
-          poNumber: data.poNumber,
-          note: data.note,
-          rejectReason: (data as any).rejectReason,
-          approvedAt: wantsApprove ? new Date() : null,
-          approvedByUserId: wantsApprove ? (approver?.id ?? null) : null,
+              currency: data.currency ?? "THB",
+              vatIncluded: data.vatIncluded ?? true,
+              vatRate: data.vatRate ?? 7,
+              billTo: data.billTo,
+              shipTo: data.shipTo,
+              status: baseStatus as any,
+              workflowStatus: workflowStatus as any,
+              autoApprovedBySystem,
+              paymentStatus: (data.paymentStatus as any) ?? "UNPAID",
+              paymentCondition: paymentCondition as any,
+              shippingFee: data.shippingFee ?? 0,
+              otherCharges: data.otherCharges ?? 0,
+              orderDiscount: data.orderDiscount ?? 0,
+              promotionSpent: promoUsed || 0,
+              poNumber: data.poNumber,
+              note: data.note,
+              rejectReason: (data as any).rejectReason,
+              creditEvaluationNote,
+              upfrontPaymentPercent,
+              shippingUpdateCount: 0,
+              shippingLocked: false,
+              expiresAt,
+              approvedAt: approvedAtValue,
+              approvedByUserId: approvedById,
               subTotal: totals.subTotal,
               discountTotal: totals.discountTotal,
               taxAmount: totals.taxAmount,
@@ -390,7 +430,7 @@ export async function POST(req: NextRequest) {
                     discountPercent: it.discountPercent ?? 0,
                     discountAmount: it.discountAmount ?? 0,
                     lineVatRate: it.lineVatRate ?? undefined,
-                    amount: taxable, // amount before VAT per line
+                    amount: taxable,
                     lotNumber: it.lotNumber,
                     mfgDate: it.mfgDate ? new Date(it.mfgDate) : null,
                     expDate: it.expDate ? new Date(it.expDate) : null,
@@ -402,40 +442,18 @@ export async function POST(req: NextRequest) {
             include: { items: true },
           });
 
-          // Reserve or Deduct stock per item depending on shippingDate or status
-          for (const item of order.items as any[]) {
-            if (!item.productId || !item.qty) continue;
-            let remaining = Math.max(0, Math.floor(Number(item.qty)));
-            if (!Number.isFinite(remaining) || remaining <= 0) continue;
-
-            const stocks = await tx.stock.findMany({
-              where: { productId: item.productId, deletedAt: null },
-              orderBy: [{ expDate: "asc" }, { mfgDate: "asc" }, { createdAt: "asc" }],
+          if (shouldApplyStock) {
+            await rebuildOrderStockCommit(tx as any, {
+              id: order.id,
+              shippingDate: order.shippingDate,
+              items: order.items.map((it: any) => ({
+                id: it.id,
+                productId: it.productId ?? null,
+                qty: it.qty ?? 0,
+              })),
             });
-
-            // Issue immediately if there is a shipping date OR order status is SHIPPED (COMPLETED in UI)
-            const isImmediateIssue = Boolean(order.shippingDate) || (order.status === "SHIPPED");
-            for (const s of stocks as any[]) {
-              if (remaining <= 0) break;
-              const onHand = Number(s.qtyOnHand || 0);
-              const reserved = Number(s.qtyReserved || 0);
-              const available = Math.max(0, onHand - reserved);
-              if (available <= 0) continue;
-              const alloc = Math.min(available, remaining);
-              if (alloc <= 0) continue;
-              if (isImmediateIssue) {
-                // Deduct on-hand immediately, do not reserve
-                await tx.stock.update({ where: { id: s.id }, data: { qtyOnHand: { decrement: alloc } } });
-                await (tx as any).stockMovement.create({ data: { stockId: s.id, productId: s.productId, saleOrderId: order.id, type: 'ISSUE', qty: alloc } });
-              } else {
-                // Reserve only
-                await tx.stock.update({ where: { id: s.id }, data: { qtyReserved: { increment: alloc } } });
-                await (tx as any).saleOrderStockReservation.create({ data: { saleOrderId: order.id, stockId: s.id, qty: alloc } });
-                await (tx as any).stockMovement.create({ data: { stockId: s.id, productId: s.productId, saleOrderId: order.id, type: 'RESERVE', qty: alloc } });
-              }
-              remaining -= alloc;
-            }
           }
+
           return order;
         });
         break; // success

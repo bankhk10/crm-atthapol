@@ -102,6 +102,21 @@ enum PaymentCondition {
   POSTPAID // ส่งของก่อน
 }
 
+// Detailed workflow status for sale order approval + fulfillment
+enum SaleOrderWorkflowStatus {
+  DRAFT
+  WAITING_MANAGER_APPROVAL
+  WAITING_PAYMENT_CONFIRMATION
+  WAITING_CREDIT_EXTENSION
+  AUTO_APPROVED
+  APPROVED
+  REJECTED
+  EXPIRED
+  PENDING_SHIPMENT
+  SHIPPED
+  CANCELLED
+}
+
 // Quote enums
 enum QuoteStatus {
   DRAFT
@@ -677,6 +692,14 @@ model SaleOrder {
   shipTo        String?
   status        SaleOrderStatus @default(DRAFT)
   paymentStatus PaymentStatus   @default(UNPAID)
+  workflowStatus SaleOrderWorkflowStatus @default(DRAFT)
+  autoApprovedBySystem Boolean @default(false)
+  upfrontPaymentPercent Float  @default(0)
+  creditEvaluationNote  String?
+
+  shippingUpdateCount Int      @default(0)
+  shippingLocked      Boolean  @default(false)
+  expiresAt           DateTime?
 
   // Approval metadata
   approvedAt       DateTime?
@@ -716,6 +739,7 @@ model SaleOrder {
   @@index([customerId])
   @@index([salespersonId])
   @@index([approvedByUserId])
+  @@index([workflowStatus])
 }
 
 model SaleOrderItem {

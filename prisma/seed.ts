@@ -64,6 +64,7 @@ function buildPermissionGroup(resource: string, actions: PermissionAction[]) {
 const approvalActions: PermissionAction[] = ["approve", "reject"];
 const manageActions: PermissionAction[] = ["view", "create", "edit", "delete", ...approvalActions];
 const contributeActions: PermissionAction[] = ["view", "create", "edit"];
+const operationsActions: PermissionAction[] = ["view", "create", "edit", ...approvalActions];
 const viewOnly: PermissionAction[] = ["view"];
 const viewCreateActions: PermissionAction[] = ["view", "create"];
 
@@ -104,6 +105,18 @@ const roleSeeds: RoleSeed[] = [
       ...buildPermissionGroup("sales", viewCreateActions),
       // Visibility scope: staff sees own
       "sales_scope:own",
+    ],
+  },
+  {
+    key: "sales_operations",
+    name: "ธุรการฝ่ายขาย",
+    description: "ตรวจสอบการชำระเงินและประสานงานการจัดส่ง",
+    permissions: [
+      ...buildPermissionGroup("customers", contributeActions),
+      ...buildPermissionGroup("sales", operationsActions),
+      ...buildPermissionGroup("products", viewOnly),
+      // Visibility scope: operations see department-level data
+      "sales_scope:department",
     ],
   },
 ];
@@ -149,6 +162,20 @@ const userSeeds: UserSeed[] = [
       department: "การขาย",
       phone: "0810000003",
       startDate: new Date("2024-06-01"),
+    },
+  },
+  {
+    email: "sales.admin@csone.local",
+    name: "ธุรการฝ่ายขาย",
+    password: "SalesAdmin@123",
+    role: "USER",
+    roleKey: "sales_operations",
+    employee: {
+      employeeCode: "EMP-0004",
+      position: "ธุรการฝ่ายขาย",
+      department: "การขาย",
+      phone: "0810000004",
+      startDate: new Date("2024-07-01"),
     },
   },
 ];

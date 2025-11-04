@@ -4,27 +4,10 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
 import { buildSaleOrderVisibilityWhere } from "@/lib/sales-visibility";
+import { mapWorkflowStatusToBaseStatus } from "@/lib/sales-approval";
+import { releaseOrderReservations } from "@/lib/sale-order-stock";
 
 export const runtime = "nodejs";
-
-async function releaseReservations(tx: any, saleOrderId: string) {
-  const reservations = await (tx as any).saleOrderStockReservation.findMany({
-    where: { saleOrderId, releasedAt: null, deletedAt: null },
-  });
-
-  for (const r of reservations as any[]) {
-    const stock = await tx.stock.findUnique({ where: { id: r.stockId }, select: { qtyReserved: true } });
-    const current = Number(stock?.qtyReserved ?? 0);
-    const qty = Math.max(0, Math.floor(Number(r.qty ?? 0)));
-    const releaseQty = Math.min(current, qty);
-    if (releaseQty > 0) {
-      await tx.stock.update({ where: { id: r.stockId }, data: { qtyReserved: { decrement: releaseQty } } });
-      const p = await tx.stock.findUnique({ where: { id: r.stockId }, select: { productId: true } });
-      await (tx as any).stockMovement.create({ data: { stockId: r.stockId, productId: p?.productId as string, saleOrderId: saleOrderId, type: 'RELEASE', qty: releaseQty } });
-    }
-    await (tx as any).saleOrderStockReservation.update({ where: { id: r.id }, data: { releasedAt: new Date() } });
-  }
-}
 
 export async function POST(req: NextRequest, context: { params: Promise<{ orderId: string }> }) {
   const { orderId } = await context.params;
@@ -48,10 +31,16 @@ export async function POST(req: NextRequest, context: { params: Promise<{ orderI
         throw new Error("NOT_FOUND");
       }
 
-      await releaseReservations(tx, orderId);
+      const prevWorkflow = String((order as any).workflowStatus ?? "DRAFT");
+      if (["CANCELLED", "REJECTED", "EXPIRED", "SHIPPED"].includes(prevWorkflow)) {
+        throw new Error("LOCKED");
+      }
+
+      await releaseOrderReservations(tx as any, orderId);
 
       // If order had shippingDate OR status is SHIPPED (treated as issued), return qtyOnHand back
-      if ((order as any).shippingDate || (order as any).status === "SHIPPED") {
+      const baseStatus = mapWorkflowStatusToBaseStatus(prevWorkflow as any);
+      if ((order as any).shippingDate || baseStatus === "SHIPPED") {
         const items = await tx.saleOrderItem.findMany({ where: { saleOrderId: orderId } });
         for (const item of items as any[]) {
           if (!item.productId || !item.qty) continue;
@@ -72,10 +61,20 @@ export async function POST(req: NextRequest, context: { params: Promise<{ orderI
         }
       }
 
+      const workflowStatus = "CANCELLED";
+      const status = mapWorkflowStatusToBaseStatus(workflowStatus as any);
+
       const updated = await tx.saleOrder.update({
         where: { id: orderId },
-        data: { status: "CANCELLED" as any, cancelReason, approvedAt: null, approvedByUserId: null },
-        include: { items: true, reservations: true },
+        data: {
+          status: status as any,
+          workflowStatus: workflowStatus as any,
+          cancelReason,
+          approvedAt: null,
+          approvedByUserId: null,
+          autoApprovedBySystem: false,
+        },
+        include: { items: true },
       });
       return updated;
     });
@@ -84,6 +83,9 @@ export async function POST(req: NextRequest, context: { params: Promise<{ orderI
   } catch (err) {
     if (err instanceof Error && err.message === "NOT_FOUND") {
       return NextResponse.json({ error: "ไม่พบใบสั่งขาย" }, { status: 404 });
+    }
+    if (err instanceof Error && err.message === "LOCKED") {
+      return NextResponse.json({ error: "เอกสารสถานะนี้ไม่สามารถยกเลิกได้" }, { status: 400 });
     }
     console.error("[POST /api/sales/orders/:id/cancel] error", err);
     return NextResponse.json({ error: "ยกเลิกใบสั่งขายไม่สำเร็จ" }, { status: 500 });

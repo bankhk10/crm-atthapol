@@ -57,6 +57,7 @@ export function EditOrderPageClient({ orderId, customerOptions, employeeOptions,
           shipPostalCode: (so as any)?.customer?.postalCode ?? undefined,
           status: String(so.status || "DRAFT"),
           paymentStatus: String(so.paymentStatus || "UNPAID"),
+          workflowStatus: String((so as any).workflowStatus || "DRAFT"),
           shippingFee: Number(so.shippingFee ?? 0),
           otherCharges: Number(so.otherCharges ?? 0),
           orderDiscount: Number((so as any).orderDiscount ?? 0),
@@ -67,6 +68,14 @@ export function EditOrderPageClient({ orderId, customerOptions, employeeOptions,
           items,
           rejectReason: (so as any).rejectReason || "",
           cancelReason: (so as any).cancelReason || "",
+          upfrontPaymentPercent:
+            typeof (so as any).upfrontPaymentPercent === "number"
+              ? Number((so as any).upfrontPaymentPercent)
+              : "",
+          autoApprovedBySystem: Boolean((so as any).autoApprovedBySystem),
+          shippingUpdateCount: Number((so as any).shippingUpdateCount ?? 0),
+          shippingLocked: Boolean((so as any).shippingLocked ?? false),
+          creditEvaluationNote: (so as any).creditEvaluationNote || "",
         });
       } catch (e: any) {
         setError(e?.message || "โหลดข้อมูลไม่สำเร็จ");
