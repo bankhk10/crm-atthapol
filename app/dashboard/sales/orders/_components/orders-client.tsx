@@ -120,6 +120,7 @@ const WORKFLOW_STATUS_OPTIONS = [
   { value: "READY_TO_SHIP", label: "รอจัดส่ง" },
   { value: "IN_TRANSIT", label: "อยู่ระหว่างจัดส่ง" },
   { value: "COMPLETED", label: "สำเร็จ" },
+  { value: "EXPIRED", label: "หมดอายุ" },
   { value: "CANCELLED", label: "ยกเลิก" },
 ];
 
@@ -129,6 +130,8 @@ function workflowFromBackend(status: string, paymentStatus: string): string {
   if (status === "INVOICED") return "READY_TO_SHIP"; // move payment-related labels to payment status
   if (status === "SHIPPED") return paymentStatus === "PAID" ? "COMPLETED" : "IN_TRANSIT";
   if (status === "APPROVED") return "APPROVED"; // or READY_TO_SHIP
+  if (status === "PENDING") return "READY_TO_SHIP";
+  if (status === "EXPIRED") return "EXPIRED";
   if (status === "CONFIRMED") return "PENDING_APPROVAL"; // or AWAITING_STOCK
   return status || "DRAFT";
 }
@@ -369,7 +372,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
 
   function workflowChipSx(wf: string) {
     if (wf === "COMPLETED") return { color: "common.white", bgcolor: "success.main" } as const;
-    if (wf === "CANCELLED" || wf === "REJECTED")
+    if (wf === "CANCELLED" || wf === "REJECTED" || wf === "EXPIRED")
       return { color: "common.white", bgcolor: "error.main" } as const;
     if (wf === "IN_TRANSIT" || wf === "READY_TO_SHIP" || wf === "AWAITING_STOCK")
       return { color: "grey.900", bgcolor: "warning.light" } as const;
@@ -629,8 +632,9 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
       <Stack spacing={1.25} sx={{ p: 1.5, display: { xs: "block", md: "none" } }}>
         {sortedItems.map((o) => {
           const rawWf = workflowFromBackend(o.status, o.paymentStatus);
-          const wf = o.status === "CANCELLED" && (o as any)?.rejectReason ? "REJECTED" : rawWf;
-          const isTerminal = wf === "COMPLETED" || wf === "CANCELLED";
+          const wf = (o.status === "REJECTED") ? "REJECTED" : (o.status === "CANCELLED" && (o as any)?.rejectReason ? "REJECTED" : rawWf);
+          const isTerminal = wf === "COMPLETED" || wf === "CANCELLED" || wf === "EXPIRED";
+          const isLocked = isTerminal || Boolean((o as any).lockedAt);
           const wfLabel = WORKFLOW_STATUS_OPTIONS.find((x) => x.value === wf)?.label || o.status;
           return (
             <Paper key={o.id} variant="outlined" sx={{ p: 1.25, borderRadius: 2 }}>
@@ -676,16 +680,16 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
                       </Tooltip>
                     )}
                     \n{" "}
-                    {!isTerminal && canEdit && (
+                    {!isLocked && canEdit && (
                       <Tooltip
-                        title={wf === "COMPLETED" ? "แก้ไขไม่ได้ (เสร็จสิ้น)" : "แก้ไข"}
+                        title={isTerminal ? "แก้ไขไม่ได้ (เสร็จสิ้น/ยกเลิก)" : (Boolean((o as any).lockedAt) ? "แก้ไขไม่ได้ (ถูกล็อก)" : "แก้ไข")}
                         arrow
                       >
                         <span>
                           <IconButton
                             size="small"
                             color="secondary"
-                            disabled={wf === "COMPLETED"}
+                            disabled={isLocked}
                             onClick={() => router.push(`/dashboard/sales/orders/${o.id}/edit`)}
                           >
                             <EditOutlinedIcon fontSize="small" />
@@ -755,7 +759,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
           <TableBody>
             {sortedItems.map((o, idx) => {
               const wf = workflowFromBackend(o.status, o.paymentStatus);
-              const isTerminal = wf === "COMPLETED" || wf === "CANCELLED";
+          const isTerminal = wf === "COMPLETED" || wf === "CANCELLED" || wf === "EXPIRED";
               return (
                 <TableRow
                   key={o.id}
@@ -875,20 +879,14 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
                         )}
                         {!isTerminal && canEdit && (
                           <Tooltip
-                            title={
-                              workflowFromBackend(o.status, o.paymentStatus) === "COMPLETED"
-                                ? "แก้ไขไม่ได้ (เสร็จสิ้น)"
-                                : "แก้ไข"
-                            }
+                            title={(() => { const wf = workflowFromBackend(o.status, o.paymentStatus); return (wf === 'COMPLETED' || Boolean((o as any).lockedAt)) ? (Boolean((o as any).lockedAt) ? 'แก้ไขไม่ได้ (ถูกล็อก)' : 'แก้ไขไม่ได้ (เสร็จสิ้น)') : 'แก้ไข'; })()}
                             arrow
                           >
                             <span>
                               <IconButton
                                 size="small"
                                 color="secondary"
-                                disabled={
-                                  workflowFromBackend(o.status, o.paymentStatus) === "COMPLETED"
-                                }
+                                disabled={(() => { const wf = workflowFromBackend(o.status, o.paymentStatus); return wf === 'COMPLETED' || Boolean((o as any).lockedAt); })()}
                                 onClick={() => router.push(`/dashboard/sales/orders/${o.id}/edit`)}
                               >
                                 <EditOutlinedIcon fontSize="small" />
@@ -1031,3 +1029,5 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
     </Stack>
   );
 }
+
+

@@ -8,15 +8,19 @@ import Loader from "@/components/Loader";
 type Props = {
   orderId: string;
   status: string;
+  paymentCondition?: string;
   canApprove: boolean;
   canReject: boolean;
 };
 
-export function ActionsBar({ orderId, status, canApprove, canReject }: Props) {
+export function ActionsBar({ orderId, status, paymentCondition, canApprove, canReject }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [openReject, setOpenReject] = useState(false);
   const [reason, setReason] = useState("");
+  const [openCredit, setOpenCredit] = useState(false);
+  const [requestedIncrease, setRequestedIncrease] = useState<string>("");
+  const [creditNote, setCreditNote] = useState<string>("");
 
   const doApprove = async () => {
     setBusy("approve");
@@ -61,6 +65,7 @@ export function ActionsBar({ orderId, status, canApprove, canReject }: Props) {
 
   const showApprove = canApprove && (status === "CONFIRMED" || status === "DRAFT");
   const showReject = canReject && (status === "CONFIRMED" || status === "DRAFT");
+  const showCreditReq = (paymentCondition === 'POSTPAID') && (status === 'CONFIRMED');
 
   if (!showApprove && !showReject) return null;
 
@@ -72,6 +77,15 @@ export function ActionsBar({ orderId, status, canApprove, canReject }: Props) {
             <span>
               <Button variant="contained" color="primary" disabled={busy === "approve"} onClick={doApprove}>
                 อนุมัติ
+              </Button>
+            </span>
+          </Tooltip>
+        )}
+        {showCreditReq && (
+          <Tooltip title="ขอเพิ่มวงเงินเครดิต" arrow>
+            <span>
+              <Button variant="outlined" color="secondary" disabled={busy === "credit"} onClick={() => setOpenCredit(true)}>
+                ขอเพิ่มวงเงินเครดิต
               </Button>
             </span>
           </Tooltip>
@@ -88,6 +102,62 @@ export function ActionsBar({ orderId, status, canApprove, canReject }: Props) {
       </Stack>
 
       {busy && <Loader fullscreen />}
+
+      <Dialog open={openCredit} onClose={() => setOpenCredit(false)}>
+        <DialogTitle>ขอเพิ่มวงเงินเครดิต</DialogTitle>
+        <DialogContent>
+          <Stack spacing={1} sx={{ mt: 1 }}>
+            <TextField
+              label="จำนวนที่ต้องการเพิ่ม (บาท)"
+              value={requestedIncrease}
+              onChange={(e) => setRequestedIncrease(e.target.value)}
+              type="number"
+              inputProps={{ min: 0 }}
+              fullWidth
+            />
+            <TextField
+              label="หมายเหตุ"
+              value={creditNote}
+              onChange={(e) => setCreditNote(e.target.value)}
+              fullWidth
+              multiline
+              minRows={2}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenCredit(false)} color="inherit">ปิด</Button>
+          <Button
+            onClick={async () => {
+              setBusy('credit');
+              try {
+                const payload: any = { requestedIncrease: Number(requestedIncrease || 0) };
+                if (creditNote.trim()) payload.note = creditNote.trim();
+                const res = await fetch(`/api/sales/orders/${orderId}/credit-requests`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(payload),
+                });
+                if (!res.ok) {
+                  const data = await res.json().catch(() => ({}));
+                  throw new Error(data?.error || 'บันทึกคำขอไม่สำเร็จ');
+                }
+                setOpenCredit(false);
+                setRequestedIncrease('');
+                setCreditNote('');
+                router.refresh();
+              } catch (e) {
+                alert(e instanceof Error ? e.message : 'บันทึกคำขอไม่สำเร็จ');
+              } finally {
+                setBusy(null);
+              }
+            }}
+            variant="contained" color="secondary" disabled={busy === 'credit'}
+          >
+            ส่งคำขอ
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog open={openReject} onClose={() => setOpenReject(false)}>
         <DialogTitle>ปฏิเสธเอกสาร</DialogTitle>

@@ -84,6 +84,7 @@ enum SaleOrderStatus {
   DRAFT
   CONFIRMED
   APPROVED
+  REJECTED
   PENDING
   SHIPPED
   INVOICED
@@ -102,6 +103,16 @@ enum PaymentStatus {
 enum PaymentCondition {
   PREPAID // โอนเงินก่อน
   POSTPAID // ส่งของก่อน
+}
+
+// ====================
+// CREDIT REQUESTS
+// ====================
+enum CreditRequestStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  CANCELLED
 }
 
 // Quote enums
@@ -257,6 +268,9 @@ model User {
   createdInteractions Interaction[]   @relation("UserCreatedInteractions")
   approvedSaleOrders  SaleOrder[]     @relation("UserApprovedSaleOrders")
   approvedSalesNotes  SalesNote[]     @relation("UserApprovedSalesNotes")
+
+  creditRequestsRequested CreditRequest[] @relation("CreditRequestedByUser")
+  creditRequestsDecided   CreditRequest[] @relation("CreditDecidedByUser")
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -453,6 +467,8 @@ model Customer {
 
   sales        Sale[]
   interactions Interaction[]
+
+  creditRequests        CreditRequest[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -714,6 +730,7 @@ model SaleOrder {
   items        SaleOrderItem[]
   reservations SaleOrderStockReservation[]
   movements    StockMovement[]
+  creditRequests CreditRequest[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -774,6 +791,36 @@ model SaleOrderStockReservation {
 
   @@index([saleOrderId])
   @@index([stockId])
+}
+
+// Credit increase request linked to a sale order
+model CreditRequest {
+  id                 String               @id @default(cuid())
+  saleOrderId        String
+  customerId         String
+  requestedIncrease  Float                @default(0)
+  requestedNewLimit  Float?
+  amountOver         Float?               // snapshot at request time
+  percentOver        Float?               // snapshot at request time (0-1)
+  note               String?
+  status             CreditRequestStatus  @default(REQUESTED)
+
+  requestedByUserId  String?
+  requestedBy        User?                @relation("CreditRequestedByUser", fields: [requestedByUserId], references: [id])
+  decidedByUserId    String?
+  decidedBy          User?                @relation("CreditDecidedByUser", fields: [decidedByUserId], references: [id])
+  decidedAt          DateTime?
+
+  saleOrder          SaleOrder            @relation(fields: [saleOrderId], references: [id], onDelete: Cascade)
+  customer           Customer             @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([saleOrderId])
+  @@index([customerId])
+  @@index([status])
 }
 
 // ====================

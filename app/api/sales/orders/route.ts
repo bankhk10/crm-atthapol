@@ -37,7 +37,7 @@ const CreateOrderSchema = z.object({
   vatRate: z.number().min(0).default(7),
   billTo: z.string().optional(),
   shipTo: z.string().optional(),
-  status: z.enum(["DRAFT","CONFIRMED","APPROVED","PENDING","SHIPPED","INVOICED","EXPIRED","CANCELLED"]).optional(),
+  status: z.enum(["DRAFT","CONFIRMED","APPROVED","REJECTED","PENDING","SHIPPED","INVOICED","EXPIRED","CANCELLED"]).optional(),
   paymentStatus: z.enum(["UNPAID","PARTIAL","PAID","OVERDUE"]).optional(),
   shippingFee: z.number().min(0).optional().default(0),
   otherCharges: z.number().min(0).optional().default(0),
@@ -185,10 +185,15 @@ export async function GET(req: NextRequest) {
           where.status = "CONFIRMED";
           break;
         case "APPROVED":
-        case "READY_TO_SHIP":
           where.status = "APPROVED";
           break;
+        case "READY_TO_SHIP":
+          // In the new flow, READY_TO_SHIP maps to backend status PENDING
+          where.status = "PENDING";
+          break;
         case "REJECTED":
+          where.status = "REJECTED";
+          break;
         case "CANCELLED":
           where.status = "CANCELLED";
           break;
@@ -207,6 +212,9 @@ export async function GET(req: NextRequest) {
         case "COMPLETED":
           where.status = "SHIPPED";
           where.paymentStatus = "PAID";
+          break;
+        case "EXPIRED":
+          where.status = "EXPIRED";
           break;
         default:
           break;
@@ -506,3 +514,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "บันทึกใบสั่งขายไม่สำเร็จ" }, { status: 500 });
   }
 }
+

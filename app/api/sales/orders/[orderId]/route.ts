@@ -111,7 +111,7 @@ const UpdateOrderSchema = z.object({
   vatRate: z.number().min(0).default(7),
   billTo: z.string().optional(),
   shipTo: z.string().optional(),
-  status: z.enum(["DRAFT","CONFIRMED","APPROVED","PENDING","SHIPPED","INVOICED","EXPIRED","CANCELLED"]).optional(),
+  status: z.enum(["DRAFT","CONFIRMED","APPROVED","REJECTED","PENDING","SHIPPED","INVOICED","EXPIRED","CANCELLED"]).optional(),
   paymentStatus: z.enum(["UNPAID","PARTIAL","PAID","OVERDUE"]).optional(),
   shippingFee: z.number().min(0).optional().default(0),
   otherCharges: z.number().min(0).optional().default(0),
@@ -217,30 +217,35 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ orderId
 
       // Approval and status change gating
       const prevStatus = String((exists as any).status || "");
+      const isAdmin = String((session?.user as any)?.role || '').toUpperCase() === 'ADMIN';
       let nextStatus = String((data as any).status ?? prevStatus);
       const prevShip = (exists as any).shippingDate ? new Date((exists as any).shippingDate as any) : null;
       const nextShip = (data as any).shippingDate ? new Date((data as any).shippingDate as any) : null;
       const shipChanged = (prevShip?.toISOString() ?? null) !== (nextShip?.toISOString() ?? null);
       const changingStatus = nextStatus !== prevStatus;
       if (changingStatus) {
-        if (nextStatus === "APPROVED" && !hasPermission(perms, "sales", "approve")) {
-          throw new Error("NO_APPROVE");
-        }
-        if (nextStatus === "CANCELLED" && !hasPermission(perms, "sales", "reject")) {
-          throw new Error("NO_REJECT");
-        }
-        // Allow non-approvers to move between DRAFT and CONFIRMED (submit/recall)
-        const isFreeChange = (prevStatus === "DRAFT" && nextStatus === "CONFIRMED") || (prevStatus === "CONFIRMED" && nextStatus === "DRAFT");
-        if (!isFreeChange) {
-          const needsApprove = ["SHIPPED", "INVOICED", "APPROVED"].includes(nextStatus);
-          if (needsApprove && !hasPermission(perms, "sales", "approve")) {
+        if (!isAdmin) {
+          if (nextStatus === "APPROVED" && !hasPermission(perms, "sales", "approve")) {
             throw new Error("NO_APPROVE");
+          }
+          if ((nextStatus === "CANCELLED" || nextStatus === "REJECTED") && !hasPermission(perms, "sales", "reject")) {
+            throw new Error("NO_REJECT");
+          }
+          // Allow non-approvers to move between DRAFT and CONFIRMED (submit/recall)
+          const isFreeChange = (prevStatus === "DRAFT" && nextStatus === "CONFIRMED") || (prevStatus === "CONFIRMED" && nextStatus === "DRAFT");
+          if (!isFreeChange) {
+            const needsApprove = ["SHIPPED", "INVOICED", "APPROVED"].includes(nextStatus);
+            if (needsApprove && !hasPermission(perms, "sales", "approve")) {
+              throw new Error("NO_APPROVE");
+            }
           }
         }
       }
       // If already approved and user wants to edit without reopening, block
-      if (prevStatus === "APPROVED" && nextStatus === "APPROVED") {
-        throw new Error("LOCKED_APPROVED");
+      if (!isAdmin) {
+        if (prevStatus === "APPROVED" && nextStatus === "APPROVED") {
+          throw new Error("LOCKED_APPROVED");
+        }
       }
 
       // --- Promotion budget adjustment (difference-based and customer-change aware) ---

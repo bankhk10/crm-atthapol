@@ -1,3 +1,4 @@
+import CreditRequestsList from "./_components/credit-requests-list";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -19,6 +20,7 @@ const WORKFLOW_STATUS_OPTIONS = [
   { value: "READY_TO_SHIP", label: "รอจัดส่ง" },
   { value: "IN_TRANSIT", label: "อยู่ระหว่างจัดส่ง" },
   { value: "COMPLETED", label: "สำเร็จ" },
+  { value: "EXPIRED", label: "หมดอายุ" },
   { value: "CANCELLED", label: "ยกเลิก" },
 ];
 
@@ -28,6 +30,8 @@ function workflowFromBackend(status: string, paymentStatus: string): string {
   if (status === "INVOICED") return "READY_TO_SHIP"; // move payment-related labels to payment status
   if (status === "SHIPPED") return paymentStatus === "PAID" ? "COMPLETED" : "IN_TRANSIT";
   if (status === "APPROVED") return "APPROVED"; // or READY_TO_SHIP
+  if (status === "PENDING") return "READY_TO_SHIP";
+  if (status === "EXPIRED") return "EXPIRED";
   if (status === "CONFIRMED") return "PENDING_APPROVAL"; // or AWAITING_STOCK
   return status || "DRAFT";
 }
@@ -71,6 +75,7 @@ export default async function SalesOrderDetailPage({ params }: { params: Promise
       customer: true,
       salesperson: { include: { user: true } },
       reservations: { include: { stock: true } },
+      creditRequests: { orderBy: { createdAt: 'desc' } },
     },
   });
 
@@ -93,13 +98,13 @@ export default async function SalesOrderDetailPage({ params }: { params: Promise
         <Stack direction="row" spacing={1} alignItems="center">
           {(() => {
             const baseWf = workflowFromBackend(String(so.status || ""), String(so.paymentStatus || ""));
-            const wf = so.status === "CANCELLED" && (so as any)?.rejectReason ? "REJECTED" : baseWf;
+            const wf = so.status === "REJECTED" ? "REJECTED" : (so.status === "CANCELLED" && (so as any)?.rejectReason ? "REJECTED" : baseWf);
             const label = WORKFLOW_STATUS_OPTIONS.find((x) => x.value === wf)?.label || String(so.status);
             const isCancelled = wf === "CANCELLED" || wf === "REJECTED";
             return <Chip label={label} color={isCancelled ? "default" : "primary"} variant={isCancelled ? "outlined" : "filled"} />;
           })()}
           <Chip label={`ชำระเงิน: ${PAYMENT_STATUS_LABEL[String(so.paymentStatus || "")] || String(so.paymentStatus)}`} variant="outlined" />
-          <ActionsBar orderId={so.id} status={String(so.status)} canApprove={canApprove} canReject={canReject} />
+          <ActionsBar orderId={so.id} status={String(so.status)} paymentCondition={String(so.paymentCondition || "")} canApprove={canApprove} canReject={canReject} />
         </Stack>
       </Stack>
 
@@ -155,8 +160,7 @@ export default async function SalesOrderDetailPage({ params }: { params: Promise
 
       <Paper variant="outlined" sx={{ p: 2 }}>
         <Typography fontWeight={700} mb={1}>รายการสินค้า</Typography>
-        <TableContainer>
-          <Table size="small">
+        <TableContainer><Table size="small">
             <TableHead>
               <TableRow>
                 <TableCell>รหัส</TableCell>
@@ -183,6 +187,37 @@ export default async function SalesOrderDetailPage({ params }: { params: Promise
             </TableBody>
           </Table>
         </TableContainer>
+      </Paper>
+      <CreditRequestsList orderId={so.id} items={(so as any).creditRequests || []} canApprove={canApprove} />
+
+      <Paper variant="outlined" sx={{ p: 2 }}>
+        <Typography fontWeight={700} mb={1}>คำขอเพิ่มวงเงินเครดิต</Typography>
+        {Array.isArray((so as any).creditRequests) && (so as any).creditRequests.length > 0 ? (
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>วันที่</TableCell>
+                  <TableCell align="right">จำนวนที่ขอเพิ่ม</TableCell>
+                  <TableCell align="right">วงเงินใหม่ (ถ้ามี)</TableCell>
+                  <TableCell>สถานะ</TableCell>
+                  <TableCell>หมายเหตุ</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {(so as any).creditRequests.map((cr: any) => (
+                  <TableRow key={cr.id}>
+                    <TableCell>{new Date(cr.createdAt).toLocaleString()}</TableCell>
+                    <TableCell align="right">{Number(cr.requestedIncrease || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                    <TableCell align="right">{typeof cr.requestedNewLimit === 'number' ? Number(cr.requestedNewLimit).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</TableCell>
+                    <TableCell>{String(cr.status)}</TableCell>
+                    <TableCell>{cr.note || '-'}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table></TableContainer>) : (
+          <Typography color="text.secondary">- ไม่มีคำขอ -</Typography>
+        )}
       </Paper>
 
       <Paper variant="outlined" sx={{ p: 2 }}>
@@ -236,3 +271,9 @@ export default async function SalesOrderDetailPage({ params }: { params: Promise
     </Stack>
   );
 }
+
+
+
+
+
+

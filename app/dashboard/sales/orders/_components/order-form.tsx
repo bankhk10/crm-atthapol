@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -316,13 +316,13 @@ export function OrderForm({
         setStatus("APPROVED");
         break;
       case "REJECTED":
-        setStatus("CANCELLED");
+        setStatus("REJECTED");
         break;
       case "AWAITING_STOCK":
         setStatus("CONFIRMED");
         break;
       case "READY_TO_SHIP":
-        setStatus("APPROVED");
+        setStatus("PENDING");
         break;
       case "IN_TRANSIT":
         setStatus("SHIPPED");
@@ -460,7 +460,7 @@ export function OrderForm({
         </Snackbar>
       )}
 
-      {/* ข้อมูลลูกค้า/พนักงานขาย */}
+  {/* ข้อมูลลูกค้า/พนักงานขาย */}
       <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
         <Typography variant="h6" fontWeight={960}>
           ข้อมูลลูกค้า/พนักงานขาย
@@ -739,7 +739,6 @@ export function OrderForm({
           borderRadius: 2,
           px: 2,
           py: 2,
-          // 1. เพิ่ม CSS 3 บรรทัดนี้
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -749,7 +748,6 @@ export function OrderForm({
           ที่อยู่จัดส่ง
         </Typography>
 
-        {/* 2. ย้าย Button ออกมาไว้นอก Typography */}
         <Button
           size="small"
           variant="outlined"
@@ -916,18 +914,15 @@ export function OrderForm({
                   disabled
                 />
                 <TextField
-                  label="จำนวน"
+        label="จำนวน"
                   type="text" // 1. เปลี่ยนเป็น "text"
                   inputMode="numeric" // 2. (แนะนำ) เพิ่ม inputMode เพื่อให้มือถือแสดงแป้นตัวเลข
                   value={it.qty}
                   onChange={(e) => {
-                    // 3. ปรับ Logic ใน onChange
                     const rawValue = e.target.value;
 
-                    // กรองเอาเฉพาะตัวเลข
                     let val = rawValue.replace(/[^0-9]/g, "");
 
-                    // ลบ 0 นำหน้า (อันเดิมของคุณ)
                     if (val.startsWith('0') && val.length > 1 && val[1] !== '.') {
                       val = String(parseInt(val, 10));
                     }
@@ -940,7 +935,6 @@ export function OrderForm({
                     setItems(next);
                   }}
                   onBlur={(e) => {
-                    // (คงเดิม) จัดการตอนที่ผู้ใช้กดออกจากช่อง
                     if (e.target.value === "") {
                       const next = [...items];
                       next[idx] = { ...next[idx], qty: 0 };
@@ -1235,7 +1229,7 @@ export function OrderForm({
       <Dialog open={customerChangeDialogOpen} onClose={() => setCustomerChangeDialogOpen(false)}>
         <DialogTitle>ยืนยันการเปลี่ยนลูกค้า</DialogTitle>
         <DialogContent>
-          คุณกำลังใช้งบส่งเสริมการขายอยู่เป็นจำนวน {Number(promotionAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท หากเปลี่ยนลูกค้า ระบบจะคืนงบให้ลูกค้าเดิมและตัดงบจากลูกค้าใหม่ตามจำนวนที่ใช้เมื่อบันทึก คุณต้องการเปลี่ยนลูกค้าหรือไม่?
+          คุณกำลังใช้งบส่งเสริมการขายอยู่เป็นจำนวน {Number(promotionAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ºÒ· ËÒ¡à»ÅÕèÂ¹ÅÙ¡¤éÒ ÃÐºº¨Ð¤×¹§ºãËéÅÙ¡¤éÒà´ÔÁáÅÐµÑ´§º¨Ò¡ÅÙ¡¤éÒãËÁèµÒÁ¨Ó¹Ç¹·ÕèãªéàÁ×èÍºÑ¹·Ö¡ ¤Ø³µéÍ§¡ÒÃà»ÅÕèÂ¹ÅÙ¡¤éÒËÃ×ÍäÁè?
         </DialogContent>
         <DialogActions>
           <Button onClick={() => { setCustomerChangeDialogOpen(false); setPendingCustomer(null); }}>ยกเลิก</Button>

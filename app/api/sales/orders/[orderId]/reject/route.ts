@@ -52,12 +52,13 @@ export async function POST(req: NextRequest, context: { params: Promise<{ orderI
       const status = String((order as any).status || "");
       if (status === "SHIPPED") throw new Error("LOCKED");
       if (status === "CANCELLED") throw new Error("LOCKED");
+      if (status === "REJECTED") throw new Error("LOCKED");
 
       await releaseReservations(tx, orderId);
 
       const updated = await tx.saleOrder.update({
         where: { id: orderId },
-        data: { status: "CANCELLED" as any, rejectReason, approvedAt: null, approvedByUserId: null },
+        data: { status: "REJECTED" as any, rejectReason, approvedAt: null, approvedByUserId: null },
         include: { items: true, reservations: true },
       });
       return updated;
