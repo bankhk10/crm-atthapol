@@ -111,7 +111,7 @@ const UpdateOrderSchema = z.object({
   vatRate: z.number().min(0).default(7),
   billTo: z.string().optional(),
   shipTo: z.string().optional(),
-  status: z.enum(["DRAFT","CONFIRMED","APPROVED","SHIPPED","INVOICED","CANCELLED"]).optional(),
+  status: z.enum(["DRAFT","CONFIRMED","APPROVED","PENDING","SHIPPED","INVOICED","EXPIRED","CANCELLED"]).optional(),
   paymentStatus: z.enum(["UNPAID","PARTIAL","PAID","OVERDUE"]).optional(),
   shippingFee: z.number().min(0).optional().default(0),
   otherCharges: z.number().min(0).optional().default(0),
@@ -174,42 +174,53 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ orderId
     const data = parsed.data;
     const totals = computeTotals(data);
 
-    // Credit check when editing if payment condition is POSTPAID
+    // Credit check when editing if POSTPAID: allow auto-approve if overage ≤ 10%
     try {
-      const existsHeader = await (prisma as any).saleOrder.findUnique({ where: { id: orderId }, select: { paymentCondition: true } });
+      const existsHeader = await (prisma as any).saleOrder.findUnique({ where: { id: orderId }, select: { paymentCondition: true, customerId: true } });
       const effectivePaymentCondition = (data as any).paymentCondition ?? (existsHeader?.paymentCondition ?? 'PREPAID');
       if (effectivePaymentCondition === 'POSTPAID') {
-        const customer = await (prisma as any).customer.findUnique({ where: { id: data.customerId }, include: { dealerDetail: true } });
+        const customerId = data.customerId ?? existsHeader?.customerId;
+        const customer = await (prisma as any).customer.findUnique({ where: { id: customerId }, include: { dealerDetail: true } });
         if (!customer) {
           return NextResponse.json({ error: 'ไม่พบลูกค้า' }, { status: 400 });
         }
-        const creditLimit = (customer as any)?.dealerDetail?.creditLimit as number | null | undefined;
-        if (typeof creditLimit === 'number') {
-          const relationshipScore = (customer as any)?.relationshipScore as number | null | undefined;
-          const enoughCredit = (totals.grandTotal ?? 0) <= creditLimit;
-          if (!enoughCredit) {
-            const canOverride = typeof relationshipScore === 'number' && relationshipScore > 3;
-            if (!canOverride) {
-              return NextResponse.json({ error: 'วงเงินเครดิตไม่พอ และคะแนนความสัมพันธ์ไม่ถึงเกณฑ์' }, { status: 400 });
-            }
-          }
+        const creditLimitRaw = (customer as any)?.dealerDetail?.creditLimit as number | null | undefined;
+        const creditLimit = typeof creditLimitRaw === 'number' ? Math.max(0, creditLimitRaw) : 0;
+        const agg = await prisma.saleOrder.aggregate({
+          _sum: { grandTotal: true },
+          where: {
+            customerId,
+            deletedAt: null,
+            status: { not: 'CANCELLED' as any },
+            paymentStatus: { in: ['UNPAID' as any, 'PARTIAL' as any, 'OVERDUE' as any] },
+          },
+        });
+        const outstanding = Number((agg as any)?._sum?.grandTotal ?? 0) || 0;
+        const availableCredit = Math.max(0, creditLimit - outstanding);
+        const overage = Math.max(0, (totals.grandTotal ?? 0) - availableCredit);
+        const overagePct = creditLimit > 0 ? overage / creditLimit : 1;
+
+        if (overage > 0 && overagePct > 0.10) {
+          return NextResponse.json({ error: 'วงเงินเครดิตไม่พอ (เกิน 10%) โปรดขอเพิ่มวงเงิน' }, { status: 400 });
         }
       }
     } catch (checkErr) {
-      // If credit check fails unexpectedly, treat as server error
       if (checkErr instanceof Response) return checkErr as any;
-      // fallthrough to continue; actual DB ops will run, but conservative approach would fail.
     }
 
     const updated = await prisma.$transaction(async (tx) => {
       const scopeWhere = await buildSaleOrderVisibilityWhere();
       const exists = await tx.saleOrder.findFirst({ where: { id: orderId, ...(scopeWhere as any) } });
       if (!exists || (exists as any).deletedAt) throw new Error("NOT_FOUND");
+      if ((exists as any).lockedAt) throw new Error("LOCKED");
       if ((exists as any).status === "SHIPPED") throw new Error("LOCKED");
 
       // Approval and status change gating
       const prevStatus = String((exists as any).status || "");
-      const nextStatus = String((data as any).status ?? prevStatus);
+      let nextStatus = String((data as any).status ?? prevStatus);
+      const prevShip = (exists as any).shippingDate ? new Date((exists as any).shippingDate as any) : null;
+      const nextShip = (data as any).shippingDate ? new Date((data as any).shippingDate as any) : null;
+      const shipChanged = (prevShip?.toISOString() ?? null) !== (nextShip?.toISOString() ?? null);
       const changingStatus = nextStatus !== prevStatus;
       if (changingStatus) {
         if (nextStatus === "APPROVED" && !hasPermission(perms, "sales", "approve")) {
@@ -316,7 +327,8 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ orderId
           vatRate: data.vatRate ?? 7,
           billTo: data.billTo,
           shipTo: data.shipTo,
-          status: (data.status as any) ?? exists.status,
+          // Auto-set PENDING when a shipping date exists and not shipped
+          status: (nextShip ? ("PENDING" as any) : ((data.status as any) ?? exists.status)),
           paymentStatus: (data.paymentStatus as any) ?? exists.paymentStatus,
           paymentCondition: (data.paymentCondition as any) ?? (exists as any).paymentCondition,
           shippingFee: data.shippingFee ?? 0,
@@ -330,6 +342,11 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ orderId
           // Approval metadata update
           approvedAt: nextStatus === "APPROVED" ? new Date() : (prevStatus === "APPROVED" && nextStatus !== "APPROVED" ? null : (exists as any).approvedAt),
           approvedByUserId: nextStatus === "APPROVED" ? (approver?.id ?? null) : (prevStatus === "APPROVED" && nextStatus !== "APPROVED" ? null : (exists as any).approvedByUserId),
+          // Shipping reschedule counter and locking logic
+          shippingRescheduleCount: shipChanged ? ((exists as any).shippingRescheduleCount ?? 0) + 1 : ((exists as any).shippingRescheduleCount ?? 0),
+          lockedAt: (shipChanged && (((exists as any).shippingRescheduleCount ?? 0) + 1) > (Number(process.env.MAX_SHIPDATE_UPDATES ?? '3') || 3)) ? new Date() : (exists as any).lockedAt,
+          // Reserve expiry
+          reserveUntil: nextShip ? null : new Date(Date.now() + (Number.isFinite(Number(process.env.RESERVE_TTL_DAYS)) && Number(process.env.RESERVE_TTL_DAYS) > 0 ? Number(process.env.RESERVE_TTL_DAYS) : 7) * 24 * 60 * 60 * 1000),
           subTotal: totals.subTotal,
           discountTotal: totals.discountTotal,
           taxAmount: totals.taxAmount,
@@ -385,6 +402,15 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ orderId
           }
           remaining -= alloc;
         }
+      }
+      // If reserved (no shipping date), ensure reserveUntil is set; else clear it
+      if (!order.shippingDate) {
+        const ttlDays = Number(process.env.RESERVE_TTL_DAYS ?? '7');
+        const safeDays = Number.isFinite(ttlDays) && ttlDays > 0 ? ttlDays : 7;
+        const reserveUntil = new Date(Date.now() + safeDays * 24 * 60 * 60 * 1000);
+        await tx.saleOrder.update({ where: { id: order.id }, data: { reserveUntil } });
+      } else {
+        await tx.saleOrder.update({ where: { id: order.id }, data: { reserveUntil: null } });
       }
       return order;
     });

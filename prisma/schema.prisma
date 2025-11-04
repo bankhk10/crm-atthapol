@@ -84,8 +84,10 @@ enum SaleOrderStatus {
   DRAFT
   CONFIRMED
   APPROVED
+  PENDING
   SHIPPED
   INVOICED
+  EXPIRED
   CANCELLED
 }
 
@@ -678,6 +680,12 @@ model SaleOrder {
   status        SaleOrderStatus @default(DRAFT)
   paymentStatus PaymentStatus   @default(UNPAID)
 
+  // Scheduling + locking controls
+  shippingRescheduleCount Int      @default(0)
+  lockedAt                DateTime?
+  // Reservation expiry deadline when shippingDate is not known
+  reserveUntil            DateTime?
+
   // Approval metadata
   approvedAt       DateTime?
   approvedByUserId String?
@@ -713,6 +721,8 @@ model SaleOrder {
 
   @@index([orderDate])
   @@index([shippingDate])
+  @@index([status])
+  @@index([reserveUntil])
   @@index([customerId])
   @@index([salespersonId])
   @@index([approvedByUserId])
