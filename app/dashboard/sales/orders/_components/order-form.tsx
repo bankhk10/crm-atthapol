@@ -34,6 +34,7 @@ import { SaveBackButtons } from "@/components/SaveBackButtons";
 import { FillRandomButton } from "@/components/FillRandomButton";
 import { fillOrderFormRandom } from "@/lib/random-fill/order";
 import Loader from "@/components/Loader";
+import { useSession } from "next-auth/react";
 
 // Option and ProductOption moved to ../types
 
@@ -174,6 +175,8 @@ export function OrderForm({
   const [autoPromotion, setAutoPromotion] = useState(false);
   const [customerChangeDialogOpen, setCustomerChangeDialogOpen] = useState(false);
   const [pendingCustomer, setPendingCustomer] = useState<Option | null>(null);
+  const [statusConfirmOpen, setStatusConfirmOpen] = useState(false);
+  const [pendingWorkflow, setPendingWorkflow] = useState<string | null>(null);
 
   // Raw input buffers for decimal fields to allow intermediate values like "12."
   const [promotionAmountInput, setPromotionAmountInput] = useState<string | null>(null);
@@ -200,8 +203,14 @@ export function OrderForm({
 
   const allowedStatusOptions = STATUS_OPTIONS;
 
-  const needRejectReason = mode === "edit" && workflowStatus === "REJECTED";
-  const needCancelReason = mode === "edit" && workflowStatus === "CANCELLED";
+  // session for admin-only status control
+  const { data: session } = useSession();
+  const isAdmin = String((session as any)?.user?.role || "").toUpperCase() === "ADMIN";
+
+  // Admin: require reason fields when choosing REJECTED/CANCELLED
+  // Non-admin: editing always resubmits for approval; no reason fields
+  const needRejectReason = isAdmin ? workflowStatus === "REJECTED" : false;
+  const needCancelReason = isAdmin ? workflowStatus === "CANCELLED" : false;
 
   const handleFillRandom = () =>
     fillOrderFormRandom({
@@ -302,6 +311,32 @@ export function OrderForm({
     setDueDate(iso);
   }, [creditTermDays, orderDate, paymentCondition]);
 
+  // Initialize workflow display: create -> PENDING_APPROVAL; edit -> map backend to UI workflow
+  useEffect(() => {
+    function workflowFromBackend(status?: string, pay?: string) {
+      const s = String(status || "");
+      const p = String(pay || "");
+      if (s === "DRAFT") return "DRAFT";
+      if (s === "CANCELLED") return "CANCELLED";
+      if (s === "INVOICED") return "READY_TO_SHIP";
+      if (s === "SHIPPED") return p === "PAID" ? "COMPLETED" : "IN_TRANSIT";
+      if (s === "APPROVED") return "APPROVED";
+      if (s === "PENDING") return "READY_TO_SHIP";
+      if (s === "EXPIRED") return "EXPIRED";
+      if (s === "CONFIRMED") return "PENDING_APPROVAL";
+      return "DRAFT";
+    }
+    if (mode === "create") {
+      setWorkflowStatus("PENDING_APPROVAL");
+      // reflect to backend mapping
+      setStatus("CONFIRMED");
+    } else if (initial?.status) {
+      const wf = workflowFromBackend(initial.status as any, (initial as any)?.paymentStatus ?? paymentStatus);
+      setWorkflowStatus(wf);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const applyWorkflowMapping = (wf: string) => {
     setWorkflowStatus(wf);
     switch (wf) {
@@ -378,7 +413,8 @@ export function OrderForm({
         return parts.join(" ");
       };
 
-      const statusForSubmit = mode === "create" ? "CONFIRMED" : status;
+      // Admin may set any status; others always (re)submit for approval
+      const statusForSubmit = isAdmin ? (status || "CONFIRMED") : "CONFIRMED";
       const payload: any = {
         customerId,
         salespersonId: salespersonId || undefined,
@@ -803,10 +839,18 @@ export function OrderForm({
           <TextField
             select
             label="สถานะ"
-            value={mode === "create" ? "PENDING_APPROVAL" : (workflowStatus as any)}
-            onChange={(e) => applyWorkflowMapping(e.target.value)}
+            value={workflowStatus as any}
+            onChange={(e) => {
+              const v = e.target.value as string;
+              if (isAdmin && (v === "REJECTED" || v === "CANCELLED")) {
+                setPendingWorkflow(v);
+                setStatusConfirmOpen(true);
+              } else {
+                applyWorkflowMapping(v);
+              }
+            }}
             fullWidth
-            disabled
+            disabled={!isAdmin}
           >
             {allowedStatusOptions.map((s) => (
               <MenuItem key={s.value} value={s.value}>
@@ -1225,6 +1269,35 @@ export function OrderForm({
       />
       {isSubmitting && <Loader fullscreen />}
 
+      {/* Confirm status change to REJECTED/CANCELLED */}
+      <Dialog open={statusConfirmOpen} onClose={() => { setStatusConfirmOpen(false); setPendingWorkflow(null); }}>
+        <DialogTitle>ยืนยันการเปลี่ยนสถานะ</DialogTitle>
+        <DialogContent>
+          <Typography>
+            {`คุณต้องการเปลี่ยนสถานะเป็น "${STATUS_OPTIONS.find(s => s.value === pendingWorkflow)?.label ?? pendingWorkflow}" ใช่หรือไม่?`}
+          </Typography>
+          {(pendingWorkflow === "REJECTED" || pendingWorkflow === "CANCELLED") && (
+            <Typography variant="body2" sx={{ mt: 1.5, color: 'text.secondary' }}>
+              การดำเนินการนี้อาจมีผลต่อเอกสาร โปรดตรวจสอบให้แน่ใจ และกรอกเหตุผลด้านล่างก่อนบันทึก
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => { setStatusConfirmOpen(false); setPendingWorkflow(null); }}>ยกเลิก</Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={() => {
+              if (pendingWorkflow) applyWorkflowMapping(pendingWorkflow);
+              setStatusConfirmOpen(false);
+              setPendingWorkflow(null);
+            }}
+          >
+            ยืนยัน
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Confirm customer change while using promotion */}
       <Dialog open={customerChangeDialogOpen} onClose={() => setCustomerChangeDialogOpen(false)}>
         <DialogTitle>ยืนยันการเปลี่ยนลูกค้า</DialogTitle>
@@ -1257,9 +1330,4 @@ export function OrderForm({
     </Stack>
   );
 }
-
-
-
-
-
 

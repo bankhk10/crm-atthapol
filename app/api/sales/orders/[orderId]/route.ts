@@ -332,8 +332,15 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ orderId
           vatRate: data.vatRate ?? 7,
           billTo: data.billTo,
           shipTo: data.shipTo,
-          // Auto-set PENDING when a shipping date exists and not shipped
-          status: (nextShip ? ("PENDING" as any) : ((data.status as any) ?? exists.status)),
+          // Auto-set PENDING when a shipping date exists, except for terminal statuses (incl. APPROVED)
+          status: (() => {
+            const desired = ((data.status as any) ?? exists.status) as any;
+            if (nextShip) {
+              const preserve = ["CANCELLED", "REJECTED", "SHIPPED", "INVOICED", "APPROVED"];
+              return (preserve as any).includes(desired) ? desired : ("PENDING" as any);
+            }
+            return desired;
+          })(),
           paymentStatus: (data.paymentStatus as any) ?? exists.paymentStatus,
           paymentCondition: (data.paymentCondition as any) ?? (exists as any).paymentCondition,
           shippingFee: data.shippingFee ?? 0,
@@ -381,31 +388,34 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ orderId
         include: { items: true },
       });
 
-      // Reserve or deduct stock per items depending on shippingDate or status
-      for (const item of (order.items as any[])) {
-        if (!item.productId || !item.qty) continue;
-        let remaining = Math.max(0, Math.floor(Number(item.qty)));
-        if (!Number.isFinite(remaining) || remaining <= 0) continue;
-        const stocks = await tx.stock.findMany({ where: { productId: item.productId, deletedAt: null }, orderBy: [{ expDate: "asc" }, { mfgDate: "asc" }, { createdAt: "asc" }] });
-        // Issue immediately if there is a shipping date OR order status is SHIPPED (COMPLETED in UI)
-        const isImmediateIssue = Boolean(order.shippingDate) || (order.status === "SHIPPED");
-        for (const s of stocks as any[]) {
-          if (remaining <= 0) break;
-          const onHand = Number(s.qtyOnHand || 0);
-          const reserved = Number(s.qtyReserved || 0);
-          const available = Math.max(0, onHand - reserved);
-          if (available <= 0) continue;
-          const alloc = Math.min(available, remaining);
-          if (alloc <= 0) continue;
-          if (isImmediateIssue) {
-            await tx.stock.update({ where: { id: s.id }, data: { qtyOnHand: { decrement: alloc } } });
-            await (tx as any).stockMovement.create({ data: { stockId: s.id, productId: s.productId, saleOrderId: order.id, type: 'ISSUE', qty: alloc } });
-          } else {
-            await tx.stock.update({ where: { id: s.id }, data: { qtyReserved: { increment: alloc } } });
-            await (tx as any).saleOrderStockReservation.create({ data: { saleOrderId: order.id, stockId: s.id, qty: alloc } });
-            await (tx as any).stockMovement.create({ data: { stockId: s.id, productId: s.productId, saleOrderId: order.id, type: 'RESERVE', qty: alloc } });
+      // Skip (re)allocation when order is cancelled or rejected
+      if ((order as any).status !== 'CANCELLED' && (order as any).status !== 'REJECTED') {
+        // Reserve or deduct stock per items depending on shippingDate or status
+        for (const item of (order.items as any[])) {
+          if (!item.productId || !item.qty) continue;
+          let remaining = Math.max(0, Math.floor(Number(item.qty)));
+          if (!Number.isFinite(remaining) || remaining <= 0) continue;
+          const stocks = await tx.stock.findMany({ where: { productId: item.productId, deletedAt: null }, orderBy: [{ expDate: "asc" }, { mfgDate: "asc" }, { createdAt: "asc" }] });
+          // Issue immediately if there is a shipping date OR order status is SHIPPED (COMPLETED in UI)
+          const isImmediateIssue = Boolean(order.shippingDate) || (order.status === "SHIPPED");
+          for (const s of stocks as any[]) {
+            if (remaining <= 0) break;
+            const onHand = Number(s.qtyOnHand || 0);
+            const reserved = Number(s.qtyReserved || 0);
+            const available = Math.max(0, onHand - reserved);
+            if (available <= 0) continue;
+            const alloc = Math.min(available, remaining);
+            if (alloc <= 0) continue;
+            if (isImmediateIssue) {
+              await tx.stock.update({ where: { id: s.id }, data: { qtyOnHand: { decrement: alloc } } });
+              await (tx as any).stockMovement.create({ data: { stockId: s.id, productId: s.productId, saleOrderId: order.id, type: 'ISSUE', qty: alloc } });
+            } else {
+              await tx.stock.update({ where: { id: s.id }, data: { qtyReserved: { increment: alloc } } });
+              await (tx as any).saleOrderStockReservation.create({ data: { saleOrderId: order.id, stockId: s.id, qty: alloc } });
+              await (tx as any).stockMovement.create({ data: { stockId: s.id, productId: s.productId, saleOrderId: order.id, type: 'RESERVE', qty: alloc } });
+            }
+            remaining -= alloc;
           }
-          remaining -= alloc;
         }
       }
       // If reserved (no shipping date), ensure reserveUntil is set; else clear it

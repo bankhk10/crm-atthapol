@@ -324,8 +324,8 @@ export async function POST(req: NextRequest) {
         effectiveStatus = "CONFIRMED";
       } else if (overagePct <= 0.10) {
         // เครดิตไม่พอ แต่เกินไม่เกิน 10% → auto-approve
-        // If shipping date is provided, mark as PENDING (waiting to ship)
-        effectiveStatus = data.shippingDate ? "PENDING" : "APPROVED";
+        // Keep APPROVED even if shipping date is provided
+        effectiveStatus = "APPROVED";
         approveNow = true;
         approvalBySystem = true;
         extraNote = `AUTO_APPROVED (over by ${overage.toFixed(2)} = ${(overagePct * 100).toFixed(2)}% of credit limit)`;
@@ -341,7 +341,8 @@ export async function POST(req: NextRequest) {
       if (!hasPermission(perms, "sales", "approve")) {
         return NextResponse.json({ error: "ไม่มีสิทธิ์อนุมัติเอกสาร" }, { status: 403 });
       }
-      effectiveStatus = data.shippingDate ? "PENDING" : "APPROVED";
+      // Keep APPROVED even if shipping date is provided
+      effectiveStatus = "APPROVED";
       approveNow = true;
     }
 
