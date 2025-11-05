@@ -2,8 +2,10 @@ import { EmployeeCreateClient } from "../_components/employee-create-client";
 import { ActionButtons } from "../../_components/action-buttons";
 import { employeeRoleOptions, getRoleDefinitionOptions } from "../data";
 import { Box, Stack } from "@mui/material";
+import { requirePermission } from "@/lib/require-permission";
 
 export default async function EmployeeCreatePage() {
+  await requirePermission("employees", "create");
   const roleDefinitions = await getRoleDefinitionOptions();
 
   return (

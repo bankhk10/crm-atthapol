@@ -2,8 +2,10 @@ import { getCustomers } from "@/app/dashboard/customers/data";
 import { getEmployees } from "@/app/dashboard/employees/data";
 import { getProducts } from "@/app/dashboard/products/data";
 import { CreateOrderPageClient } from "./_components/create-order-page-client";
+import { requirePermission } from "@/lib/require-permission";
 
 export default async function CreateSalesOrderPage() {
+  await requirePermission("sales", "create");
   const [customers, employees, products] = await Promise.all([
     getCustomers(),
     getEmployees(),

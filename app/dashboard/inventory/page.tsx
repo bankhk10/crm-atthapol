@@ -1,6 +1,7 @@
 import { Box, Paper, Stack, Typography, Divider, Table, TableHead, TableRow, TableCell, TableBody, Button } from "@mui/material";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { requirePermission } from "@/lib/require-permission";
 
 type Row = {
   id: string;
@@ -44,6 +45,7 @@ async function getInventory(): Promise<Row[]> {
 }
 
 export default async function InventoryOverviewPage() {
+  await requirePermission("products", "view");
   const rows = await getInventory();
   return (
     <Box sx={{ display: "flex", justifyContent: "center", py: 4, px: { xs: 2, md: 0 } }}>

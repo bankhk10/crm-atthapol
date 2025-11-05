@@ -5,8 +5,10 @@ import { getEmployees } from "@/app/dashboard/employees/data";
 import { OrdersClient } from "./_components/orders-client";
 import { getProducts } from "@/app/dashboard/products/data";
 import { Box } from "@mui/material";
+import { requirePermission } from "@/lib/require-permission";
 
 export default async function SalesOrdersPage() {
+  await requirePermission("sales", "view");
   const [customers, employees, products] = await Promise.all([
     getCustomers(),
     getEmployees(),

@@ -3,8 +3,10 @@ import { prisma } from "@/lib/prisma";
 import { getEmployees } from "@/app/dashboard/employees/data";
 import { getProducts } from "@/app/dashboard/products/data";
 import { EditOrderPageClient } from "./_components/edit-order-page-client";
+import { requirePermission } from "@/lib/require-permission";
 
 export default async function EditSalesOrderPage({ params }: { params: Promise<{ orderId: string }> }) {
+  await requirePermission("sales", "edit");
   const { orderId } = await params;
   const [customers, employees, products, order] = await Promise.all([
     getCustomers(),

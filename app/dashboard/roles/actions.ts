@@ -4,6 +4,9 @@ import type { Prisma } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { hasPermission } from "@/lib/permissions";
 
 import { prisma } from "@/lib/prisma";
 import { withActor } from "@/lib/with-actor";
@@ -28,6 +31,11 @@ const roleFormSchema = z.object({
 
 export async function createRole(rawValues: RoleFormValues) {
   console.log('Starting createRole with values:', rawValues);
+  const session = await getServerSession(authOptions);
+  const perms = session?.user?.permissions ?? [];
+  if (!hasPermission(perms, "roles", "create")) {
+    throw new Error("คุณไม่มีสิทธิ์สร้างบทบาทใหม่");
+  }
   
   const values = roleFormSchema.parse(rawValues);
   console.log('After schema parsing:', values);
@@ -83,6 +91,11 @@ export async function createRole(rawValues: RoleFormValues) {
 }
 
 export async function updateRole(roleId: string, rawValues: RoleFormValues) {
+  const session = await getServerSession(authOptions);
+  const perms = session?.user?.permissions ?? [];
+  if (!hasPermission(perms, "roles", "edit")) {
+    throw new Error("คุณไม่มีสิทธิ์แก้ไขบทบาท");
+  }
   const values = roleFormSchema.parse(rawValues);
 
   await withActor(async () => {

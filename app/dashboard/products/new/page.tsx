@@ -1,8 +1,10 @@
 import { Box, Stack } from "@mui/material";
 import { ProductCreateClient } from "../_components/product-create-client";
 import { prisma } from "@/lib/prisma";
+import { requirePermission } from "@/lib/require-permission";
 
 export default async function ProductCreatePage() {
+  await requirePermission("products", "create");
   const plants = await prisma.plant.findMany({
     orderBy: { name: "asc" },
   });

@@ -1,7 +1,9 @@
 import { Stack, Typography } from "@mui/material";
 import { ActionButtons } from "../_components/action-buttons";
+import { requirePermission } from "@/lib/require-permission";
 
-export default function MarketingPage() {
+export default async function MarketingPage() {
+  await requirePermission("marketing", "view");
   return (
     <>
       <ActionButtons resource="marketing" />

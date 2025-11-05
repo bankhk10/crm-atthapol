@@ -3,12 +3,14 @@ import { getAuditLogsPage, type AuditLogFilters } from "./data";
 import type { AuditLogListItem } from "./types";
 import { ActionButtons } from "../_components/action-buttons";
 import { Box, Stack } from "@mui/material";
+import { requirePermission } from "@/lib/require-permission";
 
 export default async function AuditLogsPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  await requirePermission("logs", "view");
   const sp = await searchParams;
   const filters: AuditLogFilters = {
     q: asString(sp.q),

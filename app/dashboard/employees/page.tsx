@@ -2,8 +2,10 @@ import { EmployeesGrid } from "./_components/employees-grid";
 import { ActionButtons } from "../_components/action-buttons";
 import { getEmployees } from "./data";
 import type { EmployeeListItem } from "./types";
+import { requirePermission } from "@/lib/require-permission";
 
 export default async function EmployeesPage() {
+  await requirePermission("employees", "view");
   const employees = await getEmployees();
 
   const items: EmployeeListItem[] = employees.map((employee) => ({

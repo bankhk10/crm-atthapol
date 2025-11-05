@@ -9,12 +9,14 @@ import {
   getRoleDefinitionOptions,
 } from "../../data";
 import type { EmployeeFormValues } from "../../types";
+import { requirePermission } from "@/lib/require-permission";
 
 export default async function EmployeeEditPage({
   params,
 }: {
   params: Promise<{ employeeId: string }>;
 }) {
+  await requirePermission("employees", "edit");
   const { employeeId } = await params;
 
   const [employee, roleDefinitions] = await Promise.all([

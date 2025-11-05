@@ -2,8 +2,10 @@ import { Box, Stack } from "@mui/material";
 import { CustomerCreateClient } from "../_components/customer-create-client";
 import { getEmployees } from "@/app/dashboard/employees/data";
 import { getDealerOptions } from "../data";
+import { requirePermission } from "@/lib/require-permission";
 
 export default async function CustomerCreatePage() {
+  await requirePermission("customers", "create");
   const employees = await getEmployees();
   const dealers = await getDealerOptions();
   const employeeOptions = employees

@@ -1,6 +1,7 @@
 import { Box, Chip, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from "@mui/material";
  
 import { ActionButtons } from "../../_components/action-buttons";
+import { requirePermission } from "@/lib/require-permission";
 import { KpiCard } from "../_components/KpiCard";
 import { Sparkline } from "../_components/Sparkline";
 import { BarList } from "../_components/BarList";
@@ -12,7 +13,8 @@ function currency(n: number) {
   return n.toLocaleString("th-TH", { maximumFractionDigits: 0 });
 }
 
-export default function OverviewReportPage({ searchParams }: any) {
+export default async function OverviewReportPage({ searchParams }: any) {
+  await requirePermission("reports", "view");
   const period = parseSearchParams(searchParams);
   const data = getOverviewForPeriod(period);
   const totalRevenue = data.kpis.revenue.value;

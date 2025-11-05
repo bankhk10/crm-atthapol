@@ -3,8 +3,10 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { ProductEditClient } from "../../_components/product-edit-client";
 import type { ProductFormValues } from "../../validation";
+import { requirePermission } from "@/lib/require-permission";
 
 export default async function ProductEditPage({ params }: { params: Promise<{ productId: string }> }) {
+  await requirePermission("products", "edit");
   const { productId } = await params;
 
   const [p, plants] = await Promise.all([
