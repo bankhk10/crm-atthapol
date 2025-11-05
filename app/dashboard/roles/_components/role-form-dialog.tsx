@@ -52,12 +52,13 @@ export function RoleFormDialog({
   initialValues,
   permissionLibrary,
   submitting,
-  error,
+  error: externalError,
   onClose,
   onSubmit,
 }: RoleFormDialogProps) {
   const [values, setValues] = useState<RoleFormValues>(defaultFormValues);
   const [permissionInputs, setPermissionInputs] = useState<string[]>([]);
+  const [dialogError, setDialogError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) {
@@ -117,28 +118,23 @@ export function RoleFormDialog({
     value: string,
   ) => {
     const trimmed = value.trim();
+    
+    setValues((prev) => {
+      const draft = [...prev.permissions];
+      // Keep existing items when changing category
+      const currentGroup = draft[index];
+      draft[index] = {
+        ...currentGroup,
+        category: value,
+        items: currentGroup?.items || [],
+      };
+      return { ...prev, permissions: draft };
+    });
+
+    // If the category matches a library group, clear the input
     const matchedLibraryGroup = permissionLibrary.find(
       (libraryGroup) => libraryGroup.category.toLowerCase() === trimmed.toLowerCase(),
     );
-
-    handleUpdatePermissionGroup(index, (group) => {
-      const existingItems = Array.from(new Set((group.items ?? []).map((item) => item.trim())));
-      const nextItems = matchedLibraryGroup
-        ? Array.from(
-            new Set([
-              ...existingItems,
-              ...matchedLibraryGroup.items.map((item) => item.trim()),
-            ]),
-          )
-        : existingItems;
-
-      return {
-        ...group,
-        category: value,
-        items: nextItems,
-      };
-    });
-
     if (matchedLibraryGroup) {
       setPermissionInputs((prev) => {
         const draft = [...prev];
@@ -186,12 +182,30 @@ export function RoleFormDialog({
     event.preventDefault();
     if (submitting) return;
 
+    // Add validation for permissions
+    if (!values.permissions || values.permissions.length === 0) {
+      setDialogError("กรุณาเพิ่มสิทธิ์อย่างน้อย 1 รายการ");
+      return;
+    }
+
+    // Validate each permission group
+    for (const group of values.permissions) {
+      if (!group.category.trim()) {
+        setDialogError("กรุณากรอกชื่อหมวดสิทธิ์ให้ครบถ้วน");
+        return;
+      }
+      if (!group.items || group.items.length === 0) {
+        setDialogError(`กรุณาเพิ่มสิทธิ์ในหมวด "${group.category}" อย่างน้อย 1 รายการ`);
+        return;
+      }
+    }
+
     const payload: RoleFormValues = {
       key: values.key.trim().toUpperCase(),
       name: values.name.trim(),
       description: values.description.trim(),
       department: values.department?.trim() || undefined,
-      permissions: (values.permissions ?? [])
+      permissions: values.permissions
         .map((group) => ({
           category: group.category.trim(),
           items: Array.from(new Set(group.items.map((item) => item.trim()))).filter(
@@ -201,6 +215,7 @@ export function RoleFormDialog({
         .filter((group) => group.category && group.items.length > 0),
     };
 
+    console.log('Submitting form with payload:', payload);
     onSubmit(payload);
   };
 
@@ -223,9 +238,9 @@ export function RoleFormDialog({
       <DialogContent>
         <Box component="form" id="role-form" onSubmit={handleSubmit}>
           <Stack spacing={3} py={1}>
-            {error && (
+            {(externalError || dialogError) && (
               <Alert severity="error">
-                {error}
+                {dialogError || externalError}
               </Alert>
             )}
 

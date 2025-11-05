@@ -10,21 +10,26 @@ type GroupablePermission = {
 export async function getRoleList(): Promise<RoleListItem[]> {
   const roles = await fetchRolesFromDb();
 
-  return roles.map((role) => ({
-    id: role.id,
-    key: role.key,
-    name: role.name,
-    description: role.description,
-    department: (role as any).department ?? null,
-    assignedUsers: role._count.users,
-    permissions: groupPermissions(
-      role.permissions.map((assignment) => ({
+  return roles.map((role) => {
+    // Get all valid permissions (not deleted)
+    const validPermissions = role.permissions
+      .filter(p => !p.deletedAt && !p.permission.deletedAt)
+      .map(assignment => ({
         category: assignment.permission.category,
         name: assignment.permission.name,
-      })),
-    ),
-    createdAt: role.createdAt.toISOString(),
-  }));
+      }));
+
+    return {
+      id: role.id,
+      key: role.key,
+      name: role.name,
+      description: role.description,
+      department: (role as any).department ?? null,
+      assignedUsers: role._count.users,
+      permissions: groupPermissions(validPermissions),
+      createdAt: role.createdAt.toISOString(),
+    };
+  });
 }
 
 export async function getPermissionLibrary(): Promise<PermissionLibraryGroup[]> {

@@ -27,45 +27,82 @@ const roleFormSchema = z.object({
 });
 
 export async function createRole(rawValues: RoleFormValues) {
+  console.log('Starting createRole with values:', rawValues);
+  
   const values = roleFormSchema.parse(rawValues);
+  console.log('After schema parsing:', values);
 
-  await withActor(async () => {
-    await prisma.$transaction(async (tx) => {
-      const role = await tx.roleDefinition.create({
-        data: {
+  try {
+    await withActor(async () => {
+      await prisma.$transaction(async (tx) => {
+        console.log('Creating role with data:', {
           key: values.key,
           name: values.name,
-          description: values.description || null,
-          department: values.department ? values.department : null,
-        },
-      });
+          description: values.description,
+          department: values.department
+        });
 
-      const permissionIds = await upsertPermissions(tx, values.permissions);
+        const role = await tx.roleDefinition.create({
+          data: {
+            key: values.key,
+            name: values.name,
+            description: values.description || null,
+            department: values.department ? values.department : null,
+          },
+        });
+        console.log('Created role:', role);
 
-      if (permissionIds.length > 0) {
-        await tx.rolePermission.createMany({
-          data: permissionIds.map((permissionId) => ({
+        console.log('Creating permissions for role, input permissions:', values.permissions);
+        const permissionIds = await upsertPermissions(tx, values.permissions);
+        console.log('Generated permission IDs:', permissionIds);
+
+        if (permissionIds.length > 0) {
+          const rolePermissions = permissionIds.map((permissionId) => ({
             roleId: role.id,
             permissionId,
-          })),
-          skipDuplicates: true,
-        });
-      }
-    });
-  }).catch(handlePrismaError);
+          }));
+          console.log('Creating role permissions:', rolePermissions);
 
-  revalidateRoleViews();
+          await tx.rolePermission.createMany({
+            data: rolePermissions,
+            skipDuplicates: true,
+          });
+        }
+      });
+    }).catch((error) => {
+      console.error('Error in createRole:', error);
+      throw error;
+    });
+
+    console.log('Role creation completed successfully');
+    revalidateRoleViews();
+  } catch (error) {
+    console.error('Error in outer try-catch:', error);
+    throw error;
+  }
 }
 
 export async function updateRole(roleId: string, rawValues: RoleFormValues) {
-  // detect whether client actually sent the permissions field (to avoid accidental wipe)
-  const hasPermissionsInput =
-    rawValues && typeof rawValues === "object" && Object.prototype.hasOwnProperty.call(rawValues as any, "permissions");
   const values = roleFormSchema.parse(rawValues);
 
   await withActor(async () => {
     await prisma.$transaction(async (tx) => {
-      const role = await tx.roleDefinition.update({
+      // First, get existing role and its permissions
+      const existingRole = await tx.roleDefinition.findUnique({
+        where: { id: roleId },
+        include: {
+          permissions: {
+            include: { permission: true },
+          },
+        },
+      });
+
+      if (!existingRole) {
+        throw new Error("ไม่พบบทบาทที่ต้องการแก้ไข");
+      }
+
+      // Update role basic info
+      await tx.roleDefinition.update({
         where: { id: roleId },
         data: {
           key: values.key,
@@ -75,13 +112,36 @@ export async function updateRole(roleId: string, rawValues: RoleFormValues) {
         },
       });
 
-      if (hasPermissionsInput) {
-        const permissionIds = await upsertPermissions(tx, values.permissions);
-        // Replace assignments atomically to avoid diff edge cases
-        await tx.rolePermission.deleteMany({ where: { roleId: role.id } });
-        if (permissionIds.length > 0) {
+      // Get updated permission IDs
+      const permissionIds = await upsertPermissions(tx, values.permissions);
+
+      // Soft delete removed permissions
+      await tx.rolePermission.updateMany({
+        where: { 
+          roleId: roleId,
+          NOT: { permissionId: { in: permissionIds } }
+        },
+        data: { deletedAt: new Date() }
+      });
+
+      // Add new permissions
+      if (permissionIds.length > 0) {
+        // Find existing valid permission assignments
+        const existingAssignments = existingRole.permissions
+          .filter(p => !p.deletedAt)
+          .map(p => p.permissionId);
+
+        // Only create new assignments for permissions that don't exist
+        const newPermissionIds = permissionIds.filter(
+          id => !existingAssignments.includes(id)
+        );
+
+        if (newPermissionIds.length > 0) {
           await tx.rolePermission.createMany({
-            data: permissionIds.map((permissionId) => ({ roleId: role.id, permissionId })),
+            data: newPermissionIds.map((permissionId) => ({
+              roleId: roleId,
+              permissionId
+            })),
             skipDuplicates: true,
           });
         }
@@ -96,41 +156,73 @@ async function upsertPermissions(
   tx: Prisma.TransactionClient,
   permissions: RoleFormValues["permissions"],
 ) {
+  console.log('Starting upsertPermissions with permissions:', permissions);
+
   if (!permissions || permissions.length === 0) {
+    console.log('No permissions provided, returning empty array');
     return [] as string[];
   }
 
   const ids = new Set<string>();
 
   for (const group of permissions) {
-    // Normalize category/name to lowercase to avoid case-sensitive duplicates
-    const category = group.category.trim().toLowerCase();
-    if (!category) continue;
+    console.log('Processing permission group:', group);
 
-    const uniqueItems = Array.from(new Set((group.items ?? []).map((item) => item.trim().toLowerCase()))).filter(
-      Boolean,
+    const categoryTrimmed = group.category.trim();
+    if (!categoryTrimmed) {
+      console.log('Empty category, skipping');
+      continue;
+    }
+
+    const categoryOriginal = categoryTrimmed;
+    const items = (group.items ?? []).map(item => item.trim()).filter(Boolean);
+    console.log('Processing items:', items);
+
+    // Find existing permissions for this category
+    console.log('Looking for existing permissions in category:', categoryOriginal);
+    const existingPermissions = await tx.permission.findMany({
+      where: {
+        category: categoryOriginal,
+        deletedAt: null,
+      },
+    });
+    console.log('Found existing permissions:', existingPermissions);
+
+    // Create a map of name to existing permission
+    const existingMap = new Map(
+      existingPermissions.map(p => [p.name, p.id])
     );
+    console.log('Existing permissions map:', Object.fromEntries(existingMap));
 
-    for (const name of uniqueItems) {
-      const permission = await tx.permission.upsert({
-        where: {
-          category_name: {
-            category,
-            name,
-          },
-        },
-        update: {},
-        create: {
-          category,
-          name,
+    // Upsert each permission
+    for (const item of items) {
+      console.log('Processing item:', item);
+      
+      // If we already have this permission, just use its ID
+      if (existingMap.has(item)) {
+        const existingId = existingMap.get(item)!;
+        console.log('Found existing permission, using ID:', existingId);
+        ids.add(existingId);
+        continue;
+      }
+
+      // Otherwise create a new permission
+      console.log('Creating new permission:', { category: categoryOriginal, name: item });
+      const permission = await tx.permission.create({
+        data: {
+          category: categoryOriginal,
+          name: item,
         },
       });
+      console.log('Created new permission:', permission);
 
       ids.add(permission.id);
     }
   }
 
-  return Array.from(ids.values());
+  const result = Array.from(ids.values());
+  console.log('Final permission IDs:', result);
+  return result;
 }
 
 function handlePrismaError(error: unknown): never {
