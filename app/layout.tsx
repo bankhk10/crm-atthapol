@@ -12,7 +12,14 @@ const prompt = Prompt({
   display: "swap",
 });
 
-export const metadata: Metadata = { title: "CRM" };
+export const metadata: Metadata = {
+  title: "CRM",
+  icons: {
+    icon: "/images/logo.png",
+    shortcut: "/images/logo.png",
+    apple: "/images/logo.png",
+  },
+};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
