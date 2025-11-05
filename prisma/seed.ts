@@ -6,11 +6,7 @@ const prisma = new PrismaClient({
 });
 import bcrypt from "bcrypt";
 
-import {
-  ACTION_LABELS,
-  PERMISSION_ACTIONS,
-  type PermissionAction,
-} from "@/lib/permissions";
+import { ACTION_LABELS, PERMISSION_ACTIONS, type PermissionAction } from "@/lib/permissions";
 
 type ModuleDefinition = {
   key: string;
@@ -69,7 +65,7 @@ const viewCreateActions: PermissionAction[] = ["view", "create"];
 
 // Roles
 const allPermissionKeys = resources.flatMap((r) =>
-  PERMISSION_ACTIONS.map((a) => buildPermissionKey(r.key, a))
+  PERMISSION_ACTIONS.map((a) => buildPermissionKey(r.key, a)),
 );
 
 const roleSeeds: RoleSeed[] = [
@@ -119,6 +115,20 @@ const roleSeeds: RoleSeed[] = [
 ];
 
 const userSeeds: UserSeed[] = [
+  {
+    email: "b@b.com",
+    name: "System Admin",
+    password: "b@b.com",
+    role: "ADMIN",
+    roleKey: "admin",
+    employee: {
+      employeeCode: "EMP-0000",
+      position: "ผู้ดูแลระบบ",
+      department: "แผนกเทคโนโลยีสารสนเทศ",
+      phone: "0810000001",
+      startDate: new Date("2024-01-01"),
+    },
+  },
   {
     email: "admin@csone.local",
     name: "System Admin",
@@ -214,74 +224,86 @@ async function main() {
   const roleDefinitionIdMap = new Map<string, string>();
   const permissionIdMap = new Map<string, string>();
 
-  await prisma.$transaction(async (tx) => {
-    for (const resource of resources) {
-      for (const action of PERMISSION_ACTIONS) {
-        const permission = await tx.permission.upsert({
-          where: { category_name: { category: resource.key, name: action } },
-          update: { description: `${ACTION_LABELS[action]} - ${resource.label}` },
+  await prisma.$transaction(
+    async (tx) => {
+      for (const resource of resources) {
+        for (const action of PERMISSION_ACTIONS) {
+          const permission = await tx.permission.upsert({
+            where: { category_name: { category: resource.key, name: action } },
+            update: { description: `${ACTION_LABELS[action]} - ${resource.label}` },
+            create: {
+              category: resource.key,
+              name: action,
+              description: `${ACTION_LABELS[action]} - ${resource.label}`,
+            },
+          });
+          permissionIdMap.set(buildPermissionKey(resource.key, action), permission.id);
+        }
+      }
+
+      // Add explicit sales visibility scope permissions (not part of PERMISSION_ACTIONS)
+      const scopeDefs = [
+        { category: "sales_scope", name: "own", description: "เห็นเฉพาะที่ตัวเองรับผิดชอบ" },
+        { category: "sales_scope", name: "department", description: "เห็นเฉพาะแผนกตนเอง" },
+        { category: "sales_scope", name: "all", description: "เห็นทั้งหมด" },
+      ];
+      for (const s of scopeDefs) {
+        const perm = await tx.permission.upsert({
+          where: { category_name: { category: s.category, name: s.name } },
+          update: { description: s.description },
+          create: s,
+        });
+        permissionIdMap.set(`${s.category}:${s.name}`, perm.id);
+      }
+
+      // Add fine-grained customer create permissions by type
+      const customerCreateTypes = [
+        { name: "all", description: "สร้างลูกค้าทุกประเภท" },
+        { name: "dealer", description: "สร้างลูกค้า Dealer" },
+        { name: "subdealer", description: "สร้างลูกค้า SubDealer" },
+        { name: "farmer", description: "สร้างลูกค้า Farmer" },
+        { name: "broker", description: "สร้างลูกค้า Broker" },
+      ];
+      for (const t of customerCreateTypes) {
+        const perm = await tx.permission.upsert({
+          where: { category_name: { category: "customers_create", name: t.name } },
+          update: { description: t.description },
+          create: { category: "customers_create", name: t.name, description: t.description },
+        });
+        permissionIdMap.set(`customers_create:${t.name}`, perm.id);
+      }
+
+      for (const role of roleSeeds) {
+        const roleDef = await tx.roleDefinition.upsert({
+          where: { key: role.key },
+          update: {
+            name: role.name,
+            description: role.description,
+            department: role.department ?? null,
+          },
           create: {
-            category: resource.key,
-            name: action,
-            description: `${ACTION_LABELS[action]} - ${resource.label}`,
+            key: role.key,
+            name: role.name,
+            description: role.description,
+            department: role.department ?? null,
           },
         });
-        permissionIdMap.set(buildPermissionKey(resource.key, action), permission.id);
+
+        roleDefinitionIdMap.set(role.key, roleDef.id);
+        await tx.rolePermission.deleteMany({ where: { roleId: roleDef.id } });
+
+        const permissionIds = role.permissions
+          .map((k) => permissionIdMap.get(k))
+          .filter((v): v is string => !!v);
+
+        await tx.rolePermission.createMany({
+          data: permissionIds.map((pid) => ({ roleId: roleDef.id, permissionId: pid })),
+          skipDuplicates: true,
+        });
       }
-    }
-
-    // Add explicit sales visibility scope permissions (not part of PERMISSION_ACTIONS)
-    const scopeDefs = [
-      { category: "sales_scope", name: "own", description: "เห็นเฉพาะที่ตัวเองรับผิดชอบ" },
-      { category: "sales_scope", name: "department", description: "เห็นเฉพาะแผนกตนเอง" },
-      { category: "sales_scope", name: "all", description: "เห็นทั้งหมด" },
-    ];
-    for (const s of scopeDefs) {
-      const perm = await tx.permission.upsert({
-        where: { category_name: { category: s.category, name: s.name } },
-        update: { description: s.description },
-        create: s,
-      });
-      permissionIdMap.set(`${s.category}:${s.name}`, perm.id);
-    }
-
-    // Add fine-grained customer create permissions by type
-    const customerCreateTypes = [
-      { name: "all", description: "สร้างลูกค้าทุกประเภท" },
-      { name: "dealer", description: "สร้างลูกค้า Dealer" },
-      { name: "subdealer", description: "สร้างลูกค้า SubDealer" },
-      { name: "farmer", description: "สร้างลูกค้า Farmer" },
-      { name: "broker", description: "สร้างลูกค้า Broker" },
-    ];
-    for (const t of customerCreateTypes) {
-      const perm = await tx.permission.upsert({
-        where: { category_name: { category: "customers_create", name: t.name } },
-        update: { description: t.description },
-        create: { category: "customers_create", name: t.name, description: t.description },
-      });
-      permissionIdMap.set(`customers_create:${t.name}`, perm.id);
-    }
-
-    for (const role of roleSeeds) {
-      const roleDef = await tx.roleDefinition.upsert({
-        where: { key: role.key },
-        update: { name: role.name, description: role.description, department: role.department ?? null },
-        create: { key: role.key, name: role.name, description: role.description, department: role.department ?? null },
-      });
-
-      roleDefinitionIdMap.set(role.key, roleDef.id);
-      await tx.rolePermission.deleteMany({ where: { roleId: roleDef.id } });
-
-      const permissionIds = role.permissions
-        .map((k) => permissionIdMap.get(k))
-        .filter((v): v is string => !!v);
-
-      await tx.rolePermission.createMany({
-        data: permissionIds.map((pid) => ({ roleId: roleDef.id, permissionId: pid })),
-        skipDuplicates: true,
-      });
-    }
-  }, { maxWait: 30000, timeout: 60000 });
+    },
+    { maxWait: 30000, timeout: 60000 },
+  );
 
   // ---------------------------
   // 3️⃣ สร้าง Users + Employees
@@ -308,22 +330,22 @@ async function main() {
     if (u.employee) {
       const emp = await prisma.employee.upsert({
         where: { userId: user.id },
-      update: {
-        position: u.employee.position,
-        department: u.employee.department,
-        phone: u.employee.phone,
-        startDate: u.employee.startDate,
-        status: "ACTIVE",
-      },
-      create: {
-        userId: user.id,
-        employeeCode: u.employee.employeeCode,
-        position: u.employee.position,
-        department: u.employee.department,
-        phone: u.employee.phone,
-        startDate: u.employee.startDate,
-        status: "ACTIVE",
-      },
+        update: {
+          position: u.employee.position,
+          department: u.employee.department,
+          phone: u.employee.phone,
+          startDate: u.employee.startDate,
+          status: "ACTIVE",
+        },
+        create: {
+          userId: user.id,
+          employeeCode: u.employee.employeeCode,
+          position: u.employee.position,
+          department: u.employee.department,
+          phone: u.employee.phone,
+          startDate: u.employee.startDate,
+          status: "ACTIVE",
+        },
       });
       employees[user.email as string] = emp.id;
     }
@@ -384,7 +406,12 @@ async function main() {
   const dealerDetail = await prisma.dealerDetail.upsert({
     where: { customerId: dealerCustomer.id },
     update: { creditLimit: 500000, promotionBudget: 100000, contactName: "ผู้จัดการร้าน" },
-    create: { customerId: dealerCustomer.id, creditLimit: 500000, promotionBudget: 100000, contactName: "ผู้จัดการร้าน" },
+    create: {
+      customerId: dealerCustomer.id,
+      creditLimit: 500000,
+      promotionBudget: 100000,
+      contactName: "ผู้จัดการร้าน",
+    },
   });
 
   const subDealerCustomer = await prisma.customer.upsert({
@@ -436,7 +463,12 @@ async function main() {
   const farmerDetail = await prisma.farmerDetail.upsert({
     where: { customerId: farmerCustomer.id },
     update: { areaSize: 45, cropType: "ข้าวโพด", dealerId: dealerDetail.id },
-    create: { customerId: farmerCustomer.id, areaSize: 45, cropType: "ข้าวโพด", dealerId: dealerDetail.id },
+    create: {
+      customerId: farmerCustomer.id,
+      areaSize: 45,
+      cropType: "ข้าวโพด",
+      dealerId: dealerDetail.id,
+    },
   });
   await prisma.farmPlot.create({
     data: {
@@ -525,7 +557,9 @@ async function main() {
   await prisma.sale.createMany({ data: salesData });
   await prisma.interaction.createMany({ data: interactionsData });
 
-  console.log(`🌾 Seeded monthly Sales (${salesData.length}) and Interactions (${interactionsData.length}) for year ${year}.`);
+  console.log(
+    `🌾 Seeded monthly Sales (${salesData.length}) and Interactions (${interactionsData.length}) for year ${year}.`,
+  );
 
   // ---------------------------
   // 7️⃣ ตัวอย่าง Sales Notes เพื่อจำลอง workflow
@@ -601,17 +635,42 @@ async function main() {
       await snDelegate.create({ data: n });
     } else {
       const cols = [
-        'noteNumber','customerId','creatorEmployeeId','managerEmployeeId','title','content','amount','status','submittedAt','approvedAt','approvedByUserId','rejectReason','createdAt','updatedAt','deletedAt'
+        "noteNumber",
+        "customerId",
+        "creatorEmployeeId",
+        "managerEmployeeId",
+        "title",
+        "content",
+        "amount",
+        "status",
+        "submittedAt",
+        "approvedAt",
+        "approvedByUserId",
+        "rejectReason",
+        "createdAt",
+        "updatedAt",
+        "deletedAt",
       ];
       const vals = [
-        n.noteNumber, n.customerId ?? null, n.creatorEmployeeId ?? null, n.managerEmployeeId ?? null,
-        n.title ?? null, n.content ?? null, n.amount ?? null, n.status ?? 'DRAFT',
-        n.submittedAt ?? null, n.approvedAt ?? null, n.approvedByUserId ?? null, n.rejectReason ?? null,
-        new Date(), new Date(), null
+        n.noteNumber,
+        n.customerId ?? null,
+        n.creatorEmployeeId ?? null,
+        n.managerEmployeeId ?? null,
+        n.title ?? null,
+        n.content ?? null,
+        n.amount ?? null,
+        n.status ?? "DRAFT",
+        n.submittedAt ?? null,
+        n.approvedAt ?? null,
+        n.approvedByUserId ?? null,
+        n.rejectReason ?? null,
+        new Date(),
+        new Date(),
+        null,
       ];
-      const placeholders = vals.map((_, i) => `$${i+1}`).join(',');
+      const placeholders = vals.map((_, i) => `$${i + 1}`).join(",");
       await prisma.$executeRawUnsafe(
-        `INSERT INTO "SalesNote" (${cols.map(c=>`"${c}"`).join(',')}) VALUES (${placeholders})`,
+        `INSERT INTO "SalesNote" (${cols.map((c) => `"${c}"`).join(",")}) VALUES (${placeholders})`,
         ...vals,
       );
     }
