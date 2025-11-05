@@ -103,6 +103,9 @@ npx prisma migrate reset
 
 - ใช้สิทธิ์ `sales:view|create|edit|delete|approve|reject` จาก role seed (`admin`, `sales_manager`, `sales_staff`)
 - ขอบเขตการมองเห็น: `sales_scope:own|department|all` กำกับว่าดูได้เฉพาะของตัวเอง, ของแผนก, หรือทั้งหมด
+- การสร้างลูกค้าแบบจำเพาะประเภท: ใช้ `customers_create:{dealer|subdealer|farmer|broker|all}`
+  - ปุ่ม “เพิ่ม {Type}” แสดงตามสิทธิ์ `customers_create:*` เท่านั้น
+  - ฝั่งเซิร์ฟเวอร์ตรวจสิทธิ์ก่อนสร้าง โดยต้องมี `customers_create:{type}` หรือ `customers_create:all`
 
 บทบาทตามแผนก (Department-Scoped Roles):
 
@@ -117,3 +120,4 @@ pnpm prisma generate
 pnpm prisma migrate dev --name add_role_definition_department
 pnpm run seed
 ```
+

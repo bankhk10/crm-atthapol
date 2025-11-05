@@ -13,7 +13,12 @@ export default function CustomersListClient({ customers }: { customers: Customer
   const { data: session } = useSession();
   const [query, setQuery] = useState("");
 
-  const canCreate = hasPermission(session?.user?.permissions, "customers", "create");
+  const perms = session?.user?.permissions ?? [];
+  const canCreateAllTypes = perms.includes("customers_create:all");
+  const canCreateDealer = canCreateAllTypes || perms.includes("customers_create:dealer");
+  const canCreateSubDealer = canCreateAllTypes || perms.includes("customers_create:subdealer");
+  const canCreateFarmer = canCreateAllTypes || perms.includes("customers_create:farmer");
+  const canCreateBroker = canCreateAllTypes || perms.includes("customers_create:broker");
 
   return (
     <Stack spacing={2}>
@@ -39,18 +44,26 @@ export default function CustomersListClient({ customers }: { customers: Customer
 
         {/* add buttons group */}
         <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{ width: { xs: "100%", sm: "auto" } }}>
-          <Button component={Link} href="/dashboard/customers/new/dealer" variant="contained" color="primary">
-            เพิ่ม Dealer
-          </Button>
-          <Button component={Link} href="/dashboard/customers/new/subdealer" variant="contained" color="secondary">
-            เพิ่ม SubDealer
-          </Button>
-          <Button component={Link} href="/dashboard/customers/new/farmer" variant="contained" color="success">
-            เพิ่ม Farmer
-          </Button>
-          <Button component={Link} href="/dashboard/customers/new/broker" variant="contained" color="warning">
-            เพิ่ม Broker
-          </Button>
+          {canCreateDealer && (
+            <Button component={Link} href="/dashboard/customers/new/dealer" variant="contained" color="primary">
+              เพิ่ม Dealer
+            </Button>
+          )}
+          {canCreateSubDealer && (
+            <Button component={Link} href="/dashboard/customers/new/subdealer" variant="contained" color="secondary">
+              เพิ่ม SubDealer
+            </Button>
+          )}
+          {canCreateFarmer && (
+            <Button component={Link} href="/dashboard/customers/new/farmer" variant="contained" color="success">
+              เพิ่ม Farmer
+            </Button>
+          )}
+          {canCreateBroker && (
+            <Button component={Link} href="/dashboard/customers/new/broker" variant="contained" color="warning">
+              เพิ่ม Broker
+            </Button>
+          )}
         </Stack>
       </Stack>
 

@@ -76,7 +76,10 @@ export function EmployeeForm({
 
   const filteredRoleDefinitions = useMemo(() => {
     const dept = values.department?.trim();
-    return roleDefinitions.filter((def) => !def.department || (dept && def.department === dept));
+    // ถ้ายังไม่เลือกแผนก แสดงสิทธิ์ทั้งหมดก่อน เพื่อให้เลือกได้
+    if (!dept) return roleDefinitions;
+    // ถ้าเลือกแผนกแล้ว แสดงเฉพาะสิทธิ์ที่เป็น Global (ไม่กำหนดแผนก) หรือที่ตรงกับแผนกนั้น
+    return roleDefinitions.filter((def) => !def.department || def.department === dept);
   }, [roleDefinitions, values.department]);
 
   useEffect(() => {

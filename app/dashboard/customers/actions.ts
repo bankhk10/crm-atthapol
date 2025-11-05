@@ -7,6 +7,7 @@ import type { Prisma } from "@prisma/client";
 import { runWithRequestContext } from "@/lib/request-context";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { hasPermission } from "@/lib/permissions";
 
 import type { CustomerFormValues } from "./types";
 const farmPlotSchema = z.object({
@@ -191,6 +192,16 @@ export async function createCustomer(rawValues: CustomerFormValues) {
   }
   const values = parsed.data;
   const session = await getServerSession(authOptions);
+
+  // Permission check: type-specific (or ALL types) only
+  const perms = session?.user?.permissions ?? [];
+  const t = values.type;
+  const typeKey = t === "DEALER" ? "dealer" : t === "SUBDEALER" ? "subdealer" : t === "FARMER" ? "farmer" : "broker";
+  const allowAny = perms.includes("customers_create:all");
+  const allowType = perms.includes(`customers_create:${typeKey}`);
+  if (!allowAny && !allowType) {
+    throw new Error("คุณไม่มีสิทธิ์สร้างลูกค้าประเภทนี้");
+  }
 
   await runWithRequestContext({ userId: session?.user?.id }, async () => {
     await prisma.$transaction(async (tx) => {

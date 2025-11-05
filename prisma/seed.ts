@@ -82,6 +82,8 @@ const roleSeeds: RoleSeed[] = [
       ...allPermissionKeys,
       // Visibility scope: admin sees all
       "sales_scope:all",
+      // All customer type creates
+      "customers_create:all",
     ],
   },
   {
@@ -95,6 +97,9 @@ const roleSeeds: RoleSeed[] = [
       ...buildPermissionGroup("sales", manageActions),
       // Visibility scope: manager sees department
       "sales_scope:department",
+      // Allowed customer types for create
+      "customers_create:subdealer",
+      "customers_create:farmer",
     ],
   },
   {
@@ -107,6 +112,8 @@ const roleSeeds: RoleSeed[] = [
       ...buildPermissionGroup("sales", viewCreateActions),
       // Visibility scope: staff sees own
       "sales_scope:own",
+      // Allowed customer types for create
+      "customers_create:dealer",
     ],
   },
 ];
@@ -152,6 +159,36 @@ const userSeeds: UserSeed[] = [
       department: "แผนกบริหารงานขาย",
       phone: "0810000003",
       startDate: new Date("2024-06-01"),
+    },
+  },
+  // USER A: can create Dealer only (sales_staff role)
+  {
+    email: "user.a@csone.local",
+    name: "USER A",
+    password: "UserA@123",
+    role: "USER",
+    roleKey: "sales_staff",
+    employee: {
+      employeeCode: "EMP-0004",
+      position: "เจ้าหน้าที่ฝ่ายขาย",
+      department: "แผนกบริหารงานขาย",
+      phone: "0810000004",
+      startDate: new Date("2024-07-01"),
+    },
+  },
+  // USER B: can create SubDealer + Farmer (sales_manager role)
+  {
+    email: "user.b@csone.local",
+    name: "USER B",
+    password: "UserB@123",
+    role: "MANAGER",
+    roleKey: "sales_manager",
+    employee: {
+      employeeCode: "EMP-0005",
+      position: "ผู้จัดการฝ่ายขาย",
+      department: "แผนกบริหารงานขาย",
+      phone: "0810000005",
+      startDate: new Date("2024-07-15"),
     },
   },
 ];
@@ -206,6 +243,23 @@ async function main() {
         create: s,
       });
       permissionIdMap.set(`${s.category}:${s.name}`, perm.id);
+    }
+
+    // Add fine-grained customer create permissions by type
+    const customerCreateTypes = [
+      { name: "all", description: "สร้างลูกค้าทุกประเภท" },
+      { name: "dealer", description: "สร้างลูกค้า Dealer" },
+      { name: "subdealer", description: "สร้างลูกค้า SubDealer" },
+      { name: "farmer", description: "สร้างลูกค้า Farmer" },
+      { name: "broker", description: "สร้างลูกค้า Broker" },
+    ];
+    for (const t of customerCreateTypes) {
+      const perm = await tx.permission.upsert({
+        where: { category_name: { category: "customers_create", name: t.name } },
+        update: { description: t.description },
+        create: { category: "customers_create", name: t.name, description: t.description },
+      });
+      permissionIdMap.set(`customers_create:${t.name}`, perm.id);
     }
 
     for (const role of roleSeeds) {
