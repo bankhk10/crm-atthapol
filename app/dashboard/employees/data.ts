@@ -135,6 +135,7 @@ export async function getRoleDefinitionOptions(): Promise<RoleDefinitionOption[]
     id: role.id,
     name: role.name,
     description: role.description,
+    department: (role as any).department ?? null,
     permissions: groupPermissions(
       role.permissions.map((assignment) => ({
         category: assignment.permission.category,

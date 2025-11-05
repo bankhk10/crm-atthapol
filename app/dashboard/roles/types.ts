@@ -17,6 +17,7 @@ export type RoleListItem = {
   key: string;
   name: string;
   description: string | null;
+  department?: string | null;
   assignedUsers: number;
   permissions: PermissionGroup[];
   createdAt: string;
@@ -26,5 +27,6 @@ export type RoleFormValues = {
   key: string;
   name: string;
   description: string;
+  department?: string;
   permissions: PermissionGroup[];
 };

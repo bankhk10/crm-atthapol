@@ -21,6 +21,7 @@ type RoleSeed = {
   key: string;
   name: string;
   description: string;
+  department?: string;
   permissions: string[];
 };
 
@@ -76,6 +77,7 @@ const roleSeeds: RoleSeed[] = [
     key: "admin",
     name: "ผู้ดูแลระบบ",
     description: "เข้าถึงทุกเมนูและปุ่มคำสั่งทั้งหมด",
+    department: "IT",
     permissions: [
       ...allPermissionKeys,
       // Visibility scope: admin sees all
@@ -86,6 +88,7 @@ const roleSeeds: RoleSeed[] = [
     key: "sales_manager",
     name: "ผู้จัดการฝ่ายขาย",
     description: "ติดตามการขายและดูแลข้อมูลลูกค้าและสินค้า",
+    department: "การขาย",
     permissions: [
       ...buildPermissionGroup("customers", manageActions),
       ...buildPermissionGroup("products", manageActions),
@@ -98,6 +101,7 @@ const roleSeeds: RoleSeed[] = [
     key: "sales_staff",
     name: "พนักงานฝ่ายขาย",
     description: "ดูแลข้อมูลลูกค้าและบันทึกยอดขาย",
+    department: "การขาย",
     permissions: [
       ...buildPermissionGroup("customers", contributeActions),
       ...buildPermissionGroup("sales", viewCreateActions),
@@ -207,8 +211,8 @@ async function main() {
     for (const role of roleSeeds) {
       const roleDef = await tx.roleDefinition.upsert({
         where: { key: role.key },
-        update: { name: role.name, description: role.description },
-        create: { key: role.key, name: role.name, description: role.description },
+        update: { name: role.name, description: role.description, department: role.department ?? null },
+        create: { key: role.key, name: role.name, description: role.description, department: role.department ?? null },
       });
 
       roleDefinitionIdMap.set(role.key, roleDef.id);

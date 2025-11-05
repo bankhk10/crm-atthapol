@@ -15,6 +15,7 @@ export async function getRoleList(): Promise<RoleListItem[]> {
     key: role.key,
     name: role.name,
     description: role.description,
+    department: (role as any).department ?? null,
     assignedUsers: role._count.users,
     permissions: groupPermissions(
       role.permissions.map((assignment) => ({

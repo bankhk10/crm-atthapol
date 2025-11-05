@@ -40,6 +40,7 @@ const defaultFormValues: RoleFormValues = {
   key: "",
   name: "",
   description: "",
+  department: "",
   permissions: [],
 };
 
@@ -65,6 +66,7 @@ export function RoleFormDialog({
       key: initialValues.key ?? "",
       name: initialValues.name ?? "",
       description: initialValues.description ?? "",
+      department: initialValues.department ?? "",
       permissions: initialValues.permissions ?? [],
     });
 
@@ -186,6 +188,7 @@ export function RoleFormDialog({
       key: values.key.trim().toUpperCase(),
       name: values.name.trim(),
       description: values.description.trim(),
+      department: values.department?.trim() || undefined,
       permissions: (values.permissions ?? [])
         .map((group) => ({
           category: group.category.trim(),
@@ -224,28 +227,38 @@ export function RoleFormDialog({
               </Alert>
             )}
 
-            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-              <TextField
-                label="รหัสบทบาท (Key)"
-                value={values.key}
-                onChange={handleFieldChange("key")}
-                placeholder="เช่น SALES_MANAGER"
-                fullWidth
-                required
-                disabled={submitting}
-                inputProps={{ maxLength: 64, style: { textTransform: "uppercase" } }}
-                helperText="ใช้ตัวอักษรภาษาอังกฤษและขีดล่างเพื่ออ้างอิงในระบบ"
-              />
-              <TextField
-                label="ชื่อบทบาท"
-                value={values.name}
-                onChange={handleFieldChange("name")}
-                placeholder="เช่น ผู้จัดการฝ่ายขาย"
-                fullWidth
-                required
-                disabled={submitting}
-              />
-            </Stack>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <TextField
+              label="รหัสบทบาท (Key)"
+              value={values.key}
+              onChange={handleFieldChange("key")}
+              placeholder="เช่น SALES_MANAGER"
+              fullWidth
+              required
+              disabled={submitting}
+              inputProps={{ maxLength: 64, style: { textTransform: "uppercase" } }}
+              helperText="ใช้ตัวอักษรภาษาอังกฤษและขีดล่างเพื่ออ้างอิงในระบบ"
+            />
+            <TextField
+              label="ชื่อบทบาท"
+              value={values.name}
+              onChange={handleFieldChange("name")}
+              placeholder="เช่น ผู้จัดการฝ่ายขาย"
+              fullWidth
+              required
+              disabled={submitting}
+            />
+          </Stack>
+
+          <TextField
+            label="แผนก (ถ้าต้องการจำกัด)"
+            value={values.department}
+            onChange={handleFieldChange("department")}
+            placeholder="เช่น การขาย หรือ IT"
+            fullWidth
+            disabled={submitting}
+            helperText="เว้นว่างหากบทบาทนี้ใช้ได้ทุกแผนก"
+          />
 
             <TextField
               label="รายละเอียดบทบาท"

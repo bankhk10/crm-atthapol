@@ -22,6 +22,7 @@ const roleFormSchema = z.object({
   key: z.string().trim().min(1, "กรุณากรอกรหัสบทบาท"),
   name: z.string().trim().min(1, "กรุณากรอกชื่อบทบาท"),
   description: z.string().trim().optional().default(""),
+  department: z.string().trim().optional().default(""),
   permissions: z.array(permissionGroupSchema).optional().default([]),
 });
 
@@ -35,6 +36,7 @@ export async function createRole(rawValues: RoleFormValues) {
           key: values.key,
           name: values.name,
           description: values.description || null,
+          department: values.department ? values.department : null,
         },
       });
 
@@ -66,6 +68,7 @@ export async function updateRole(roleId: string, rawValues: RoleFormValues) {
           key: values.key,
           name: values.name,
           description: values.description || null,
+          department: values.department ? values.department : null,
         },
       });
 

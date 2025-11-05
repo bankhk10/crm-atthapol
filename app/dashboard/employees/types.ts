@@ -62,5 +62,6 @@ export type RoleDefinitionOption = {
   id: string;
   name: string;
   description: string | null;
+  department?: string | null;
   permissions: PermissionGroup[];
 };

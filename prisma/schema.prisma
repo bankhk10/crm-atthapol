@@ -349,6 +349,8 @@ model RoleDefinition {
   key         String    @unique
   name        String    @unique
   description String?
+  // Optional department tag to scope this role to a specific department
+  department  String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?

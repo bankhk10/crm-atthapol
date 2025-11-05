@@ -58,6 +58,7 @@ const emptyForm: RoleFormValues = {
   key: "",
   name: "",
   description: "",
+  department: "",
   permissions: [],
 };
 
@@ -130,6 +131,7 @@ export function RolesClient({ roles, permissionLibrary }: RolesClientProps) {
         key: dialogState.role.key,
         name: dialogState.role.name,
         description: dialogState.role.description ?? "",
+        department: dialogState.role.department ?? "",
         permissions: dialogState.role.permissions,
       } satisfies RoleFormValues;
     }
@@ -233,6 +235,9 @@ export function RolesClient({ roles, permissionLibrary }: RolesClientProps) {
                     <Typography fontWeight={600}>{role.name}</Typography>
                     <Typography variant="body2" color="text.secondary">
                       KEY: {role.key}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      แผนก: {role.department ? role.department : "ทั้งหมด"}
                     </Typography>
                   </Stack>
                 </TableCell>

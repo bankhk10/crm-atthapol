@@ -92,21 +92,6 @@ pnpm run seed
 <!-- ล้าง -->
 npx prisma migrate reset
  
-### Reports (Mock Data)
-
-- Pages:
-  - `/dashboard/reports/overview` รายงานภาพรวม
-  - `/dashboard/reports/sales` รายงานการขาย
-  - `/dashboard/reports/marketing` รายงานการตลาด
-  - `/dashboard/reports/activity` รายงานกิจกรรม
-- Implementation uses MUI components only (no extra chart libs) with lightweight SVG sparkline and bar list.
-- Mock sources: `app/dashboard/reports/_mock/index.ts`
-- Reusable UI: `app/dashboard/reports/_components/{KpiCard,Sparkline,BarList}.tsx`
-
-Notes:
-- All numbers and series are mock values and can be replaced with real data later.
-- Layout uses responsive CSS grid via `Box` for compatibility.
-
 
 <!-- Test prod -->
 รัน build: npm run build
@@ -114,52 +99,21 @@ Notes:
 เปิดใช้งานที่: http://localhost:3000
 ถ้าต้องการเปิดกลับในอนาคต ลบหรือแก้ next.config.mjs ให้เอา ignoreDuringBuilds ออก
 
-## Sales Notes (บันทึกการขาย)
-
-- Models: เพิ่ม `SalesNote` + `SalesNoteStatus` ใน `prisma/schema.prisma` สำหรับ flow: ร่าง → ส่งอนุมัติ → อนุมัติ/ปฏิเสธ
-- API Endpoints:
-  - `GET /api/sales/notes` รายการ พร้อมกรอง `status`, `customerId`, `q`, รองรับสิทธิ์การมองเห็น (own/department/all)
-  - `POST /api/sales/notes` สร้างบันทึก การกำหนด `status=APPROVED/REJECTED` ต้องมีสิทธิ์อนุมัติ/ปฏิเสธ
-  - `GET /api/sales/notes/:id` ดูรายละเอียด
-  - `PUT /api/sales/notes/:id` แก้ไขได้ก่อนถูกอนุมัติ/ปฏิเสธ
-  - `POST /api/sales/notes/:id/submit` ส่งเพื่ออนุมัติ (จากสถานะ `DRAFT`)
-  - `POST /api/sales/notes/:id/approve` อนุมัติ (ต้องมีสิทธิ์ `sales:approve`)
-  - `POST /api/sales/notes/:id/reject` ปฏิเสธ (ต้องมีสิทธิ์ `sales:reject`)
-
-- เลขที่เอกสาร: ระบบออกเลขแบบ `SN-YYYYMM-xxxxxx` ด้วยตาราง `DocSequence` (atomic) เมื่อสร้างผ่าน API
-- Seed: เพิ่มตัวอย่าง 4 รายการ (`SN-SEED-0001..4`) ใน `prisma/seed.ts` สำหรับสถานะ DRAFT / SUBMITTED / APPROVED / REJECTED
-
-ตัวอย่างทดสอบด้วยบัญชี seed:
-
-- ผู้จัดการฝ่ายขาย: `sales.manager@csone.local` / `SalesManager@123`
-- พนักงานฝ่ายขาย: `sales.staff@csone.local` / `SalesStaff@123`
-
-ตัวอย่างเรียกใช้งาน (หลัง login ได้ cookie/session แล้ว):
-
-```bash
-# สร้างบันทึก (พนักงาน) -> DRAFT
-curl -X POST http://localhost:3000/api/sales/notes \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "customerId": "seed-dealer-1",
-    "title": "เสนอขายสินค้า",
-    "content": "รายละเอียด...",
-    "amount": 25000
-  }'
-
-# ส่งเพื่ออนุมัติ (จาก DRAFT)
-curl -X POST http://localhost:3000/api/sales/notes/<NOTE_ID>/submit
-
-# อนุมัติ (ผู้จัดการ)
-curl -X POST http://localhost:3000/api/sales/notes/<NOTE_ID>/approve
-
-# หรือปฏิเสธ (ใส่เหตุผล)
-curl -X POST http://localhost:3000/api/sales/notes/<NOTE_ID>/reject \
-  -H 'Content-Type: application/json' \
-  -d '{ "reason": "ข้อมูลยังไม่ครบ" }'
-```
-
 การกำหนดสิทธิ์:
 
 - ใช้สิทธิ์ `sales:view|create|edit|delete|approve|reject` จาก role seed (`admin`, `sales_manager`, `sales_staff`)
 - ขอบเขตการมองเห็น: `sales_scope:own|department|all` กำกับว่าดูได้เฉพาะของตัวเอง, ของแผนก, หรือทั้งหมด
+
+บทบาทตามแผนก (Department-Scoped Roles):
+
+- เพิ่มฟิลด์ `department` ใน `RoleDefinition` เพื่อแท็กบทบาทกับแผนกที่เกี่ยวข้อง (เว้นว่าง = ใช้ได้ทุกแผนก)
+- หน้า “บทบาทและสิทธิ์การใช้งาน” แสดงแผนกของแต่ละบทบาท และแบบฟอร์มสร้าง/แก้ไขรองรับการระบุแผนก
+- เมื่อตั้งค่าพนักงาน ระบบกรองรายการ Role Definition ให้ตรงกับแผนกที่เลือก (หรือบทบาทที่ไม่กำหนดแผนก)
+
+Migration ที่ต้องรันหลังอัปเดตโค้ดนี้:
+
+```
+pnpm prisma generate
+pnpm prisma migrate dev --name add_role_definition_department
+pnpm run seed
+```

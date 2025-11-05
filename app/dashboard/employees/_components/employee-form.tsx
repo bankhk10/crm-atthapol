@@ -82,6 +82,11 @@ export function EmployeeForm({
     [roleDefinitions, values.roleDefinitionId],
   );
 
+  const filteredRoleDefinitions = useMemo(() => {
+    const dept = values.department?.trim();
+    return roleDefinitions.filter((def) => !def.department || (dept && def.department === dept));
+  }, [roleDefinitions, values.department]);
+
   useEffect(() => {
     setValues(initialValues);
   }, [initialValues]);
@@ -567,7 +572,7 @@ export function EmployeeForm({
             }}
           >
             <MenuItem value="">ไม่กำหนด</MenuItem>
-            {roleDefinitions.map((definition) => (
+            {filteredRoleDefinitions.map((definition) => (
               <MenuItem key={definition.id} value={definition.id}>
                 {definition.name}
               </MenuItem>
