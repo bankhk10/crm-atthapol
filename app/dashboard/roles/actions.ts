@@ -137,23 +137,33 @@ export async function updateRole(roleId: string, rawValues: RoleFormValues) {
         data: { deletedAt: new Date() }
       });
 
-      // Add new permissions
+      // Add new permissions: first reactivate any soft-deleted rolePermission rows
       if (permissionIds.length > 0) {
-        // Find existing valid permission assignments
-        const existingAssignments = existingRole.permissions
-          .filter(p => !p.deletedAt)
-          .map(p => p.permissionId);
+        // Reactivate existing (soft-deleted) rolePermission rows for this role
+        await tx.rolePermission.updateMany({
+          where: {
+            roleId: roleId,
+            permissionId: { in: permissionIds },
+            deletedAt: { not: null },
+          },
+          data: { deletedAt: null },
+        });
 
-        // Only create new assignments for permissions that don't exist
-        const newPermissionIds = permissionIds.filter(
-          id => !existingAssignments.includes(id)
-        );
+        // Find current active assignments after reactivation
+        const activeAssignments = await tx.rolePermission.findMany({
+          where: { roleId: roleId, deletedAt: null },
+          select: { permissionId: true },
+        });
+        const activeIds = activeAssignments.map((a) => a.permissionId);
+
+        // Only create new assignments for permissions that still don't exist
+        const newPermissionIds = permissionIds.filter((id) => !activeIds.includes(id));
 
         if (newPermissionIds.length > 0) {
           await tx.rolePermission.createMany({
             data: newPermissionIds.map((permissionId) => ({
               roleId: roleId,
-              permissionId
+              permissionId,
             })),
             skipDuplicates: true,
           });
@@ -191,46 +201,56 @@ async function upsertPermissions(
     const items = (group.items ?? []).map(item => item.trim()).filter(Boolean);
     console.log('Processing items:', items);
 
-    // Find existing permissions for this category
-    console.log('Looking for existing permissions in category:', categoryOriginal);
-    const existingPermissions = await tx.permission.findMany({
-      where: {
-        category: categoryOriginal,
-        deletedAt: null,
-      },
-    });
-    console.log('Found existing permissions:', existingPermissions);
-
-    // Create a map of name to existing permission
-    const existingMap = new Map(
-      existingPermissions.map(p => [p.name, p.id])
-    );
-    console.log('Existing permissions map:', Object.fromEntries(existingMap));
-
-    // Upsert each permission
-    for (const item of items) {
-      console.log('Processing item:', item);
-      
-      // If we already have this permission, just use its ID
-      if (existingMap.has(item)) {
-        const existingId = existingMap.get(item)!;
-        console.log('Found existing permission, using ID:', existingId);
-        ids.add(existingId);
-        continue;
-      }
-
-      // Otherwise create a new permission
-      console.log('Creating new permission:', { category: categoryOriginal, name: item });
-      const permission = await tx.permission.create({
-        data: {
+      // Find existing permissions for this category (include soft-deleted so we can reactivate)
+      console.log('Looking for existing permissions in category (including deleted):', categoryOriginal);
+      const existingPermissions = await tx.permission.findMany({
+        where: {
           category: categoryOriginal,
-          name: item,
         },
       });
-      console.log('Created new permission:', permission);
+      console.log('Found existing permissions (including deleted):', existingPermissions);
 
-      ids.add(permission.id);
-    }
+      // Create a map of lowercased name -> permission object for case-insensitive matching
+      const existingMap = new Map(
+        existingPermissions.map((p) => [p.name.toLowerCase(), p]),
+      );
+      console.log('Existing permissions map (lowercased):', Array.from(existingMap.keys()));
+
+      // Upsert (create or reactivate) each permission
+      for (const item of items) {
+        console.log('Processing item:', item);
+        const itemKey = item.toLowerCase();
+
+        // If we already have this permission (including soft-deleted), use/reactivate it
+        if (existingMap.has(itemKey)) {
+          const existing = existingMap.get(itemKey)!;
+          if (existing.deletedAt) {
+            console.log('Reactivating soft-deleted permission:', existing.id);
+            // Reactivate the permission (clear deletedAt)
+            await tx.permission.update({
+              where: { id: existing.id },
+              data: { deletedAt: null },
+            });
+          } else {
+            console.log('Found existing active permission, using ID:', existing.id);
+          }
+
+          ids.add(existing.id);
+          continue;
+        }
+
+        // Otherwise create a new permission
+        console.log('Creating new permission:', { category: categoryOriginal, name: item });
+        const permission = await tx.permission.create({
+          data: {
+            category: categoryOriginal,
+            name: item,
+          },
+        });
+        console.log('Created new permission:', permission);
+
+        ids.add(permission.id);
+      }
   }
 
   const result = Array.from(ids.values());
