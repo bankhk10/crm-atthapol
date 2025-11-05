@@ -64,7 +64,6 @@ function buildPermissionGroup(resource: string, actions: PermissionAction[]) {
 const approvalActions: PermissionAction[] = ["approve", "reject"];
 const manageActions: PermissionAction[] = ["view", "create", "edit", "delete", ...approvalActions];
 const contributeActions: PermissionAction[] = ["view", "create", "edit"];
-const viewOnly: PermissionAction[] = ["view"];
 const viewCreateActions: PermissionAction[] = ["view", "create"];
 
 // Roles
