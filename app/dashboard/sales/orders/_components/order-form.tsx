@@ -49,24 +49,7 @@ const DEFAULT_ITEM: OrderItemInput = {
   discountAmount: "",
 };
 
-const STATUS_OPTIONS = [
-  { value: "DRAFT", label: "ร่าง" },
-  { value: "PENDING_APPROVAL", label: "รออนุมัติ" },
-  { value: "APPROVED", label: "อนุมัติ" },
-  { value: "REJECTED", label: "ปฏิเสธ" },
-  { value: "AWAITING_STOCK", label: "รอสินค้า" },
-  { value: "READY_TO_SHIP", label: "รอจัดส่ง" },
-  { value: "IN_TRANSIT", label: "อยู่ระหว่างจัดส่ง" },
-  { value: "COMPLETED", label: "สำเร็จ" },
-  { value: "CANCELLED", label: "ยกเลิก" },
-];
-
-const PAYMENT_STATUS_OPTIONS = [
-  { value: "UNPAID", label: "ยังไม่ชำระ" },
-  { value: "PARTIAL", label: "บางส่วน" },
-  { value: "PAID", label: "ชำระแล้ว" },
-  { value: "OVERDUE", label: "เกินกำหนด" },
-];
+// สถานะและสถานะชำระเงินถูกย้ายไปเปลี่ยนที่หน้า /dashboard/sales/orders
 
 // Safely convert any value to a finite number; fallback to 0 for NaN/Infinity
 function toNumberOrZero(v: unknown): number {
@@ -152,7 +135,6 @@ export function OrderForm({
   const [shipPostalCode, setShipPostalCode] = useState<string | undefined>(initial?.shipPostalCode);
   const [status, setStatus] = useState(initial?.status ?? "DRAFT");
   const [paymentStatus, setPaymentStatus] = useState(initial?.paymentStatus ?? "UNPAID");
-  const [workflowStatus, setWorkflowStatus] = useState<string>(initial?.status ?? "DRAFT");
   const [shippingFee, setShippingFee] = useState<number | "">(initial?.shippingFee ?? 0);
   const [otherCharges, setOtherCharges] = useState<number | "">(initial?.otherCharges ?? 0);
   const [poNumber, setPoNumber] = useState(initial?.poNumber ?? "");
@@ -170,13 +152,11 @@ export function OrderForm({
   const [promotionLoading, setPromotionLoading] = useState(false);
   const [promotionSupported, setPromotionSupported] = useState<boolean | null>(null);
   const [orderDiscount, setOrderDiscount] = useState<number | "">(initial?.orderDiscount ?? 0);
-  const [rejectReason, setRejectReason] = useState<string>(initial?.rejectReason ?? "");
-  const [cancelReason, setCancelReason] = useState<string>(initial?.cancelReason ?? "");
+  // ยกเลิกฟิลด์เหตุผลปฏิเสธ/ยกเลิกในฟอร์ม
   const [autoPromotion, setAutoPromotion] = useState(false);
   const [customerChangeDialogOpen, setCustomerChangeDialogOpen] = useState(false);
   const [pendingCustomer, setPendingCustomer] = useState<Option | null>(null);
-  const [statusConfirmOpen, setStatusConfirmOpen] = useState(false);
-  const [pendingWorkflow, setPendingWorkflow] = useState<string | null>(null);
+  // ยกเลิก state สำหรับยืนยันการเปลี่ยนสถานะ (ย้ายการเปลี่ยนไปหน้า list)
 
   // Raw input buffers for decimal fields to allow intermediate values like "12."
   const [promotionAmountInput, setPromotionAmountInput] = useState<string | null>(null);
@@ -201,16 +181,10 @@ export function OrderForm({
     return net;
   }, [totals, orderDiscount]);
 
-  const allowedStatusOptions = STATUS_OPTIONS;
-
   // session for admin-only status control
   const { data: session } = useSession();
   const isAdmin = String((session as any)?.user?.role || "").toUpperCase() === "ADMIN";
-
-  // Admin: require reason fields when choosing REJECTED/CANCELLED
-  // Non-admin: editing always resubmits for approval; no reason fields
-  const needRejectReason = isAdmin ? workflowStatus === "REJECTED" : false;
-  const needCancelReason = isAdmin ? workflowStatus === "CANCELLED" : false;
+  // ยกเลิกการบังคับเหตุผลปฏิเสธ/ยกเลิกในฟอร์ม (ย้ายไปที่หน้า list)
 
   const handleFillRandom = () =>
     fillOrderFormRandom({
@@ -311,68 +285,15 @@ export function OrderForm({
     setDueDate(iso);
   }, [creditTermDays, orderDate, paymentCondition]);
 
-  // Initialize workflow display: create -> PENDING_APPROVAL; edit -> map backend to UI workflow
+  // create: ให้สถานะ backend เริ่มเป็น CONFIRMED (รออนุมัติ)
   useEffect(() => {
-    function workflowFromBackend(status?: string, pay?: string) {
-      const s = String(status || "");
-      const p = String(pay || "");
-      if (s === "DRAFT") return "DRAFT";
-      if (s === "CANCELLED") return "CANCELLED";
-      if (s === "INVOICED") return "READY_TO_SHIP";
-      if (s === "SHIPPED") return p === "PAID" ? "COMPLETED" : "IN_TRANSIT";
-      if (s === "APPROVED") return "APPROVED";
-      if (s === "PENDING") return "READY_TO_SHIP";
-      if (s === "EXPIRED") return "EXPIRED";
-      if (s === "CONFIRMED") return "PENDING_APPROVAL";
-      return "DRAFT";
-    }
     if (mode === "create") {
-      setWorkflowStatus("PENDING_APPROVAL");
-      // reflect to backend mapping
       setStatus("CONFIRMED");
-    } else if (initial?.status) {
-      const wf = workflowFromBackend(initial.status as any, (initial as any)?.paymentStatus ?? paymentStatus);
-      setWorkflowStatus(wf);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const applyWorkflowMapping = (wf: string) => {
-    setWorkflowStatus(wf);
-    switch (wf) {
-      case "DRAFT":
-        setStatus("DRAFT");
-        setPaymentStatus("UNPAID");
-        break;
-      case "PENDING_APPROVAL":
-        setStatus("CONFIRMED");
-        break;
-      case "APPROVED":
-        setStatus("APPROVED");
-        break;
-      case "REJECTED":
-        setStatus("REJECTED");
-        break;
-      case "AWAITING_STOCK":
-        setStatus("CONFIRMED");
-        break;
-      case "READY_TO_SHIP":
-        setStatus("PENDING");
-        break;
-      case "IN_TRANSIT":
-        setStatus("SHIPPED");
-        break;
-      case "COMPLETED":
-        setStatus("SHIPPED");
-        setPaymentStatus("PAID");
-        break;
-      case "CANCELLED":
-        setStatus("CANCELLED");
-        break;
-      default:
-        break;
-    }
-  };
+  // ยกเลิกตัวช่วย mapping workflow (ไม่ใช้ในฟอร์มแล้ว)
 
   const canSubmit =
     customerId &&
@@ -387,8 +308,7 @@ export function OrderForm({
       (promotionAmount !== "" &&
         Number(promotionAmount) > 0 &&
         (promotionAvailable === null || Number(promotionAmount) <= Number(promotionAvailable)))) &&
-    (!needRejectReason || (rejectReason || "").trim().length > 0) &&
-    (!needCancelReason || (cancelReason || "").trim().length > 0);
+    true;
 
   const handleSubmit = async () => {
     if (!canSubmit || isSubmitting) return;
@@ -413,8 +333,11 @@ export function OrderForm({
         return parts.join(" ");
       };
 
-      // Admin may set any status; others always (re)submit for approval
-      const statusForSubmit = isAdmin ? (status || "CONFIRMED") : "CONFIRMED";
+      // สำหรับหน้าแก้ไข: ไม่ให้เปลี่ยนสถานะ/สถานะชำระเงินในฟอร์ม ใช้ค่าปัจจุบันของเอกสาร
+      // สำหรับหน้าสร้าง: คงลอจิกเดิม (แอดมินเลือกได้, ผู้ใช้ทั่วไปส่งเข้ารออนุมัติ)
+      const statusForSubmit = mode === "edit"
+        ? (initial?.status ?? status)
+        : (isAdmin ? (status || "CONFIRMED") : "CONFIRMED");
       const payload: any = {
         customerId,
         salespersonId: salespersonId || undefined,
@@ -443,7 +366,7 @@ export function OrderForm({
             shipPostalCode,
           ) || undefined,
         status: statusForSubmit,
-        paymentStatus,
+        paymentStatus: (mode === "edit" ? (initial?.paymentStatus ?? paymentStatus) : paymentStatus),
         shippingFee: Number(shippingFee || 0),
         otherCharges: Number(otherCharges || 0),
         orderDiscount: orderDiscount === "" ? 0 : Number(orderDiscount || 0),
@@ -451,8 +374,6 @@ export function OrderForm({
         promotionAmount: promotionAmount === "" ? undefined : Number(promotionAmount),
         poNumber: poNumber || undefined,
         note: note || undefined,
-        rejectReason: needRejectReason ? (rejectReason || "").trim() : undefined,
-        cancelReason: needCancelReason ? (cancelReason || "").trim() : undefined,
         items: items.map((it) => ({
           productId: it.productId,
           productCodeSnapshot: it.productCodeSnapshot,
@@ -689,19 +610,7 @@ export function OrderForm({
               disabled={paymentCondition !== "POSTPAID"}
             />
           </LocalizationProvider>
-          <TextField
-            select
-            label="สถานะชำระเงิน"
-            value={paymentStatus}
-            onChange={(e) => setPaymentStatus(e.target.value)}
-            fullWidth
-          >
-            {PAYMENT_STATUS_OPTIONS.map((s) => (
-              <MenuItem key={s.value} value={s.value}>
-                {s.label}
-              </MenuItem>
-            ))}
-          </TextField>
+          {/* ซ่อนการเปลี่ยนสถานะการชำระเงินในฟอร์ม (เปลี่ยนที่หน้า list) */}
         </Stack>
       </Box>
 
@@ -828,65 +737,7 @@ export function OrderForm({
         />
       </Box>
 
-      {/* สถานะเอกสาร */}
-      <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
-        <Typography variant="h6" fontWeight={960}>
-          สถานะ
-        </Typography>
-      </Box>
-      <Box>
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-          <TextField
-            select
-            label="สถานะ"
-            value={workflowStatus as any}
-            onChange={(e) => {
-              const v = e.target.value as string;
-              if (isAdmin && (v === "REJECTED" || v === "CANCELLED")) {
-                setPendingWorkflow(v);
-                setStatusConfirmOpen(true);
-              } else {
-                applyWorkflowMapping(v);
-              }
-            }}
-            fullWidth
-            disabled={!isAdmin}
-          >
-            {allowedStatusOptions.map((s) => (
-              <MenuItem key={s.value} value={s.value}>
-                {s.label}
-              </MenuItem>
-            ))}
-          </TextField>
-        </Stack>
-      </Box>
-
-      {needRejectReason && (
-        <TextField
-          label="เหตุผลการปฏิเสธ"
-          value={rejectReason}
-          onChange={(e) => setRejectReason(e.target.value)}
-          fullWidth
-          multiline
-          minRows={2}
-          required
-          error={(rejectReason || "").trim().length === 0}
-          helperText={(rejectReason || "").trim().length === 0 ? "กรอกเหตุผลการปฏิเสธ" : undefined}
-        />
-      )}
-      {needCancelReason && (
-        <TextField
-          label="เหตุผลการยกเลิก"
-          value={cancelReason}
-          onChange={(e) => setCancelReason(e.target.value)}
-          fullWidth
-          multiline
-          minRows={2}
-          required
-          error={(cancelReason || "").trim().length === 0}
-          helperText={(cancelReason || "").trim().length === 0 ? "กรอกเหตุผลการยกเลิก" : undefined}
-        />
-      )}
+      {/* สถานะเอกสารถูกย้ายไปเปลี่ยนที่หน้า /dashboard/sales/orders */}
 
       {/* รายการสินค้า */}
       <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
@@ -1269,34 +1120,7 @@ export function OrderForm({
       />
       {isSubmitting && <Loader fullscreen />}
 
-      {/* Confirm status change to REJECTED/CANCELLED */}
-      <Dialog open={statusConfirmOpen} onClose={() => { setStatusConfirmOpen(false); setPendingWorkflow(null); }}>
-        <DialogTitle>ยืนยันการเปลี่ยนสถานะ</DialogTitle>
-        <DialogContent>
-          <Typography>
-            {`คุณต้องการเปลี่ยนสถานะเป็น "${STATUS_OPTIONS.find(s => s.value === pendingWorkflow)?.label ?? pendingWorkflow}" ใช่หรือไม่?`}
-          </Typography>
-          {(pendingWorkflow === "REJECTED" || pendingWorkflow === "CANCELLED") && (
-            <Typography variant="body2" sx={{ mt: 1.5, color: 'text.secondary' }}>
-              การดำเนินการนี้อาจมีผลต่อเอกสาร โปรดตรวจสอบให้แน่ใจ และกรอกเหตุผลด้านล่างก่อนบันทึก
-            </Typography>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => { setStatusConfirmOpen(false); setPendingWorkflow(null); }}>ยกเลิก</Button>
-          <Button
-            variant="contained"
-            color="error"
-            onClick={() => {
-              if (pendingWorkflow) applyWorkflowMapping(pendingWorkflow);
-              setStatusConfirmOpen(false);
-              setPendingWorkflow(null);
-            }}
-          >
-            ยืนยัน
-          </Button>
-        </DialogActions>
-      </Dialog>
+      
 
       {/* Confirm customer change while using promotion */}
       <Dialog open={customerChangeDialogOpen} onClose={() => setCustomerChangeDialogOpen(false)}>
