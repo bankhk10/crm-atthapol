@@ -57,7 +57,6 @@ export function RoleFormDialog({
   onSubmit,
 }: RoleFormDialogProps) {
   const [values, setValues] = useState<RoleFormValues>(defaultFormValues);
-  const [permissionInputs, setPermissionInputs] = useState<string[]>([]);
   const [dialogError, setDialogError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -65,6 +64,7 @@ export function RoleFormDialog({
       return;
     }
 
+    setDialogError(null);
     setValues({
       key: initialValues.key ?? "",
       name: initialValues.name ?? "",
@@ -72,8 +72,6 @@ export function RoleFormDialog({
       department: initialValues.department ?? "",
       permissions: initialValues.permissions ?? [],
     });
-
-    setPermissionInputs(initialValues.permissions?.map(() => "") ?? []);
   }, [initialValues, open]);
 
   const categoryOptions = useMemo(
@@ -102,7 +100,6 @@ export function RoleFormDialog({
       ...prev,
       permissions: [...prev.permissions, { category: "", items: [] }],
     }));
-    setPermissionInputs((prev) => [...prev, ""]);
   };
 
   const handleRemovePermissionGroup = (index: number) => {
@@ -110,18 +107,11 @@ export function RoleFormDialog({
       ...prev,
       permissions: prev.permissions.filter((_, i) => i !== index),
     }));
-    setPermissionInputs((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handlePermissionCategoryChange = (
-    index: number,
-    value: string,
-  ) => {
-    const trimmed = value.trim();
-    
+  const handlePermissionCategoryChange = (index: number, value: string) => {
     setValues((prev) => {
       const draft = [...prev.permissions];
-      // Keep existing items when changing category
       const currentGroup = draft[index];
       draft[index] = {
         ...currentGroup,
@@ -130,45 +120,21 @@ export function RoleFormDialog({
       };
       return { ...prev, permissions: draft };
     });
+  };
 
-    // If the category matches a library group, clear the input
-    const matchedLibraryGroup = permissionLibrary.find(
-      (libraryGroup) => libraryGroup.category.toLowerCase() === trimmed.toLowerCase(),
-    );
-    if (matchedLibraryGroup) {
-      setPermissionInputs((prev) => {
-        const draft = [...prev];
-        draft[index] = "";
-        return draft;
-      });
+  const handlePermissionItemsChange = (index: number, items: string[]) => {
+    // Deduplicate while preserving order
+    const seen = new Set<string>();
+    const next = [] as string[];
+    for (const it of items) {
+      const k = it.trim();
+      if (!k) continue;
+      const key = k.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      next.push(k);
     }
-  };
-
-  const handlePermissionInputChange = (index: number, value: string) => {
-    setPermissionInputs((prev) => {
-      const draft = [...prev];
-      draft[index] = value;
-      return draft;
-    });
-  };
-
-  const addPermissionToGroup = (index: number) => {
-    const rawValue = (permissionInputs[index] ?? "").trim();
-    if (!rawValue) return;
-
-    handleUpdatePermissionGroup(index, (group) => {
-      const existing = new Set(group.items.map((item) => item.trim().toLowerCase()));
-      if (existing.has(rawValue.toLowerCase())) {
-        return group;
-      }
-
-      return {
-        ...group,
-        items: [...group.items, rawValue],
-      };
-    });
-
-    handlePermissionInputChange(index, "");
+    handleUpdatePermissionGroup(index, (group) => ({ ...group, items: next }));
   };
 
   const removePermissionFromGroup = (index: number, item: string) => {
@@ -182,23 +148,7 @@ export function RoleFormDialog({
     event.preventDefault();
     if (submitting) return;
 
-    // Add validation for permissions
-    if (!values.permissions || values.permissions.length === 0) {
-      setDialogError("กรุณาเพิ่มสิทธิ์อย่างน้อย 1 รายการ");
-      return;
-    }
-
-    // Validate each permission group
-    for (const group of values.permissions) {
-      if (!group.category.trim()) {
-        setDialogError("กรุณากรอกชื่อหมวดสิทธิ์ให้ครบถ้วน");
-        return;
-      }
-      if (!group.items || group.items.length === 0) {
-        setDialogError(`กรุณาเพิ่มสิทธิ์ในหมวด "${group.category}" อย่างน้อย 1 รายการ`);
-        return;
-      }
-    }
+    setDialogError(null);
 
     const payload: RoleFormValues = {
       key: values.key.trim().toUpperCase(),
@@ -215,7 +165,6 @@ export function RoleFormDialog({
         .filter((group) => group.category && group.items.length > 0),
     };
 
-    console.log('Submitting form with payload:', payload);
     onSubmit(payload);
   };
 
@@ -330,10 +279,8 @@ export function RoleFormDialog({
                     submitting={submitting}
                     categoryOptions={categoryOptions}
                     availableItems={availableItems}
-                    inputValue={permissionInputs[index] ?? ""}
                     onCategoryChange={handlePermissionCategoryChange}
-                    onInputChange={handlePermissionInputChange}
-                    onAddItem={addPermissionToGroup}
+                    onItemsChange={handlePermissionItemsChange}
                     onRemoveItem={removePermissionFromGroup}
                     onRemoveGroup={handleRemovePermissionGroup}
                   />
@@ -362,10 +309,8 @@ type PermissionGroupSectionProps = {
   submitting: boolean;
   categoryOptions: string[];
   availableItems: string[];
-  inputValue: string;
   onCategoryChange: (index: number, value: string) => void;
-  onInputChange: (index: number, value: string) => void;
-  onAddItem: (index: number) => void;
+  onItemsChange: (index: number, items: string[]) => void;
   onRemoveItem: (index: number, item: string) => void;
   onRemoveGroup: (index: number) => void;
 };
@@ -376,10 +321,8 @@ function PermissionGroupSection({
   submitting,
   categoryOptions,
   availableItems,
-  inputValue,
   onCategoryChange,
-  onInputChange,
-  onAddItem,
+  onItemsChange,
   onRemoveItem,
   onRemoveGroup,
 }: PermissionGroupSectionProps) {
@@ -387,18 +330,25 @@ function PermissionGroupSection({
     <Stack spacing={2} sx={{ border: 1, borderColor: "divider", borderRadius: 2, p: 2 }}>
       <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ sm: "flex-start" }}>
         <TextField
+          select
           label="หมวดสิทธิ์"
           value={group.category}
           onChange={(event) => onCategoryChange(index, event.target.value)}
-          placeholder="เช่น การจัดการผู้ใช้"
           fullWidth
           disabled={submitting}
-          helperText={
-            categoryOptions.length > 0
-              ? `หมวดที่มีอยู่: ${categoryOptions.join(", ")}`
-              : undefined
-          }
-        />
+          SelectProps={{
+            displayEmpty: true,
+          }}
+        >
+          <MenuItem value="" disabled>
+            {/* <em>เลือกหมวดสิทธิ์</em> */}
+          </MenuItem>
+          {categoryOptions.map((category) => (
+            <MenuItem key={category} value={category}>
+              {category}
+            </MenuItem>
+          ))}
+        </TextField>
         <Button
           startIcon={<RemoveCircleOutlineIcon />}
           color="error"
@@ -413,40 +363,36 @@ function PermissionGroupSection({
       <Divider sx={{ mx: -2 }} />
 
       <Stack spacing={1.5}>
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
-          <TextField
-            label="เพิ่มสิทธิ์ในหมวดนี้"
-            value={inputValue}
-            onChange={(event) => onInputChange(index, event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                onAddItem(index);
-              }
-            }}
-            placeholder="เช่น สร้างผู้ใช้"
-            fullWidth
-            disabled={submitting}
-            helperText={
-              availableItems.length > 0
-                ? `สิทธิ์ที่มีอยู่: ${availableItems.join(", ")}`
-                : undefined
-            }
-          />
-          <Button
-            variant="outlined"
-            onClick={() => onAddItem(index)}
-            disabled={submitting}
-            sx={{ flexShrink: 0 }}
-          >
-            เพิ่มสิทธิ์
-          </Button>
-        </Stack>
+        <TextField
+          select
+          label="สิทธิ์ในหมวดนี้"
+          value={group.items}
+          onChange={(event) => {
+            const value = event.target.value as string | string[];
+            const next = Array.isArray(value) ? value : value.split(",");
+            onItemsChange(index, next);
+          }}
+          placeholder="เลือกสิทธิ์"
+          fullWidth
+          disabled={submitting || !group.category.trim()}
+          SelectProps={{ multiple: true }}
+          helperText={
+            availableItems.length > 0
+              ? `สิทธิ์ที่มีอยู่: ${availableItems.join(", ")}`
+              : undefined
+          }
+        >
+          {Array.from(new Set([...(availableItems || []), ...(group.items || [])])).map((item) => (
+            <MenuItem key={item} value={item}>
+              {item}
+            </MenuItem>
+          ))}
+        </TextField>
 
         <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
           {group.items.length === 0 && (
             <Typography variant="body2" color="text.secondary">
-              ยังไม่มีสิทธิ์ในหมวดนี้ เพิ่มสิทธิ์ใหม่ได้จากด้านบน
+              ยังไม่มีสิทธิ์ในหมวดนี้ เลือกจากรายการด้านบน
             </Typography>
           )}
           {group.items.map((item) => (
