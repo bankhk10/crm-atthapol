@@ -34,6 +34,7 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import SyncAltIcon from "@mui/icons-material/SyncAlt";
 import FirstPageIcon from "@mui/icons-material/FirstPage";
 import LastPageIcon from "@mui/icons-material/LastPage";
 import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
@@ -192,6 +193,13 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
   const [confirm, setConfirm] = useState<null | { type: "cancel" | "delete"; order: OrderItem }>(
     null,
   );
+  const [statusDlg, setStatusDlg] = useState<{
+    open: boolean;
+    order: OrderItem | null;
+    action: "APPROVED" | "REJECTED" | "CANCELLED" | "";
+    payment: "UNPAID" | "PARTIAL" | "PAID" | "OVERDUE" | "";
+    note: string;
+  }>({ open: false, order: null, action: "", payment: "", note: "" });
   // edit dialog removed; navigate to edit page instead
 
   // Sorting & Pagination (match products table UX)
@@ -214,6 +222,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
   const canDelete = hasPermission(session?.user?.permissions, "sales", "delete");
   const canEdit = hasPermission(session?.user?.permissions, "sales", "edit");
   const canApprove = hasPermission(session?.user?.permissions, "sales", "approve");
+  const canReject = hasPermission(session?.user?.permissions, "sales", "reject");
 
   const chips = useMemo(() => WORKFLOW_STATUS_OPTIONS, []);
   const paymentChips = useMemo(
@@ -253,6 +262,118 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
       // ignore
     } finally {
       setLoading(false);
+    }
+  };
+
+  const doStatusChange = async () => {
+    if (!statusDlg.open || !statusDlg.order) return;
+    const order = statusDlg.order;
+    const action = statusDlg.action;
+    const newPayment = statusDlg.payment;
+    const note = statusDlg.note?.trim();
+    const wantsPayment = Boolean(newPayment) && newPayment !== order.paymentStatus;
+    const wantsDocChange = Boolean(action) && action !== order.status;
+    const wantsDocApproveRejectCancel = wantsDocChange && (action === "APPROVED" || action === "REJECTED" || action === "CANCELLED");
+    const wantsDocViaPut = wantsDocChange && !(["APPROVED", "REJECTED", "CANCELLED"] as const).includes(action as any);
+    if (!wantsPayment && !wantsDocChange) return; // nothing to change
+    setBusyId(order.id);
+    try {
+      if (wantsDocApproveRejectCancel && action === "APPROVED") {
+        const res = await fetch(`/api/sales/orders/${order.id}/approve`, { method: "POST" });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data?.error || "อนุมัติไม่สำเร็จ");
+        }
+      } else if (wantsDocApproveRejectCancel && action === "REJECTED") {
+        const payload = note ? { reason: note } : undefined;
+        const res = await fetch(`/api/sales/orders/${order.id}/reject`, {
+          method: "POST",
+          headers: payload ? { "Content-Type": "application/json" } : undefined,
+          body: payload ? JSON.stringify(payload) : undefined,
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data?.error || "ปฏิเสธไม่สำเร็จ");
+        }
+      } else if (wantsDocApproveRejectCancel && action === "CANCELLED") {
+        const payload = note ? { reason: note } : undefined;
+        const res = await fetch(`/api/sales/orders/${order.id}/cancel`, {
+          method: "POST",
+          headers: payload ? { "Content-Type": "application/json" } : undefined,
+          body: payload ? JSON.stringify(payload) : undefined,
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data?.error || "ยกเลิกไม่สำเร็จ");
+        }
+      }
+
+      // Decide if we still need a PUT (for payment change and/or non-special doc status change)
+      if (wantsPayment || wantsDocViaPut) {
+        // Fetch current order then PUT with same fields + changes
+        const resGet = await fetch(`/api/sales/orders/${order.id}`);
+        if (!resGet.ok) {
+          const data = await resGet.json().catch(() => ({}));
+          throw new Error(data?.error || "โหลดข้อมูลไม่สำเร็จ");
+        }
+        const so = await resGet.json();
+        const payload: any = {
+          customerId: so.customerId,
+          salespersonId: so.salespersonId || undefined,
+          orderDate: so.orderDate ? new Date(so.orderDate).toISOString() : undefined,
+          dueDate: so.dueDate ? new Date(so.dueDate).toISOString() : undefined,
+          shippingDate: so.shippingDate ? new Date(so.shippingDate).toISOString() : undefined,
+          creditTermDays: typeof so.creditTermDays === "number" ? so.creditTermDays : undefined,
+          paymentCondition: (so.paymentCondition as any) === "POSTPAID" ? "POSTPAID" : "PREPAID",
+          currency: so.currency || "THB",
+          vatIncluded: Boolean(so.vatIncluded),
+          vatRate: Number(so.vatRate || 0),
+          billTo: so.billTo || undefined,
+          shipTo: so.shipTo || undefined,
+          status: wantsDocViaPut ? action : String(so.status || "DRAFT"),
+          paymentStatus: wantsPayment ? newPayment : String(so.paymentStatus || "UNPAID"),
+          shippingFee: Number(so.shippingFee ?? 0),
+          otherCharges: Number(so.otherCharges ?? 0),
+          orderDiscount: Number((so as any).orderDiscount ?? 0),
+          usePromotion: Number((so as any).promotionSpent || 0) > 0,
+          promotionAmount: Number((so as any).promotionSpent || 0) > 0 ? Number((so as any).promotionSpent || 0) : undefined,
+          poNumber: (so as any).poNumber || undefined,
+          note: so.note || undefined,
+          rejectReason: (so as any).rejectReason || undefined,
+          cancelReason: (so as any).cancelReason || undefined,
+          items: (so.items || []).map((it: any) => ({
+            productId: it.productId ?? undefined,
+            productCodeSnapshot: it.productCodeSnapshot ?? undefined,
+            nameSnapshot: it.nameSnapshot ?? "",
+            unit: it.unit ?? undefined,
+            qty: Number(it.qty || 0),
+            unitPrice: Number(it.unitPrice || 0),
+            discountPercent: Number(it.discountPercent || 0),
+            discountAmount: Number(it.discountAmount || 0),
+            lineVatRate: typeof it.lineVatRate === 'number' ? it.lineVatRate : undefined,
+            lotNumber: it.lotNumber ?? undefined,
+            mfgDate: it.mfgDate ? new Date(it.mfgDate).toISOString() : undefined,
+            expDate: it.expDate ? new Date(it.expDate).toISOString() : undefined,
+            note: it.note ?? undefined,
+          })),
+        };
+        const resPut = await fetch(`/api/sales/orders/${order.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!resPut.ok) {
+          const data = await resPut.json().catch(() => ({}));
+          throw new Error(data?.error || 'อัปเดตสถานะไม่สำเร็จ');
+        }
+      }
+      setStatusDlg({ open: false, order: null, action: "", note: "" });
+      await load();
+    } catch (e) {
+      // eslint-disable-next-line no-alert
+      alert(e instanceof Error ? e.message : "อัปเดตสถานะไม่สำเร็จ");
+    } finally {
+      setBusyId(null);
     }
   };
 
@@ -652,7 +773,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
                     label={`ชำระ: ${PAYMENT_STATUS_LABEL[o.paymentStatus] || o.paymentStatus}`}
                   />
                 </Stack>
-                {(canView || canEdit || canCancel || canDelete) && (
+                {(canView || canEdit || canCancel || canDelete || canApprove) && (
                   <Stack direction="row" spacing={0.5} justifyContent="flex-end">
                     {canView && (
                       <Tooltip title="ดูรายละเอียด" arrow>
@@ -680,6 +801,38 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
                             onClick={() => router.push(`/dashboard/sales/orders/${o.id}/edit`)}
                           >
                             <EditOutlinedIcon fontSize="small" />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                    )}
+                    \n{" "}
+                    {!isTerminal && (canApprove || canReject || canEdit) && (
+                      <Tooltip title="เปลี่ยนสถานะ/เพิ่มหมายเหตุ" arrow>
+                        <span>
+                          <IconButton
+                            size="small"
+                            color="info"
+                            disabled={busyId === o.id}
+                            onClick={() => {
+                              const current = o.status as any;
+                              const allowed = canApprove
+                                ? [
+                                    "DRAFT",
+                                    "CONFIRMED",
+                                    "APPROVED",
+                                    "REJECTED",
+                                    "PENDING",
+                                    "SHIPPED",
+                                    "INVOICED",
+                                    "EXPIRED",
+                                    "CANCELLED",
+                                  ]
+                                : (canReject ? ["REJECTED", "CANCELLED"] : []);
+                              const nextAction = (allowed as any).includes(current) ? current : "";
+                              setStatusDlg({ open: true, order: o, action: nextAction as any, payment: (o.paymentStatus as any), note: "" });
+                            }}
+                          >
+                            <SyncAltIcon fontSize="small" />
                           </IconButton>
                         </span>
                       </Tooltip>
@@ -836,7 +989,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
                     </Tooltip>
                   </TableCell>
                   {(canView || canEdit || canCancel || canDelete || canApprove) && (
-                    <TableCell align="center" sx={{ width: 180, px: 2 }}>
+                    <TableCell align="center" sx={{ width: 220, px: 2 }}>
                       <Stack direction="row" spacing={0.5} justifyContent="center">
                         {canView && (
                           <Tooltip title="ดูรายละเอียด" arrow>
@@ -867,7 +1020,40 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
                             </span>
                           </Tooltip>
                         )}
-                      
+
+                        {/* Change status */}
+                        {!isTerminal && (canApprove || canReject || canEdit) && (
+                          <Tooltip title="เปลี่ยนสถานะ/เพิ่มหมายเหตุ" arrow>
+                            <span>
+                              <IconButton
+                                size="small"
+                                color="info"
+                                disabled={busyId === o.id}
+                                onClick={() => {
+                                  const current = o.status as any;
+                                  const allowed = canApprove
+                                    ? [
+                                        "DRAFT",
+                                        "CONFIRMED",
+                                        "APPROVED",
+                                        "REJECTED",
+                                        "PENDING",
+                                        "SHIPPED",
+                                        "INVOICED",
+                                        "EXPIRED",
+                                        "CANCELLED",
+                                      ]
+                                    : (canReject ? ["REJECTED", "CANCELLED"] : []);
+                                  const nextAction = (allowed as any).includes(current) ? current : "";
+                                  setStatusDlg({ open: true, order: o, action: nextAction as any, payment: (o.paymentStatus as any), note: "" });
+                                }}
+                              >
+                                <SyncAltIcon fontSize="small" />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        )}
+
                         {!isTerminal && canDelete && (
                           <Tooltip title="ลบ" arrow>
                             <span>
@@ -979,6 +1165,86 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
             color={confirm?.type === "delete" ? "error" : "warning"}
           >
             ยืนยัน
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Change status dialog */}
+      <Dialog open={statusDlg.open} onClose={() => setStatusDlg({ open: false, order: null, action: "", payment: "", note: "" })}>
+        <DialogTitle>เปลี่ยนสถานะเอกสาร/การชำระเงิน</DialogTitle>
+        <DialogContent>
+          <Stack spacing={1.5} sx={{ mt: 1 }}>
+            <TextField
+              select
+              label="เลือกสถานะใหม่"
+              value={statusDlg.action}
+              onChange={(e) => setStatusDlg((prev) => ({ ...prev, action: (e.target.value as any) }))}
+              fullWidth
+              size="small"
+              SelectProps={{ native: true }}
+            >
+              <option value="">— โปรดเลือก —</option>
+              {canApprove ? (
+                <>
+                  <option value="DRAFT">ร่าง</option>
+                  <option value="CONFIRMED">ยืนยัน</option>
+                  <option value="APPROVED">อนุมัติ</option>
+                  <option value="REJECTED">ปฏิเสธ</option>
+                  <option value="PENDING">รอจัดส่ง</option>
+                  <option value="SHIPPED">จัดส่งแล้ว</option>
+                  <option value="INVOICED">ออกเอกสารแล้ว</option>
+                  <option value="EXPIRED">หมดอายุ</option>
+                  <option value="CANCELLED">ยกเลิก</option>
+                </>
+              ) : (
+                <>
+                  {canReject && <option value="REJECTED">ปฏิเสธ</option>}
+                  {canReject && <option value="CANCELLED">ยกเลิก</option>}
+                </>
+              )}
+            </TextField>
+            <TextField
+              select
+              label="สถานะการชำระเงิน"
+              value={statusDlg.payment}
+              onChange={(e) => setStatusDlg((prev) => ({ ...prev, payment: (e.target.value as any) }))}
+              fullWidth
+              size="small"
+              SelectProps={{ native: true }}
+            >
+              <option value="">— ไม่เปลี่ยน —</option>
+              <option value="UNPAID">ยังไม่ชำระ</option>
+              <option value="PARTIAL">ชำระบางส่วน</option>
+              <option value="PAID">ชำระแล้ว</option>
+              <option value="OVERDUE">เกินกำหนด</option>
+            </TextField>
+            {(statusDlg.action === "REJECTED" || statusDlg.action === "CANCELLED") && (
+              <TextField
+                label="หมายเหตุ/เหตุผล"
+                value={statusDlg.note}
+                onChange={(e) => setStatusDlg((prev) => ({ ...prev, note: e.target.value }))}
+                fullWidth
+                multiline
+                minRows={2}
+              />
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setStatusDlg({ open: false, order: null, action: "", payment: "", note: "" })} color="inherit">
+            ปิด
+          </Button>
+          <Button
+            onClick={doStatusChange}
+            variant="contained"
+            disabled={
+              !(
+                (Boolean(statusDlg.action) && statusDlg.action !== ((statusDlg.order as any)?.status)) ||
+                (Boolean(statusDlg.payment) && statusDlg.payment !== ((statusDlg.order as any)?.paymentStatus))
+              ) || ((statusDlg.action === 'REJECTED' || statusDlg.action === 'CANCELLED') && !statusDlg.note.trim())
+            }
+          >
+            บันทึก
           </Button>
         </DialogActions>
       </Dialog>
