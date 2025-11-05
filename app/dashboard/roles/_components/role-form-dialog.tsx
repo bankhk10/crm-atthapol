@@ -16,10 +16,12 @@ import {
   DialogTitle,
   Divider,
   IconButton,
+  MenuItem,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
+import { DEPARTMENTS } from "@/lib/departments";
 
 import type { PermissionLibraryGroup, RoleFormValues } from "../types";
 
@@ -251,14 +253,21 @@ export function RoleFormDialog({
           </Stack>
 
           <TextField
+            select
             label="แผนก (ถ้าต้องการจำกัด)"
             value={values.department}
-            onChange={handleFieldChange("department")}
-            placeholder="เช่น การขาย หรือ IT"
+            onChange={handleFieldChange("department") as any}
             fullWidth
             disabled={submitting}
             helperText="เว้นว่างหากบทบาทนี้ใช้ได้ทุกแผนก"
-          />
+          >
+            <MenuItem value="">ไม่กำหนด</MenuItem>
+            {DEPARTMENTS.map((dep) => (
+              <MenuItem key={dep} value={dep}>
+                {dep}
+              </MenuItem>
+            ))}
+          </TextField>
 
             <TextField
               label="รายละเอียดบทบาท"

@@ -1,6 +1,7 @@
 import type { EmployeeFormValues } from "@/app/dashboard/employees/types";
 import type { EmployeeRoleOption, RoleDefinitionOption } from "@/app/dashboard/employees/types";
 import { choice, randInt, randomCode } from "@/lib/random";
+import { DEPARTMENTS } from "@/lib/departments";
 
 const COMPANY_OPTIONS = [
   "บริษัท อินเตอร์ คร็อพ จำกัด",
@@ -78,7 +79,7 @@ export function makeRandomEmployeeValues(opts: {
     email,
     password: "P@ssw0rd123",
     position,
-    department: "การตลาด",
+    department: choice([...DEPARTMENTS]),
     company,
     responsibilityArea,
     address,

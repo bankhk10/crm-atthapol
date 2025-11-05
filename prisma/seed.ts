@@ -77,7 +77,7 @@ const roleSeeds: RoleSeed[] = [
     key: "admin",
     name: "ผู้ดูแลระบบ",
     description: "เข้าถึงทุกเมนูและปุ่มคำสั่งทั้งหมด",
-    department: "IT",
+    department: "แผนกเทคโนโลยีสารสนเทศ",
     permissions: [
       ...allPermissionKeys,
       // Visibility scope: admin sees all
@@ -88,7 +88,7 @@ const roleSeeds: RoleSeed[] = [
     key: "sales_manager",
     name: "ผู้จัดการฝ่ายขาย",
     description: "ติดตามการขายและดูแลข้อมูลลูกค้าและสินค้า",
-    department: "การขาย",
+    department: "แผนกบริหารงานขาย",
     permissions: [
       ...buildPermissionGroup("customers", manageActions),
       ...buildPermissionGroup("products", manageActions),
@@ -101,7 +101,7 @@ const roleSeeds: RoleSeed[] = [
     key: "sales_staff",
     name: "พนักงานฝ่ายขาย",
     description: "ดูแลข้อมูลลูกค้าและบันทึกยอดขาย",
-    department: "การขาย",
+    department: "แผนกบริหารงานขาย",
     permissions: [
       ...buildPermissionGroup("customers", contributeActions),
       ...buildPermissionGroup("sales", viewCreateActions),
@@ -121,7 +121,7 @@ const userSeeds: UserSeed[] = [
     employee: {
       employeeCode: "EMP-0001",
       position: "ผู้ดูแลระบบ",
-      department: "IT",
+      department: "แผนกเทคโนโลยีสารสนเทศ",
       phone: "0810000001",
       startDate: new Date("2024-01-01"),
     },
@@ -135,7 +135,7 @@ const userSeeds: UserSeed[] = [
     employee: {
       employeeCode: "EMP-0002",
       position: "ผู้จัดการฝ่ายขาย",
-      department: "การขาย",
+      department: "แผนกบริหารงานขาย",
       phone: "0810000002",
       startDate: new Date("2024-03-01"),
     },
@@ -149,7 +149,7 @@ const userSeeds: UserSeed[] = [
     employee: {
       employeeCode: "EMP-0003",
       position: "เจ้าหน้าที่ฝ่ายขาย",
-      department: "การขาย",
+      department: "แผนกบริหารงานขาย",
       phone: "0810000003",
       startDate: new Date("2024-06-01"),
     },
@@ -254,22 +254,22 @@ async function main() {
     if (u.employee) {
       const emp = await prisma.employee.upsert({
         where: { userId: user.id },
-        update: {
-          position: u.employee.position,
-          department: u.employee.department,
-          phone: u.employee.phone,
-          startDate: u.employee.startDate,
-          status: "ACTIVE",
-        },
-        create: {
-          userId: user.id,
-          employeeCode: u.employee.employeeCode,
-          position: u.employee.position,
-          department: u.employee.department,
-          phone: u.employee.phone,
-          startDate: u.employee.startDate,
-          status: "ACTIVE",
-        },
+      update: {
+        position: u.employee.position,
+        department: u.employee.department,
+        phone: u.employee.phone,
+        startDate: u.employee.startDate,
+        status: "ACTIVE",
+      },
+      create: {
+        userId: user.id,
+        employeeCode: u.employee.employeeCode,
+        position: u.employee.position,
+        department: u.employee.department,
+        phone: u.employee.phone,
+        startDate: u.employee.startDate,
+        status: "ACTIVE",
+      },
       });
       employees[user.email as string] = emp.id;
     }

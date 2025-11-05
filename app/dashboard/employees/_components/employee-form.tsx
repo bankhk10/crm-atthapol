@@ -16,6 +16,7 @@ import {
 } from "@mui/material";
 
 import type { EmployeeFormValues, EmployeeRoleOption, RoleDefinitionOption } from "../types";
+import { DEPARTMENTS } from "@/lib/departments";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -44,14 +45,8 @@ const statusOptions = [
   { value: "INACTIVE", label: "ออกจากงาน" },
 ];
 
-const departmentOptions = [
-  "เทคโนโลยีสารสนเทศ",
-  "การเงิน",
-  "บริหารงานาขาย",
-  "การตลาด",
-  "พัฒนาการตลาด",
-  "ธุระการขาย",
-];
+// Centralized department list
+const departmentOptions = [...DEPARTMENTS];
 
 export function EmployeeForm({
   title,
@@ -67,10 +62,7 @@ export function EmployeeForm({
   const [isSubmitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const departmentItems = useMemo(
-    () => [...departmentOptions].sort((a, b) => a.localeCompare(b)),
-    [],
-  );
+  const departmentItems = useMemo(() => [...departmentOptions], []);
 
   const selectedRole = useMemo(
     () => roleOptions.find((option) => option.value === values.role),
