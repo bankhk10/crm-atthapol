@@ -58,6 +58,9 @@ export async function createRole(rawValues: RoleFormValues) {
 }
 
 export async function updateRole(roleId: string, rawValues: RoleFormValues) {
+  // detect whether client actually sent the permissions field (to avoid accidental wipe)
+  const hasPermissionsInput =
+    rawValues && typeof rawValues === "object" && Object.prototype.hasOwnProperty.call(rawValues as any, "permissions");
   const values = roleFormSchema.parse(rawValues);
 
   await withActor(async () => {
@@ -72,52 +75,16 @@ export async function updateRole(roleId: string, rawValues: RoleFormValues) {
         },
       });
 
-      const permissionIds = await upsertPermissions(tx, values.permissions);
-      const nextPermissionSet = new Set(permissionIds);
-
-      const existingAssignments = await tx.rolePermission.findMany({
-        where: { roleId: role.id },
-      });
-
-      const existingSet = new Set(existingAssignments.map((assignment) => assignment.permissionId));
-
-      const toRemove = existingAssignments
-        .filter((assignment) => !nextPermissionSet.has(assignment.permissionId))
-        .map((assignment) => assignment.permissionId);
-
-      if (toRemove.length > 0) {
-        await tx.rolePermission.deleteMany({
-          where: {
-            roleId: role.id,
-            permissionId: { in: toRemove },
-          },
-        });
-      }
-
-      const toAdd = permissionIds.filter((id) => !existingSet.has(id));
-
-      if (toAdd.length > 0) {
-        // Reactivate soft-deleted assignments if they exist
-        await tx.rolePermission.updateMany({
-          where: {
-            roleId: role.id,
-            permissionId: { in: toAdd },
-            deletedAt: { not: null },
-          },
-          data: {
-            deletedAt: null,
-            assignedAt: new Date(),
-          },
-        });
-
-        // Create remaining new assignments (skip if they already exist)
-        await tx.rolePermission.createMany({
-          data: toAdd.map((permissionId) => ({
-            roleId: role.id,
-            permissionId,
-          })),
-          skipDuplicates: true,
-        });
+      if (hasPermissionsInput) {
+        const permissionIds = await upsertPermissions(tx, values.permissions);
+        // Replace assignments atomically to avoid diff edge cases
+        await tx.rolePermission.deleteMany({ where: { roleId: role.id } });
+        if (permissionIds.length > 0) {
+          await tx.rolePermission.createMany({
+            data: permissionIds.map((permissionId) => ({ roleId: role.id, permissionId })),
+            skipDuplicates: true,
+          });
+        }
       }
     });
   }).catch(handlePrismaError);
@@ -136,10 +103,11 @@ async function upsertPermissions(
   const ids = new Set<string>();
 
   for (const group of permissions) {
-    const category = group.category.trim();
+    // Normalize category/name to lowercase to avoid case-sensitive duplicates
+    const category = group.category.trim().toLowerCase();
     if (!category) continue;
 
-    const uniqueItems = Array.from(new Set((group.items ?? []).map((item) => item.trim()))).filter(
+    const uniqueItems = Array.from(new Set((group.items ?? []).map((item) => item.trim().toLowerCase()))).filter(
       Boolean,
     );
 
@@ -168,13 +136,17 @@ async function upsertPermissions(
 function handlePrismaError(error: unknown): never {
   if (error instanceof PrismaClientKnownRequestError) {
     if (error.code === "P2002") {
-      const target = (error.meta?.target as string[]) ?? [];
+      // Prisma can return target as string or string[] or index name
+      const rawTarget = (error.meta?.target ?? "") as string | string[];
+      const targets = Array.isArray(rawTarget) ? rawTarget : [String(rawTarget)];
+      const joined = targets.join(",").toLowerCase();
 
-      if (target.includes("key")) {
+      // Match by field or unique index name
+      if (joined.includes("roledefinition_key") || joined.includes("key")) {
         throw new Error("รหัสบทบาทนี้ถูกใช้งานแล้ว กรุณาใช้รหัสอื่น");
       }
 
-      if (target.includes("name")) {
+      if (joined.includes("roledefinition_name") || joined.includes("name")) {
         throw new Error("ชื่อบทบาทนี้ถูกใช้งานแล้ว กรุณาใช้ชื่ออื่น");
       }
     }

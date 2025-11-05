@@ -128,6 +128,39 @@ export const authOptions: NextAuthOptions = {
         safeToken.roleName = extended.roleName ?? null;
         safeToken.department = extended.department ?? null;
         safeToken.permissions = extended.permissions ?? [];
+      } else if (safeToken.id) {
+        // Refresh dynamic fields (permissions/role/department) from DB to reflect latest changes
+        try {
+          const userDb = await prisma.user.findUnique({
+            where: { id: String(safeToken.id) },
+            include: {
+              roleDefinition: {
+                include: {
+                  permissions: {
+                    where: { deletedAt: null, permission: { deletedAt: null } },
+                    include: { permission: true },
+                  },
+                },
+              },
+              employee: true,
+            },
+          });
+          if (userDb) {
+            const permissionSet = new Set<string>();
+            userDb.roleDefinition?.permissions.forEach((assignment) => {
+              const category = assignment.permission.category?.trim();
+              const name = assignment.permission.name?.trim();
+              if (category && name) permissionSet.add(`${category}:${name}`);
+            });
+            safeToken.role = userDb.role ?? safeToken.role;
+            safeToken.roleKey = userDb.roleDefinition?.key ?? null;
+            safeToken.roleName = userDb.roleDefinition?.name ?? null;
+            safeToken.department = userDb.employee?.department ?? null;
+            safeToken.permissions = Array.from(permissionSet.values());
+          }
+        } catch (e) {
+          // swallow errors to avoid breaking auth flow
+        }
       }
       return safeToken;
     },

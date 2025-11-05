@@ -378,6 +378,11 @@ export async function updateCustomer(customerId: string, rawValues: CustomerForm
   }
   const values = parsed.data;
   const session = await getServerSession(authOptions);
+  // Require edit permission
+  const perms = session?.user?.permissions ?? [];
+  if (!hasPermission(perms, "customers", "edit")) {
+    throw new Error("คุณไม่มีสิทธิ์แก้ไขลูกค้า");
+  }
 
   await runWithRequestContext({ userId: session?.user?.id }, async () => {
     await prisma.$transaction(async (tx) => {

@@ -1,6 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, Fragment } from "react";
+import Collapse from "@mui/material/Collapse";
+import IconButton from "@mui/material/IconButton";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
+import Tooltip from "@mui/material/Tooltip";
 import AddIcon from "@mui/icons-material/Add";
 import ShieldOutlinedIcon from "@mui/icons-material/ShieldOutlined";
 import TaskAltOutlinedIcon from "@mui/icons-material/TaskAltOutlined";
@@ -67,6 +72,7 @@ export function RolesClient({ roles, permissionLibrary }: RolesClientProps) {
   const [dialogState, setDialogState] = useState<DialogState>(initialDialogState);
   const [isSaving, setIsSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<RoleListItem | null>(null);
+  const [openRoleIds, setOpenRoleIds] = useState<Set<string>>(new Set());
   const { data: session } = useSession();
   const permissions = session?.user?.permissions ?? [];
   const canCreateRole = hasPermission(permissions, "roles", "create");
@@ -138,6 +144,21 @@ export function RolesClient({ roles, permissionLibrary }: RolesClientProps) {
 
     return emptyForm;
   }, [dialogState.role]);
+
+  const toggleOpen = (roleId: string) => {
+    setOpenRoleIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(roleId)) next.delete(roleId);
+      else next.add(roleId);
+      return next;
+    });
+  };
+
+  const getPermissionCounts = (role: RoleListItem) => {
+    const categories = role.permissions.length;
+    const items = role.permissions.reduce((sum, g) => sum + g.items.length, 0);
+    return { categories, items };
+  };
 
   return (
     <Stack spacing={3}>
@@ -229,7 +250,8 @@ export function RolesClient({ roles, permissionLibrary }: RolesClientProps) {
           </TableHead>
           <TableBody>
             {roles.map((role) => (
-              <TableRow key={role.id} hover>
+              <Fragment key={role.id}>
+              <TableRow hover sx={{ '& > *': { borderBottom: 'unset' } }}>
                 <TableCell sx={{ whiteSpace: "nowrap" }}>
                   <Stack spacing={0.5}>
                     <Typography fontWeight={600}>{role.name}</Typography>
@@ -252,17 +274,22 @@ export function RolesClient({ roles, permissionLibrary }: RolesClientProps) {
                       ยังไม่มีการกำหนดสิทธิ์สำหรับบทบาทนี้
                     </Typography>
                   ) : (
-                    <Stack spacing={2} divider={<Divider flexItem />}>
-                      {role.permissions.map((group) => (
-                        <Stack key={group.category} spacing={1}>
-                          <Typography fontWeight={600}>{group.category}</Typography>
-                          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                            {group.items.map((item) => (
-                              <Chip key={item} label={item} size="small" />
-                            ))}
-                          </Stack>
-                        </Stack>
-                      ))}
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      {(() => {
+                        const { categories, items } = getPermissionCounts(role);
+                        return (
+                          <Chip label={`หมวด ${categories} / รายการ ${items}`} size="small" />
+                        );
+                      })()}
+                      <Tooltip title={openRoleIds.has(role.id) ? "ซ่อนสิทธิ์" : "ดูสิทธิ์ทั้งหมด"}>
+                        <IconButton size="small" onClick={() => toggleOpen(role.id)}>
+                          {openRoleIds.has(role.id) ? (
+                            <KeyboardArrowUpIcon fontSize="small" />
+                          ) : (
+                            <KeyboardArrowDownIcon fontSize="small" />
+                          )}
+                        </IconButton>
+                      </Tooltip>
                     </Stack>
                   )}
                 </TableCell>
@@ -297,6 +324,29 @@ export function RolesClient({ roles, permissionLibrary }: RolesClientProps) {
                   </Stack>
                 </TableCell>
               </TableRow>
+              {role.permissions.length > 0 && (
+                <TableRow>
+                  <TableCell colSpan={5} sx={{ py: 0, bgcolor: "#fafafa" }}>
+                    <Collapse in={openRoleIds.has(role.id)} timeout="auto" unmountOnExit>
+                      <Box sx={{ p: 2 }}>
+                        <Stack spacing={2}>
+                          {role.permissions.map((group) => (
+                            <Stack key={`${role.id}-${group.category}`} spacing={1}>
+                              <Typography fontWeight={700}>{group.category}</Typography>
+                              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                                {group.items.map((item) => (
+                                  <Chip key={`${role.id}-${group.category}-${item}`} label={item} size="small" />
+                                ))}
+                              </Stack>
+                            </Stack>
+                          ))}
+                        </Stack>
+                      </Box>
+                    </Collapse>
+                  </TableCell>
+                </TableRow>
+              )}
+              </Fragment>
             ))}
             {roles.length === 0 && (
               <TableRow>

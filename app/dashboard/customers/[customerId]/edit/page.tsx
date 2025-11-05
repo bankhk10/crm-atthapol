@@ -1,4 +1,8 @@
 import { Box, Stack } from "@mui/material";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { hasPermission } from "@/lib/permissions";
+import { redirect } from "next/navigation";
 import { notFound } from "next/navigation";
 import { CustomerEditClient } from "../../_components/customer-edit-client";
 import { getCustomer } from "../../data";
@@ -10,6 +14,11 @@ type EmployeesWithUser = Awaited<ReturnType<typeof getEmployees>>;
 
 export default async function CustomerEditPage({ params }: { params: Promise<{ customerId: string }> }) {
   const { customerId } = await params;
+  const session = await getServerSession(authOptions);
+  const perms = session?.user?.permissions ?? [];
+  if (!hasPermission(perms, "customers", "edit")) {
+    redirect(`/dashboard/customers/${customerId}`);
+  }
   const customer = await getCustomer(customerId);
   if (!customer) return notFound();
   const employees: EmployeesWithUser = await getEmployees();
