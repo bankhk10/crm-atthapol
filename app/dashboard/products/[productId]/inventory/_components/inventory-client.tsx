@@ -8,6 +8,7 @@ import {
   TextField,
   Typography,
   Table,
+  TableContainer,
   TableHead,
   TableRow,
   TableCell,
@@ -423,7 +424,8 @@ export default function InventoryClient({
                 </Card>
               </Stack>
             ) : (
-              <Table size="small">
+              <TableContainer sx={{ width: "100%", overflowX: "auto" }}>
+              <Table size="small" sx={{ minWidth: 900 }}>
                 <TableHead>
                   <TableRow sx={{ backgroundColor: "grey.50" }}>
                     <TableCell align="center" sx={{ fontWeight: 700 }}>
@@ -620,8 +622,9 @@ export default function InventoryClient({
                     </TableCell>
                     <TableCell colSpan={4}></TableCell>
                   </TableRow>
-                </TableBody>
-              </Table>
+              </TableBody>
+            </Table>
+            </TableContainer>
             )}
           </CardContent>
         </Card>
