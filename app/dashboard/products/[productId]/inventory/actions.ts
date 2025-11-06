@@ -99,8 +99,8 @@ export async function createLot(productId: string, raw: unknown) {
       // importedAt will be set by overriding createdAt when provided
       createdAt: (data.importedAt as unknown as Date | null) ?? undefined,
       expDate: (data.expDate as unknown as Date | null) ?? null,
-      warehouseId: (data.warehouseId as string | undefined) ?? null,
-      locationId: (data.locationId as string | undefined) ?? null,
+      warehouseId: (data.warehouseId as string | null) ?? null,
+      locationId: (data.locationId as string | null) ?? null,
       note: data.note ?? null,
     },
   });
@@ -144,8 +144,8 @@ export async function updateLot(productId: string, stockId: string, raw: unknown
       qtyOnHand: data.qtyOnHand,
       createdAt: (data.importedAt as unknown as Date | null) ?? undefined,
       expDate: (data.expDate as unknown as Date | null) ?? undefined,
-      warehouseId: (data.warehouseId as unknown as string | null) ?? undefined,
-      locationId: (data.locationId as unknown as string | null) ?? undefined,
+      warehouseId: data.warehouseId as string | null | undefined,
+      locationId: data.locationId as string | null | undefined,
       note: data.note,
     },
   });
