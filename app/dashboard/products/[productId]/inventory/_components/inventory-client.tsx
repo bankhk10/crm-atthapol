@@ -340,52 +340,27 @@ export default function InventoryClient({
                         }}
                         slotProps={{ textField: { size: "small", fullWidth: true } }}
                       />
-                      <TextField
-                        select
-                        label="คลังสินค้า"
-                        value={r.warehouseId ?? ""}
-                        onChange={(e) =>
-                          setRows((prev) =>
-                            prev.map((x) =>
-                              x.id === r.id
-                                ? { ...x, warehouseId: (e.target.value as string) || null, locationId: null }
-                                : x,
-                            ),
-                          )
-                        }
-                        size="small"
-                        fullWidth
-                      >
-                        <MenuItem value="">- ไม่ระบุ -</MenuItem>
-                        {warehouses.map((w) => (
-                          <MenuItem key={w.id} value={w.id}>
-                            {w.name}
-                          </MenuItem>
-                        ))}
-                      </TextField>
+                      
                       <TextField
                         select
                         label="สถานที่เก็บ"
                         value={r.locationId ?? ""}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          const locId = (e.target.value as string) || null;
+                          const whId = locId ? locations.find((l) => l.id === locId)?.warehouseId ?? null : null;
                           setRows((prev) =>
-                            prev.map((x) =>
-                              x.id === r.id ? { ...x, locationId: (e.target.value as string) || null } : x,
-                            ),
-                          )
-                        }
+                            prev.map((x) => (x.id === r.id ? { ...x, locationId: locId, warehouseId: whId } : x)),
+                          );
+                        }}
                         size="small"
                         fullWidth
-                        disabled={!r.warehouseId}
                       >
                         <MenuItem value="">- ไม่ระบุ -</MenuItem>
-                        {locations
-                          .filter((loc) => loc.warehouseId === (r.warehouseId ?? ""))
-                          .map((loc) => (
-                            <MenuItem key={loc.id} value={loc.id}>
-                              {loc.name}
-                            </MenuItem>
-                          ))}
+                        {locations.map((loc) => (
+                          <MenuItem key={loc.id} value={loc.id}>
+                            {loc.name}
+                          </MenuItem>
+                        ))}
                       </TextField>
                       <Stack direction="row" spacing={1} alignItems="center">
                         <TextField
@@ -423,10 +398,13 @@ export default function InventoryClient({
                     จำนวน
                   </TableCell>
                   <TableCell align="center" sx={{ fontWeight: 700 }}>
-                    วันที่นำเข้า / คลังสินค้า
+                    วันที่นำเข้า
                   </TableCell>
                   <TableCell align="center" sx={{ fontWeight: 700 }}>
-                    วันหมดอายุ / สถานที่เก็บ
+                    วันหมดอายุ
+                  </TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700 }}>
+                    สถานที่เก็บ
                   </TableCell>
                   <TableCell align="center" sx={{ fontWeight: 700 }}>
                     หมายเหตุ
@@ -468,91 +446,64 @@ export default function InventoryClient({
                       />
                     </TableCell>
                     <TableCell sx={{ minWidth: 140 }}>
-                      <Stack spacing={0.75}>
-                        <DatePicker
-                          label={undefined}
-                          value={r.importedAt ? new Date(r.importedAt) : null}
-                          onChange={(newValue) => {
-                            setRows((prev) =>
-                              prev.map((x) =>
-                                x.id === r.id
-                                  ? {
-                                      ...x,
-                                      importedAt: newValue ? newValue.toISOString().slice(0, 10) : "",
-                                    }
-                                  : x,
-                              ),
-                            );
-                          }}
-                          slotProps={{ textField: { size: "small", fullWidth: true } }}
-                        />
-                        <TextField
-                          select
-                          value={r.warehouseId ?? ""}
-                        onChange={(e) =>
+                      <DatePicker
+                        label={undefined}
+                        value={r.importedAt ? new Date(r.importedAt) : null}
+                        onChange={(newValue) => {
                           setRows((prev) =>
                             prev.map((x) =>
                               x.id === r.id
-                                ? { ...x, warehouseId: (e.target.value as string) || null, locationId: null }
+                                ? {
+                                    ...x,
+                                    importedAt: newValue ? newValue.toISOString().slice(0, 10) : "",
+                                  }
                                 : x,
                             ),
-                          )
-                        }
-                          size="small"
-                          fullWidth
-                        >
-                          <MenuItem value="">- เลือกคลัง -</MenuItem>
-                          {warehouses.map((w) => (
-                            <MenuItem key={w.id} value={w.id}>
-                              {w.name}
-                            </MenuItem>
-                          ))}
-                        </TextField>
-                      </Stack>
+                          );
+                        }}
+                        slotProps={{ textField: { size: "small", fullWidth: true } }}
+                      />
                     </TableCell>
                     <TableCell sx={{ minWidth: 140 }}>
-                      <Stack spacing={0.75}>
-                        <DatePicker
-                          label={undefined}
-                          value={r.expDate ? new Date(r.expDate) : null}
-                          onChange={(newValue) => {
-                            setRows((prev) =>
-                              prev.map((x) =>
-                                x.id === r.id
-                                  ? {
-                                      ...x,
-                                      expDate: newValue ? newValue.toISOString().slice(0, 10) : "",
-                                    }
-                                  : x,
-                              ),
-                            );
-                          }}
-                          slotProps={{ textField: { size: "small", fullWidth: true } }}
-                        />
-                        <TextField
-                          select
-                          value={r.locationId ?? ""}
-                        onChange={(e) =>
+                      <DatePicker
+                        label={undefined}
+                        value={r.expDate ? new Date(r.expDate) : null}
+                        onChange={(newValue) => {
                           setRows((prev) =>
                             prev.map((x) =>
-                              x.id === r.id ? { ...x, locationId: (e.target.value as string) || null } : x,
+                              x.id === r.id
+                                ? {
+                                    ...x,
+                                    expDate: newValue ? newValue.toISOString().slice(0, 10) : "",
+                                  }
+                                : x,
                             ),
-                          )
-                        }
-                          size="small"
-                          fullWidth
-                          disabled={!r.warehouseId}
-                        >
-                          <MenuItem value="">- เลือกตำแหน่ง -</MenuItem>
-                          {locations
-                            .filter((loc) => loc.warehouseId === (r.warehouseId ?? ""))
-                            .map((loc) => (
-                              <MenuItem key={loc.id} value={loc.id}>
-                                {loc.name}
-                              </MenuItem>
-                            ))}
-                        </TextField>
-                      </Stack>
+                          );
+                        }}
+                        slotProps={{ textField: { size: "small", fullWidth: true } }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ minWidth: 140 }}>
+                      <TextField
+                        select
+                        value={r.locationId ?? ""}
+                        onChange={(e) => {
+                          const locId = (e.target.value as string) || null;
+                          const whId = locId ? locations.find((l) => l.id === locId)?.warehouseId ?? null : null;
+                          setRows((prev) =>
+                            prev.map((x) => (x.id === r.id ? { ...x, locationId: locId, warehouseId: whId } : x)),
+                          );
+                        }}
+                        size="small"
+                        fullWidth
+                      >
+                        <MenuItem value="">- เลือกตำแหน่ง -</MenuItem>
+                        {locations.map((loc) => (
+                          <MenuItem key={loc.id} value={loc.id}>
+                            {loc.name}
+                          </MenuItem>
+                        ))}
+                      </TextField>
                     </TableCell>
                     <TableCell sx={{ minWidth: 300 }}>
                       <Stack direction="row" spacing={1} alignItems="center">
@@ -596,7 +547,7 @@ export default function InventoryClient({
                       {totals.onHand}
                     </Typography>
                   </TableCell>
-                  <TableCell colSpan={3}></TableCell>
+                  <TableCell colSpan={4}></TableCell>
                 </TableRow>
               </TableBody>
             </Table>
