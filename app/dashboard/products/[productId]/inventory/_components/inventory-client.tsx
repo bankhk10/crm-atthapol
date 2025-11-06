@@ -250,12 +250,25 @@ export default function InventoryClient({
           <CardContent>
             <TextField
               label="ราคา"
-              // size="small"
               type="number"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               sx={{ minWidth: 240, width: { xs: "100%", sm: 240 } }}
               inputProps={{ min: 0, step: 1 }}
+              InputProps={{
+                startAdornment: (
+                  <Typography
+                    sx={{
+                      mr: 1,
+                      fontWeight: 600,
+                      // color: "text.secondary",
+                      fontSize: 18,
+                    }}
+                  >
+                    ฿
+                  </Typography>
+                ),
+              }}
             />
           </CardContent>
         </Card>
@@ -349,7 +362,7 @@ export default function InventoryClient({
 
                       <TextField
                         select
-                        label="สถานที่เก็บ"
+                        label="สถานที่จัดเก็บ"
                         value={r.locationId ?? ""}
                         onChange={(e) => {
                           const locId = (e.target.value as string) || null;
@@ -426,7 +439,7 @@ export default function InventoryClient({
                       วันหมดอายุ
                     </TableCell>
                     <TableCell align="center" sx={{ fontWeight: 700 }}>
-                      สถานที่เก็บ
+                      สถานที่จัดเก็บ
                     </TableCell>
                     <TableCell align="center" sx={{ fontWeight: 700 }}>
                       หมายเหตุ
@@ -495,7 +508,7 @@ export default function InventoryClient({
                               size: "small",
                               fullWidth: true,
                               sx: {
-                                width: { xs: "100%", sm: 160, md: 180 },
+                                width: { xs: "100%", sm: 140, md: 150 },
                                 minWidth: 140,
                               },
                               inputProps: { style: { fontSize: 14 } },
@@ -525,7 +538,7 @@ export default function InventoryClient({
                               size: "small",
                               fullWidth: true,
                               sx: {
-                                width: { xs: "100%", sm: 160, md: 180 },
+                                width: { xs: "100%", sm: 140, md: 150 },
                                 minWidth: 140,
                               },
                               inputProps: { style: { fontSize: 14 } },

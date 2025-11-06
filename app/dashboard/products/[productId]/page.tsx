@@ -214,7 +214,7 @@ export default async function ProductDetailPage({
                 คลังสินค้า
               </Grid>
               <Grid size={{ xs: 6, sm: 2 }} sx={{ display: { xs: "none", sm: "block" } }}>
-                สถานที่เก็บ
+                สถานที่จัดเก็บ
               </Grid>
               <Grid size={{ xs: 6, sm: 2 }} sx={{ display: { xs: "none", sm: "block" } }}>
                 วันที่นำเข้า
@@ -307,7 +307,7 @@ export default async function ProductDetailPage({
                           <Chip label={`${w.totalQty.toLocaleString('th-TH')} ชิ้น`} size="small" color="primary" variant="outlined" />
                         </Stack>
                         <Grid container sx={{ fontSize: 14, color: 'text.secondary', mb: 0.5, px: 1 }}>
-                          <Grid size={{ xs: 6, sm: 6 }}>สถานที่เก็บ</Grid>
+                          <Grid size={{ xs: 6, sm: 6 }}>สถานที่จัดเก็บ</Grid>
                           <Grid size={{ xs: 6, sm: 6 }}>คงเหลือ/ล็อต</Grid>
                         </Grid>
                         <Stack>
