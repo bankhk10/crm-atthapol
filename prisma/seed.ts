@@ -80,6 +80,10 @@ const roleSeeds: RoleSeed[] = [
       "sales_scope:all",
       // All customer type creates
       "customers_create:all",
+      // UI features
+      "ui:random_fill",
+      // UI features
+      "employees_ui:random_fill",
     ],
   },
   {
@@ -254,6 +258,20 @@ async function main() {
           create: s,
         });
         permissionIdMap.set(`${s.category}:${s.name}`, perm.id);
+      }
+
+      // Add UI feature flags as permissions
+      const uiPerms = [
+        { category: "ui", name: "random_fill", description: "ใช้ปุ่มกรอกแบบสุ่ม (ทุกหน้า)" },
+        { category: "employees_ui", name: "random_fill", description: "ใช้ปุ่มกรอกแบบสุ่มในหน้าพนักงาน" },
+      ];
+      for (const u of uiPerms) {
+        const perm = await tx.permission.upsert({
+          where: { category_name: { category: u.category, name: u.name } },
+          update: { description: u.description },
+          create: u,
+        });
+        permissionIdMap.set(`${u.category}:${u.name}`, perm.id);
       }
 
       // Add fine-grained customer create permissions by type

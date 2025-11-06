@@ -30,6 +30,8 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { SaveBackButtons } from "@/components/SaveBackButtons";
 import { FillRandomButton } from "@/components/FillRandomButton";
 import { makeRandomProductValues } from "@/lib/random-fill/product";
+import { useSession } from "next-auth/react";
+import { canShowRandomFill } from "@/lib/ui-permissions";
 
 type Plant = {
   id: string;
@@ -64,6 +66,7 @@ export function ProductForm({
   plants,
   mode = "edit",
 }: Props) {
+  const { data: session } = useSession();
   const [values, setValues] = useState<ProductFormValues>(initialValues);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -306,8 +309,8 @@ export function ProductForm({
       </Typography>
       <Divider sx={{ mt: 1, mb: 4 }} />
 
-      {/* ปุ่มกรอกแบบสุ่ม แสดงเฉพาะตอนเพิ่มใหม่ */}
-      {mode === "create" && (
+      {/* ปุ่มกรอกแบบสุ่ม: แสดงเฉพาะตอนเพิ่มใหม่ และมีสิทธิ์ */}
+      {mode === "create" && canShowRandomFill(session?.user?.permissions ?? [], "products", "create") && (
         <Stack direction="row" justifyContent="flex-end" sx={{ mb: 2 }}>
           <FillRandomButton onClick={handleFillRandom} disabled={submitting} />
         </Stack>

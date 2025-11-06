@@ -3,6 +3,8 @@
 import type { Dispatch, SetStateAction } from "react";
 import { Box, Stack, TextField, Typography, MenuItem } from "@mui/material";
 import { FillRandomButton } from "@/components/FillRandomButton";
+import { useSession } from "next-auth/react";
+import { canShowRandomFill } from "@/lib/ui-permissions";
 import Autocomplete from "@mui/material/Autocomplete";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
@@ -26,6 +28,8 @@ export default function DealerFormSection({
   handleChange,
   employeeOptions = [],
 }: DealerFormSectionProps) {
+  const { data: session } = useSession();
+  const perms = session?.user?.permissions ?? [];
   const fillRandom = () => {
     const randInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
     const choice = <T,>(arr: T[]) => arr[randInt(0, arr.length - 1)];
@@ -101,7 +105,7 @@ export default function DealerFormSection({
   return (
     <Stack spacing={3}>
       <Stack direction="row" justifyContent="flex-end">
-        <FillRandomButton onClick={fillRandom} />
+        {canShowRandomFill(perms, "customers", "create") && <FillRandomButton onClick={fillRandom} />}
       </Stack>
       <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
         <Typography variant="h6" fontWeight={960}>

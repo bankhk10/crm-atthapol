@@ -3,6 +3,8 @@
 import type { Dispatch, SetStateAction } from "react";
 import { Box, Stack, TextField, Typography, MenuItem, Paper, Button } from "@mui/material";
 import { FillRandomButton } from "@/components/FillRandomButton";
+import { useSession } from "next-auth/react";
+import { canShowRandomFill } from "@/lib/ui-permissions";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -25,6 +27,8 @@ export default function FarmerFormSection({
   fieldErrors,
   handleChange,
 }: FarmerFormSectionProps) {
+  const { data: session } = useSession();
+  const perms = session?.user?.permissions ?? [];
   const fillRandom = () => {
     const randInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
     const choice = <T,>(arr: T[]) => arr[randInt(0, arr.length - 1)];
@@ -96,7 +100,7 @@ export default function FarmerFormSection({
   return (
     <Stack spacing={3}>
       <Stack direction="row" justifyContent="flex-end">
-        <FillRandomButton onClick={fillRandom} />
+        {canShowRandomFill(perms, "customers", "create") && <FillRandomButton onClick={fillRandom} />}
       </Stack>
       <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
         <Typography variant="h6" fontWeight={960}>

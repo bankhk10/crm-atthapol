@@ -1,6 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { canShowRandomFill } from "@/lib/ui-permissions";
 import type { Option, ProductOption } from "../../types";
 import { OrderForm } from "../../_components/order-form";
 
@@ -12,6 +14,9 @@ type Props = {
 
 export function CreateOrderPageClient({ customerOptions, employeeOptions, productOptions }: Props) {
   const router = useRouter();
+  const { data: session } = useSession();
+  const perms = session?.user?.permissions ?? [];
+  const showRandom = canShowRandomFill(perms, "sales", "create");
 
   return (
     <OrderForm
@@ -21,7 +26,7 @@ export function CreateOrderPageClient({ customerOptions, employeeOptions, produc
       customerOptions={customerOptions}
       employeeOptions={employeeOptions}
       productOptions={productOptions}
-      showFillRandom
+      showFillRandom={showRandom}
       onSubmit={async (payload) => {
         const res = await fetch("/api/sales/orders", {
           method: "POST",

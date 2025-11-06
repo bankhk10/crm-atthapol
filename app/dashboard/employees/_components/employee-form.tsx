@@ -2,11 +2,9 @@
 
 import type { ChangeEvent, FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
-// Link not needed; using shared buttons
+import { useSession } from "next-auth/react";
 import {
   Alert,
-  Button,
-  Chip,
   MenuItem,
   Paper,
   Stack,
@@ -27,6 +25,7 @@ import { SaveBackButtons } from "@/components/SaveBackButtons";
 import { FillRandomButton } from "@/components/FillRandomButton";
 import { makeRandomEmployeeValues } from "@/lib/random-fill/employee";
 import Loader from "@/components/Loader";
+import { canShowRandomFill } from "@/lib/ui-permissions";
 
 export type EmployeeFormProps = {
   title: string;
@@ -45,7 +44,6 @@ const statusOptions = [
   { value: "INACTIVE", label: "ออกจากงาน" },
 ];
 
-// Centralized department list
 const departmentOptions = [...DEPARTMENTS];
 
 export function EmployeeForm({
@@ -58,6 +56,7 @@ export function EmployeeForm({
   onSubmit,
   requirePassword = false,
 }: EmployeeFormProps) {
+  const { data: session } = useSession();
   const [values, setValues] = useState<EmployeeFormValues>(initialValues);
   const [isSubmitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -76,9 +75,7 @@ export function EmployeeForm({
 
   const filteredRoleDefinitions = useMemo(() => {
     const dept = values.department?.trim();
-    // ถ้ายังไม่เลือกแผนก แสดงสิทธิ์ทั้งหมดก่อน เพื่อให้เลือกได้
     if (!dept) return roleDefinitions;
-    // ถ้าเลือกแผนกแล้ว แสดงเฉพาะสิทธิ์ที่เป็น Global (ไม่กำหนดแผนก) หรือที่ตรงกับแผนกนั้น
     return roleDefinitions.filter((def) => !def.department || def.department === dept);
   }, [roleDefinitions, values.department]);
 
@@ -127,6 +124,13 @@ export function EmployeeForm({
     }
   };
 
+  // Permission: Show random fill only if user can create/edit employees
+  const canUseRandomFill = useMemo(() => {
+    const perms = session?.user?.permissions ?? [];
+    const mode = requirePassword ? "create" : "edit";
+    return canShowRandomFill(perms, "employees", mode);
+  }, [session?.user?.permissions, requirePassword]);
+
   return (
     <Paper
       component="form"
@@ -134,16 +138,18 @@ export function EmployeeForm({
       sx={{ p: { xs: 2, sm: 3 }, maxWidth: 960 }}
     >
       <Stack spacing={3}>
-        <Stack direction="row" justifyContent="flex-end">
-          <FillRandomButton
-            onClick={() =>
-              setValues((prev) => ({
-                ...prev,
-                ...makeRandomEmployeeValues({ roleOptions, roleDefinitions }),
-              }))
-            }
-          />
-        </Stack>
+        {canUseRandomFill && (
+          <Stack direction="row" justifyContent="flex-end">
+            <FillRandomButton
+              onClick={() =>
+                setValues((prev) => ({
+                  ...prev,
+                  ...makeRandomEmployeeValues({ roleOptions, roleDefinitions }),
+                }))
+              }
+            />
+          </Stack>
+        )}
         {error && (
           <Alert severity="error" onClose={() => setError(null)}>
             {error}
@@ -187,7 +193,6 @@ export function EmployeeForm({
             <MenuItem value="นาย">นาย</MenuItem>
             <MenuItem value="นาง">นาง</MenuItem>
             <MenuItem value="นางสาว">นางสาว</MenuItem>
-            {/* <MenuItem value="อื่นๆ">อื่นๆ</MenuItem> */}
           </TextField>
           <TextField
             label="ชื่อ"
@@ -305,37 +310,6 @@ export function EmployeeForm({
           </TextField>
         </Stack>
 
-        {/* <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-          <TextField
-            select
-            label="เพศ"
-            value={values.gender ?? ""}
-            onChange={handleChange("gender") as any}
-            fullWidth
-          >
-            <MenuItem value="">ไม่ระบุ</MenuItem>
-            <MenuItem value="MALE">ชาย</MenuItem>
-            <MenuItem value="FEMALE">หญิง</MenuItem>
-            <MenuItem value="OTHER">อื่นๆ</MenuItem>
-          </TextField>
-          <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={th}>
-            <DatePicker
-              label="วันที่เริ่มงาน"
-              value={values.startDate ? new Date(values.startDate) : null}
-              views={["year", "month", "day"]}
-              onChange={(newValue) => {
-                setValues((prev) => ({
-                  ...prev,
-                  startDate: newValue ? newValue.toISOString().slice(0, 10) : "",
-                }));
-              }}
-              slotProps={{
-                textField: { fullWidth: true },
-              }}
-            />
-          </LocalizationProvider>
-        </Stack> */}
-
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           {/* สังกัดบริษัท */}
           <TextField
@@ -437,111 +411,6 @@ export function EmployeeForm({
             fullWidth
           />
         </Stack>
-
-        {/* <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-            <TextField
-              select
-              label="บทบาทผู้ใช้งาน"
-              value={values.role}
-              onChange={handleChange("role")}
-              required
-              fullWidth
-              helperText={selectedRole?.description ?? undefined}
-            >
-              {roleOptions.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  <Stack spacing={0.5}>
-                    <Typography fontWeight={600}>{option.label}</Typography>
-                    {option.description && (
-                      <Typography variant="body2" color="text.secondary">
-                        {option.description}
-                      </Typography>
-                    )}
-                  </Stack>
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              select
-              label="สิทธิ์การใช้งาน"
-              value={values.roleDefinitionId ?? ""}
-              onChange={handleRoleDefinitionChange}
-              fullWidth
-              helperText={
-                roleDefinitions.length === 0
-                  ? "ยังไม่มีสิทธิ์การใช้งานที่สร้างไว้"
-                  : "เลือกสิทธิ์เพื่อกำหนดขอบเขตการใช้งาน"
-              }
-              disabled={roleDefinitions.length === 0}
-            >
-              <MenuItem value="">ไม่กำหนด (ใช้ตามบทบาทหลัก)</MenuItem>
-              {roleDefinitions.map((definition) => (
-                <MenuItem key={definition.id} value={definition.id}>
-                  <Stack spacing={0.5}>
-                    <Typography fontWeight={600}>{definition.name}</Typography>
-                    {definition.description && (
-                      <Typography variant="body2" color="text.secondary">
-                        {definition.description}
-                      </Typography>
-                    )}
-                  </Stack>
-                </MenuItem>
-              ))}
-            </TextField>
-          </Stack> */}
-
-        {/* 
-          {roleDefinitions.length === 0 ? (
-            <Alert severity="info">
-              ยังไม่มีการสร้างสิทธิ์การใช้งาน กรุณาสร้างจากเมนูบทบาทก่อน
-            </Alert>
-          ) : selectedRoleDefinition ? (
-            <Paper variant="outlined" sx={{ p: 2 }}>
-              <Stack spacing={1.5}>
-                <Stack spacing={0.5}>
-                  <Typography fontWeight={600}>
-                    {selectedRoleDefinition.name}
-                  </Typography>
-                  {selectedRoleDefinition.description && (
-                    <Typography color="text.secondary">
-                      {selectedRoleDefinition.description}
-                    </Typography>
-                  )}
-                </Stack>
-
-                {selectedRoleDefinition.permissions.length > 0 ? (
-                  <Stack spacing={2}>
-                    {selectedRoleDefinition.permissions.map((group) => (
-                      <Stack key={group.category} spacing={1}>
-                        <Typography fontWeight={600}>
-                          {group.category}
-                        </Typography>
-                        <Stack
-                          direction="row"
-                          spacing={1}
-                          flexWrap="wrap"
-                          useFlexGap
-                        >
-                          {group.items.map((item) => (
-                            <Chip key={item} label={item} size="small" />
-                          ))}
-                        </Stack>
-                      </Stack>
-                    ))}
-                  </Stack>
-                ) : (
-                  <Typography color="text.secondary">
-                    ยังไม่มีการกำหนดสิทธิ์สำหรับรายการนี้
-                  </Typography>
-                )}
-              </Stack>
-            </Paper>
-          ) : (
-            <Typography color="text.secondary">
-              เลือกสิทธิ์การใช้งานเพื่อดูรายละเอียดของสิทธิ์ที่ได้รับ
-            </Typography>
-          )} */}
-
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           <TextField
             select
@@ -549,18 +418,13 @@ export function EmployeeForm({
             value={values.roleDefinitionId ?? ""}
             onChange={handleRoleDefinitionChange}
             fullWidth
-            // helperText={
-            //   roleDefinitions.length === 0
-            //     ? "ยังไม่มีสิทธิ์การใช้งานที่สร้างไว้"
-            //     : "เลือกสิทธิ์เพื่อกำหนดขอบเขตการใช้งาน"
-            // }
             disabled={roleDefinitions.length === 0}
             SelectProps={{
               MenuProps: {
                 PaperProps: {
                   style: {
-                    maxHeight: 180, // ความสูงสูงสุด (px)
-                    overflowY: "auto", // เลื่อนแนวตั้ง
+                    maxHeight: 180,
+                    overflowY: "auto",
                   },
                 },
               },
