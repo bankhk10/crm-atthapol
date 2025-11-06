@@ -1,6 +1,6 @@
 import type { EmployeeFormValues } from "@/app/dashboard/employees/types";
 import type { EmployeeRoleOption, RoleDefinitionOption } from "@/app/dashboard/employees/types";
-import { choice, randInt, randomCode } from "@/lib/random";
+import { choice, randInt, randomCode, randomDateBetween } from "@/lib/random";
 import { DEPARTMENTS } from "@/lib/departments";
 
 const COMPANY_OPTIONS = [
@@ -15,7 +15,13 @@ const COMPANY_OPTIONS = [
 
 const AREAS = ["ภาคเหนือ", "ภาคตะวันออกเฉียงเหนือ", "ภาคตะวันตก", "ภาคกลาง", "ภาคใต้"];
 const PREFIXES = ["นาย", "นาง", "นางสาว"] as const;
-const POSITIONS = ["พนักงานขาย", "หัวหน้างาน", "ผู้จัดการ", "เจ้าหน้าที่", "ผู้ช่วยผู้จัดการ"];
+// Keep positions in sync with the form's MenuItem options
+const POSITIONS = [
+  "ผู้บริหารระดับสูง",
+  "ผู้จัดการ",
+  "หัวหน้างาน",
+  "พนักงานปฏิบัติการ",
+] as const;
 const FIRST_NAMES = [
   "สมชาย",
   "วิชัย",
@@ -55,7 +61,7 @@ export function makeRandomEmployeeValues(opts: {
   const employeeCode = randomCode("EMP-", 4);
   const phone = `0${String(randInt(600000000, 999999999))}`;
   const email = `${asciiId(6)}.${asciiId(4)}@example.com`;
-  const position = choice(POSITIONS);
+  const position = choice(POSITIONS) as unknown as string;
   const company = choice(COMPANY_OPTIONS);
   const responsibilityArea = choice(AREAS);
   const address = `เลขที่ ${randInt(1, 199)}/ ${randInt(1, 20)} ซอยสุขุมวิท ถนนเพชรเกษม`;
@@ -64,11 +70,20 @@ export function makeRandomEmployeeValues(opts: {
   const subdistrict = "หัวหมาก";
   const postalCode = "10240";
   const startDate = new Date().toISOString().slice(0, 10);
+  // Reasonable birth date between age 22 and 56
+  const now = new Date();
+  const from = new Date(now.getFullYear() - 56, 0, 1);
+  const to = new Date(now.getFullYear() - 22, 11, 31);
+  const birthDate = randomDateBetween(from, to).toISOString().slice(0, 10);
   const status: EmployeeFormValues["status"] = choice(["ACTIVE", "ON_LEAVE", "INACTIVE"]);
   const role = (opts.roleOptions[0]?.value ?? "USER") as EmployeeFormValues["role"];
-  const roleDefinitionId = (opts.roleDefinitions && opts.roleDefinitions.length
-    ? choice(opts.roleDefinitions).id
-    : null) as EmployeeFormValues["roleDefinitionId"];
+
+  // Pick department first, then choose a matching role definition for that department
+  const department = choice([...DEPARTMENTS]);
+  const candidates = (opts.roleDefinitions ?? []).filter(
+    (def) => !def.department || def.department === department,
+  );
+  const roleDefinitionId = (candidates.length ? choice(candidates).id : null) as EmployeeFormValues["roleDefinitionId"];
 
   return {
     prefix,
@@ -79,7 +94,7 @@ export function makeRandomEmployeeValues(opts: {
     email,
     password: "P@ssw0rd123",
     position,
-    department: choice([...DEPARTMENTS]),
+    department,
     company,
     responsibilityArea,
     address,
@@ -87,6 +102,7 @@ export function makeRandomEmployeeValues(opts: {
     district,
     subdistrict,
     postalCode,
+    birthDate,
     startDate,
     status,
     role,

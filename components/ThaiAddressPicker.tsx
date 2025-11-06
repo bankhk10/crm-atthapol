@@ -63,7 +63,7 @@ export default function ThaiAddressPicker({ value, onChange }: Props) {
     return d ? d.subdistricts : [];
   }, [district, districts]);
 
-  // อัพเดทค่า postalCode อัตโนมัติ
+  // อัพเดทค่า postalCode อัตโนมัติ เมื่อเลือกที่อยู่ หรือเมื่อข้อมูลจังหวัดถูกโหลด
   useEffect(() => {
     const p = provinces.find((pp: any) => pp.name === province);
     const d = p?.districts?.find((dd: any) => dd.name === district);
@@ -73,7 +73,7 @@ export default function ThaiAddressPicker({ value, onChange }: Props) {
     if (onChange) {
       onChange({ province, district, subdistrict, postalCode: s?.postalCode });
     }
-  }, [province, district, subdistrict]);
+  }, [province, district, subdistrict, provinces]);
 
   // sync ค่าเมื่อ parent ส่งมา
   useEffect(() => {
