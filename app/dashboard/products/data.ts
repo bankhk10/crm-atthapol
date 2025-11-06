@@ -53,9 +53,15 @@ export async function getProducts(): Promise<ProductListItem[]> {
 export async function getProduct(productId: string) {
   const p = await prisma.product.findUnique({
     where: { id: productId, deletedAt: null },
-    include: { 
-      stocks: true, 
-      plants: { include: { plant: true } } 
+    include: {
+      stocks: {
+        include: {
+          // Include master names for display
+          warehouseRef: true,
+          locationRef: true,
+        },
+      },
+      plants: { include: { plant: true } },
     },
   });
   if (!p) return null;
