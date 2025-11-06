@@ -13,11 +13,7 @@ export default async function ProductInventoryPage({
   const product = await getProduct(productId);
   if (!product) return notFound();
 
-  // Load master data for warehouse/location dropdowns
-  const warehouses = await prisma.warehouse.findMany({
-    where: { deletedAt: null },
-    orderBy: { name: "asc" },
-  });
+  // Load master data for location dropdown
   const locations = await prisma.warehouseLocation.findMany({
     where: { deletedAt: null },
     orderBy: { name: "asc" },
@@ -53,7 +49,6 @@ export default async function ProductInventoryPage({
                 storageLocation: s.storageLocation ?? "",
                 note: s.note ?? "",
               }))}
-              warehouses={warehouses.map((w) => ({ id: w.id, name: w.name }))}
               locations={locations.map((l) => ({ id: l.id, name: l.name, warehouseId: l.warehouseId }))}
             />
           </Stack>
