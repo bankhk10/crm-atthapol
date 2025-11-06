@@ -694,6 +694,49 @@ async function main() {
     }
   }
   console.log(`📝 Seeded Sales Notes (${notesData.length}) for demo workflow.`);
+
+  // ---------------------------
+  // 8️⃣ สร้างคลังสินค้า + ตำแหน่งเก็บ (Master Data)
+  // ---------------------------
+  const warehouseSeeds = [
+    {
+      code: "MAIN",
+      name: "คลังหลัก",
+      locations: [
+        { code: "MAIN-01", name: "ชั้น 1" },
+        { code: "MAIN-02", name: "ชั้น 2" },
+      ],
+    },
+    {
+      code: "SEC",
+      name: "คลังสำรอง",
+      locations: [
+        { code: "SEC-A", name: "โซน A" },
+        { code: "SEC-B", name: "โซน B" },
+      ],
+    },
+  ];
+
+  for (const wh of warehouseSeeds) {
+    const w = await prisma.warehouse.upsert({
+      where: { code: wh.code },
+      update: { name: wh.name },
+      create: { code: wh.code, name: wh.name },
+    });
+    for (const loc of wh.locations) {
+      await prisma.warehouseLocation.upsert({
+        where: {
+          warehouseId_name: {
+            warehouseId: w.id,
+            name: loc.name,
+          },
+        },
+        update: { code: loc.code ?? null },
+        create: { warehouseId: w.id, code: loc.code ?? null, name: loc.name },
+      });
+    }
+  }
+  console.log("🏬 Seeded Warehouses and Locations");
 }
 
 main()

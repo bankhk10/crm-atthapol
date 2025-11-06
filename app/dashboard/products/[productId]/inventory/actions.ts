@@ -25,6 +25,14 @@ const lotSchema = z.object({
     .transform((v) => (v ? new Date(v) : null))
     .nullable()
     .optional(),
+  warehouseId: z
+    .preprocess((v) => (typeof v === "string" && v.trim().length === 0 ? undefined : v), z.string())
+    .optional()
+    .nullable(),
+  locationId: z
+    .preprocess((v) => (typeof v === "string" && v.trim().length === 0 ? undefined : v), z.string())
+    .optional()
+    .nullable(),
   note: z.string().trim().max(500).optional().nullable(),
 });
 
@@ -44,6 +52,14 @@ const updateLotSchema = z.object({
     .string()
     .trim()
     .transform((v) => (v ? new Date(v) : null))
+    .nullable()
+    .optional(),
+  warehouseId: z
+    .preprocess((v) => (typeof v === "string" && v.trim().length === 0 ? undefined : v), z.string())
+    .nullable()
+    .optional(),
+  locationId: z
+    .preprocess((v) => (typeof v === "string" && v.trim().length === 0 ? undefined : v), z.string())
     .nullable()
     .optional(),
   note: z
@@ -83,6 +99,8 @@ export async function createLot(productId: string, raw: unknown) {
       // importedAt will be set by overriding createdAt when provided
       createdAt: (data.importedAt as unknown as Date | null) ?? undefined,
       expDate: (data.expDate as unknown as Date | null) ?? null,
+      warehouseId: (data.warehouseId as string | undefined) ?? null,
+      locationId: (data.locationId as string | undefined) ?? null,
       note: data.note ?? null,
     },
   });
@@ -97,7 +115,7 @@ export async function updateLot(productId: string, stockId: string, raw: unknown
   let normalized: Record<string, unknown> = {};
   if (raw && typeof raw === "object") {
     normalized = { ...(raw as Record<string, unknown>) };
-    const keys = ["lotNumber", "note", "importedAt", "expDate"] as const;
+    const keys = ["lotNumber", "note", "importedAt", "expDate", "warehouseId", "locationId"] as const;
     for (const k of keys) {
       const v = (normalized as Record<string, unknown>)[k];
       if (typeof v === "string" && v.trim().length === 0) {
@@ -126,6 +144,8 @@ export async function updateLot(productId: string, stockId: string, raw: unknown
       qtyOnHand: data.qtyOnHand,
       createdAt: (data.importedAt as unknown as Date | null) ?? undefined,
       expDate: (data.expDate as unknown as Date | null) ?? undefined,
+      warehouseId: (data.warehouseId as unknown as string | null) ?? undefined,
+      locationId: (data.locationId as unknown as string | null) ?? undefined,
       note: data.note,
     },
   });

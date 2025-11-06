@@ -21,6 +21,7 @@ import {
   CardContent, // เพิ่ม
   CircularProgress, // เพิ่ม
 } from "@mui/material";
+import MenuItem from "@mui/material/MenuItem";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -49,6 +50,10 @@ type LotRowDb = {
   qtyOnHand: number;
   importedAt: string;
   expDate: string;
+  warehouse?: string;
+  storageLocation?: string;
+  warehouseId?: string;
+  locationId?: string;
   note?: string;
 };
 
@@ -59,16 +64,27 @@ type LotRow = {
   qtyOnHand: string;
   importedAt: string;
   expDate: string;
+  warehouse?: string;
+  storageLocation?: string;
+  warehouseId?: string;
+  locationId?: string;
   note?: string;
   isNew?: boolean;
 };
 
+type WarehouseOption = { id: string; name: string };
+type LocationOption = { id: string; name: string; warehouseId: string };
+
 export default function InventoryClient({
   product,
   lots,
+  warehouses,
+  locations,
 }: {
   product: ProductInfo;
   lots: LotRowDb[];
+  warehouses: WarehouseOption[];
+  locations: LocationOption[];
 }) {
   const [isPending, startTransition] = useTransition();
   const [price, setPrice] = useState<string>(product.price != null ? String(product.price) : "");
@@ -79,6 +95,10 @@ export default function InventoryClient({
       qtyOnHand: r.qtyOnHand != null ? String(r.qtyOnHand) : "",
       importedAt: r.importedAt,
       expDate: r.expDate,
+      warehouse: r.warehouse ?? "",
+      storageLocation: r.storageLocation ?? "",
+      warehouseId: r.warehouseId,
+      locationId: r.locationId,
       note: r.note ?? "",
     })),
   );
@@ -95,6 +115,10 @@ export default function InventoryClient({
         qtyOnHand: r.qtyOnHand != null ? String(r.qtyOnHand) : "",
         importedAt: r.importedAt,
         expDate: r.expDate,
+        warehouse: r.warehouse ?? "",
+        storageLocation: r.storageLocation ?? "",
+        warehouseId: r.warehouseId,
+        locationId: r.locationId,
         note: r.note ?? "",
       })),
     );
@@ -158,6 +182,8 @@ export default function InventoryClient({
             qtyOnHand: r.qtyOnHand === "" ? 0 : Number(r.qtyOnHand),
             importedAt: r.importedAt,
             expDate: r.expDate,
+            warehouseId: r.warehouseId,
+            locationId: r.locationId,
             note: r.note,
           }),
         );
@@ -170,6 +196,8 @@ export default function InventoryClient({
             qtyOnHand: d.qtyOnHand === "" ? 0 : Number(d.qtyOnHand),
             importedAt: d.importedAt,
             expDate: d.expDate,
+            warehouseId: d.warehouseId,
+            locationId: d.locationId,
             note: d.note,
           }),
         );
@@ -205,6 +233,8 @@ export default function InventoryClient({
       qtyOnHand: "",
       importedAt: "", // ใช้ "" (string เปล่า) ดีกว่า null/undefined สำหรับ input
       expDate: "",
+      warehouse: "",
+      storageLocation: "",
       note: "",
       isNew: true,
     };
@@ -310,6 +340,53 @@ export default function InventoryClient({
                         }}
                         slotProps={{ textField: { size: "small", fullWidth: true } }}
                       />
+                      <TextField
+                        select
+                        label="คลังสินค้า"
+                        value={r.warehouseId ?? ""}
+                        onChange={(e) =>
+                          setRows((prev) =>
+                            prev.map((x) =>
+                              x.id === r.id
+                                ? { ...x, warehouseId: e.target.value || undefined, locationId: undefined }
+                                : x,
+                            ),
+                          )
+                        }
+                        size="small"
+                        fullWidth
+                      >
+                        <MenuItem value="">- ไม่ระบุ -</MenuItem>
+                        {warehouses.map((w) => (
+                          <MenuItem key={w.id} value={w.id}>
+                            {w.name}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                      <TextField
+                        select
+                        label="สถานที่เก็บ"
+                        value={r.locationId ?? ""}
+                        onChange={(e) =>
+                          setRows((prev) =>
+                            prev.map((x) =>
+                              x.id === r.id ? { ...x, locationId: e.target.value || undefined } : x,
+                            ),
+                          )
+                        }
+                        size="small"
+                        fullWidth
+                        disabled={!r.warehouseId}
+                      >
+                        <MenuItem value="">- ไม่ระบุ -</MenuItem>
+                        {locations
+                          .filter((loc) => loc.warehouseId === (r.warehouseId ?? ""))
+                          .map((loc) => (
+                            <MenuItem key={loc.id} value={loc.id}>
+                              {loc.name}
+                            </MenuItem>
+                          ))}
+                      </TextField>
                       <Stack direction="row" spacing={1} alignItems="center">
                         <TextField
                           label="หมายเหตุ"
@@ -350,6 +427,12 @@ export default function InventoryClient({
                   </TableCell>
                   <TableCell align="center" sx={{ fontWeight: 700 }}>
                     วันหมดอายุ
+                  </TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700 }}>
+                    คลังสินค้า
+                  </TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700 }}>
+                    สถานที่เก็บ
                   </TableCell>
                   <TableCell align="center" sx={{ fontWeight: 700 }}>
                     หมายเหตุ
@@ -432,6 +515,55 @@ export default function InventoryClient({
                         }}
                       />
                     </TableCell>
+                    <TableCell sx={{ minWidth: 160 }}>
+                      <TextField
+                        select
+                        value={r.warehouseId ?? ""}
+                        onChange={(e) =>
+                          setRows((prev) =>
+                            prev.map((x) =>
+                              x.id === r.id
+                                ? { ...x, warehouseId: e.target.value || undefined, locationId: undefined }
+                                : x,
+                            ),
+                          )
+                        }
+                        size="small"
+                        fullWidth
+                      >
+                        <MenuItem value="">- ไม่ระบุ -</MenuItem>
+                        {warehouses.map((w) => (
+                          <MenuItem key={w.id} value={w.id}>
+                            {w.name}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                    </TableCell>
+                    <TableCell sx={{ minWidth: 160 }}>
+                      <TextField
+                        select
+                        value={r.locationId ?? ""}
+                        onChange={(e) =>
+                          setRows((prev) =>
+                            prev.map((x) =>
+                              x.id === r.id ? { ...x, locationId: e.target.value || undefined } : x,
+                            ),
+                          )
+                        }
+                        size="small"
+                        fullWidth
+                        disabled={!r.warehouseId}
+                      >
+                        <MenuItem value="">- ไม่ระบุ -</MenuItem>
+                        {locations
+                          .filter((loc) => loc.warehouseId === (r.warehouseId ?? ""))
+                          .map((loc) => (
+                            <MenuItem key={loc.id} value={loc.id}>
+                              {loc.name}
+                            </MenuItem>
+                          ))}
+                      </TextField>
+                    </TableCell>
                     <TableCell sx={{ minWidth: 300 }}>
                       <Stack direction="row" spacing={1} alignItems="center">
                         <TextField
@@ -474,7 +606,7 @@ export default function InventoryClient({
                       {totals.onHand}
                     </Typography>
                   </TableCell>
-                  <TableCell colSpan={3}></TableCell>
+                  <TableCell colSpan={5}></TableCell>
                 </TableRow>
               </TableBody>
             </Table>

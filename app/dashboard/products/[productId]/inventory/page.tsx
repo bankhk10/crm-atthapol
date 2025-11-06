@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { Box, Paper, Stack, Typography, Divider } from "@mui/material";
 import { getProduct } from "../../data";
+import { prisma } from "@/lib/prisma";
 import InventoryClient from "./_components/inventory-client";
 
 export default async function ProductInventoryPage({
@@ -11,6 +12,16 @@ export default async function ProductInventoryPage({
   const { productId } = await params;
   const product = await getProduct(productId);
   if (!product) return notFound();
+
+  // Load master data for warehouse/location dropdowns
+  const warehouses = await prisma.warehouse.findMany({
+    where: { deletedAt: null },
+    orderBy: { name: "asc" },
+  });
+  const locations = await prisma.warehouseLocation.findMany({
+    where: { deletedAt: null },
+    orderBy: { name: "asc" },
+  });
 
   return (
     <Box sx={{ display: "flex", justifyContent: "center", py: 4, px: { xs: 2, md: 0 } }}>
@@ -36,8 +47,14 @@ export default async function ProductInventoryPage({
                 qtyReserved: s.qtyReserved ?? 0,
                 importedAt: s.createdAt ? new Date(s.createdAt).toISOString().slice(0, 10) : "",
                 expDate: s.expDate ? new Date(s.expDate).toISOString().slice(0, 10) : "",
+                warehouseId: s.warehouseId ?? undefined,
+                locationId: s.locationId ?? undefined,
+                warehouse: s.warehouse ?? "",
+                storageLocation: s.storageLocation ?? "",
                 note: s.note ?? "",
               }))}
+              warehouses={warehouses.map((w) => ({ id: w.id, name: w.name }))}
+              locations={locations.map((l) => ({ id: l.id, name: l.name, warehouseId: l.warehouseId }))}
             />
           </Stack>
         </Paper>
