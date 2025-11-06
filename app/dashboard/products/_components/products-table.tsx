@@ -332,12 +332,28 @@ export function ProductsTable({ products, query }: Props) {
                       component={Link}
                       href={`/dashboard/products/${p.id}/inventory`}
                       size="small"
+                      sx={{
+                        color: 'info.main',
+                        borderRadius: 2,
+                        '&:hover': { bgcolor: 'info.main', color: 'common.white' },
+                        transition: 'all .15s ease',
+                      }}
                     >
                       <FormatListBulletedAddIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
                   <Tooltip title="ดูรายละเอียด" arrow>
-                    <IconButton component={Link} href={`/dashboard/products/${p.id}`} size="small">
+                    <IconButton
+                      component={Link}
+                      href={`/dashboard/products/${p.id}`}
+                      size="small"
+                      sx={{
+                        color: 'primary.main',
+                        borderRadius: 2,
+                        '&:hover': { bgcolor: 'primary.main', color: 'common.white' },
+                        transition: 'all .15s ease',
+                      }}
+                    >
                       <VisibilityOutlinedIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
@@ -346,12 +362,27 @@ export function ProductsTable({ products, query }: Props) {
                       component={Link}
                       href={`/dashboard/products/${p.id}/edit`}
                       size="small"
+                      sx={{
+                        color: 'warning.main',
+                        borderRadius: 2,
+                        '&:hover': { bgcolor: 'warning.main', color: 'common.white' },
+                        transition: 'all .15s ease',
+                      }}
                     >
                       <EditOutlinedIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
                   <Tooltip title="ลบ" arrow>
-                    <IconButton size="small" onClick={() => setDeleteTarget(p)}>
+                    <IconButton
+                      size="small"
+                      onClick={() => setDeleteTarget(p)}
+                      sx={{
+                        color: 'error.main',
+                        borderRadius: 2,
+                        '&:hover': { bgcolor: 'error.main', color: 'common.white' },
+                        transition: 'all .15s ease',
+                      }}
+                    >
                       <DeleteOutlineIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
@@ -514,15 +545,19 @@ export function ProductsTable({ products, query }: Props) {
                           component={Link}
                           href={`/dashboard/products/${p.id}/inventory`}
                           size="small"
+                          sx={{
+                            color: 'info.main',
+                            borderRadius: 2,
+                            '&:hover': { bgcolor: 'info.main', color: 'common.white' },
+                            transition: 'all .15s ease',
+                          }}
                         >
                           <FormatListBulletedAddIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="ดูรายละเอียด" arrow>
-                        <IconButton
-                          component={Link}
-                          href={`/dashboard/products/${p.id}`}
-                          size="small"
+                        <IconButton component={Link} href={`/dashboard/products/${p.id}`} size="small"
+                          sx={{ color: 'primary.main', borderRadius: 2, '&:hover': { bgcolor: 'primary.main', color: 'common.white' }, transition: 'all .15s ease' }}
                         >
                           <VisibilityOutlinedIcon fontSize="small" />
                         </IconButton>
@@ -532,12 +567,20 @@ export function ProductsTable({ products, query }: Props) {
                           component={Link}
                           href={`/dashboard/products/${p.id}/edit`}
                           size="small"
+                          sx={{
+                            color: 'warning.main',
+                            borderRadius: 2,
+                            '&:hover': { bgcolor: 'warning.main', color: 'common.white' },
+                            transition: 'all .15s ease',
+                          }}
                         >
                           <EditOutlinedIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="ลบ" arrow>
-                        <IconButton size="small" onClick={() => setDeleteTarget(p)}>
+                        <IconButton size="small" onClick={() => setDeleteTarget(p)}
+                          sx={{ color: 'error.main', borderRadius: 2, '&:hover': { bgcolor: 'error.main', color: 'common.white' }, transition: 'all .15s ease' }}
+                        >
                           <DeleteOutlineIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
