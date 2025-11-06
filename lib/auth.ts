@@ -86,6 +86,11 @@ export const authOptions: NextAuthOptions = {
         const ok = await bcrypt.compare(password, user.passwordHash);
         if (!ok) return null;
 
+        // Disallow login if employee status is INACTIVE (ออกจากงาน)
+        if (user.employee && user.employee.status === "INACTIVE") {
+          return null;
+        }
+
         const permissionSet = new Set<string>();
         user.roleDefinition?.permissions.forEach((assignment) => {
           const category = assignment.permission.category?.trim();
