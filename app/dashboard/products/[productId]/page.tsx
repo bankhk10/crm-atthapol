@@ -301,11 +301,11 @@ export default async function ProductDetailPage({
                   <Stack spacing={2}>
                     {warehouses.map((w) => (
                       <Stack key={w.name} spacing={1.25}>
-                        <Stack direction="row" spacing={1} alignItems="center">
+                        {/* <Stack direction="row" spacing={1} alignItems="center">
                           <Typography variant="subtitle1" fontWeight={700}>{w.name}</Typography>
                           <Chip label={`${w.lotCount} ล็อต`} size="small" />
                           <Chip label={`${w.totalQty.toLocaleString('th-TH')} ชิ้น`} size="small" color="primary" variant="outlined" />
-                        </Stack>
+                        </Stack> */}
                         <Grid container sx={{ fontSize: 14, color: 'text.secondary', mb: 0.5, px: 1 }}>
                           <Grid size={{ xs: 6, sm: 6 }}>สถานที่จัดเก็บ</Grid>
                           <Grid size={{ xs: 6, sm: 6 }}>คงเหลือ/ล็อต</Grid>
