@@ -79,7 +79,12 @@ const visuallyHidden = {
   whiteSpace: "nowrap" as const,
 };
 
-const numericKeys = new Set<SortableKeys>(["price", "stockOnHand", "stockAvailable", "stockReserved"]);
+const numericKeys = new Set<SortableKeys>([
+  "price",
+  "stockOnHand",
+  "stockAvailable",
+  "stockReserved",
+]);
 
 function descendingComparator(a: ProductListItem, b: ProductListItem, orderBy: SortableKeys) {
   const av = a[orderBy];
@@ -314,8 +319,8 @@ export function ProductsTable({ products, query }: Props) {
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 {p.price != null
-                  ? `ราคา: ${p.price.toLocaleString('th-TH', { style: 'currency', currency: 'THB' })}`
-                  : 'ราคา: -'}
+                  ? `ราคา: ${p.price.toLocaleString("th-TH", { style: "currency", currency: "THB" })}`
+                  : "ราคา: -"}
               </Typography>
               <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
                 <Chip size="small" label={`จำนวน: ${p.stockOnHand}`} />
@@ -333,10 +338,13 @@ export function ProductsTable({ products, query }: Props) {
                       href={`/dashboard/products/${p.id}/inventory`}
                       size="small"
                       sx={{
-                        color: 'info.main',
+                        color: "#fd810dff",
                         borderRadius: 2,
-                        '&:hover': { bgcolor: 'info.main', color: 'common.white' },
-                        transition: 'all .15s ease',
+                        "&:hover": {
+                          bgcolor: "#fd810dff",
+                          color: "common.white",
+                        },
+                        transition: "all .15s ease",
                       }}
                     >
                       <FormatListBulletedAddIcon fontSize="small" />
@@ -348,10 +356,10 @@ export function ProductsTable({ products, query }: Props) {
                       href={`/dashboard/products/${p.id}`}
                       size="small"
                       sx={{
-                        color: 'primary.main',
+                        color: "primary.main",
                         borderRadius: 2,
-                        '&:hover': { bgcolor: 'primary.main', color: 'common.white' },
-                        transition: 'all .15s ease',
+                        "&:hover": { bgcolor: "primary.main", color: "common.white" },
+                        transition: "all .15s ease",
                       }}
                     >
                       <VisibilityOutlinedIcon fontSize="small" />
@@ -363,10 +371,10 @@ export function ProductsTable({ products, query }: Props) {
                       href={`/dashboard/products/${p.id}/edit`}
                       size="small"
                       sx={{
-                        color: 'warning.main',
+                        color: "secondary.main",
                         borderRadius: 2,
-                        '&:hover': { bgcolor: 'warning.main', color: 'common.white' },
-                        transition: 'all .15s ease',
+                        "&:hover": { bgcolor: "secondary.main", color: "common.white" },
+                        transition: "all .15s ease",
                       }}
                     >
                       <EditOutlinedIcon fontSize="small" />
@@ -377,10 +385,10 @@ export function ProductsTable({ products, query }: Props) {
                       size="small"
                       onClick={() => setDeleteTarget(p)}
                       sx={{
-                        color: 'error.main',
+                        color: "error.main",
                         borderRadius: 2,
-                        '&:hover': { bgcolor: 'error.main', color: 'common.white' },
-                        transition: 'all .15s ease',
+                        "&:hover": { bgcolor: "error.main", color: "common.white" },
+                        transition: "all .15s ease",
                       }}
                     >
                       <DeleteOutlineIcon fontSize="small" />
@@ -462,14 +470,14 @@ export function ProductsTable({ products, query }: Props) {
                   <Tooltip
                     title={
                       p.price != null
-                        ? p.price.toLocaleString('th-TH', { style: 'currency', currency: 'THB' })
+                        ? p.price.toLocaleString("th-TH", { style: "currency", currency: "THB" })
                         : "-"
                     }
                     arrow
                   >
                     <span>
                       {p.price != null
-                        ? p.price.toLocaleString('th-TH', { style: 'currency', currency: 'THB' })
+                        ? p.price.toLocaleString("th-TH", { style: "currency", currency: "THB" })
                         : "-"}
                     </span>
                   </Tooltip>
@@ -546,18 +554,29 @@ export function ProductsTable({ products, query }: Props) {
                           href={`/dashboard/products/${p.id}/inventory`}
                           size="small"
                           sx={{
-                            color: 'info.main',
+                            color: "#fd810dff",
                             borderRadius: 2,
-                            '&:hover': { bgcolor: 'info.main', color: 'common.white' },
-                            transition: 'all .15s ease',
+                            "&:hover": {
+                              bgcolor: "#fd810dff",
+                              color: "common.white",
+                            },
+                            transition: "all .15s ease",
                           }}
                         >
                           <FormatListBulletedAddIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="ดูรายละเอียด" arrow>
-                        <IconButton component={Link} href={`/dashboard/products/${p.id}`} size="small"
-                          sx={{ color: 'primary.main', borderRadius: 2, '&:hover': { bgcolor: 'primary.main', color: 'common.white' }, transition: 'all .15s ease' }}
+                        <IconButton
+                          component={Link}
+                          href={`/dashboard/products/${p.id}`}
+                          size="small"
+                          sx={{
+                            color: "primary.main",
+                            borderRadius: 2,
+                            "&:hover": { bgcolor: "primary.main", color: "common.white" },
+                            transition: "all .15s ease",
+                          }}
                         >
                           <VisibilityOutlinedIcon fontSize="small" />
                         </IconButton>
@@ -568,18 +587,25 @@ export function ProductsTable({ products, query }: Props) {
                           href={`/dashboard/products/${p.id}/edit`}
                           size="small"
                           sx={{
-                            color: 'warning.main',
+                            color: "secondary.main",
                             borderRadius: 2,
-                            '&:hover': { bgcolor: 'warning.main', color: 'common.white' },
-                            transition: 'all .15s ease',
+                            "&:hover": { bgcolor: "secondary.main", color: "common.white" },
+                            transition: "all .15s ease",
                           }}
                         >
                           <EditOutlinedIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="ลบ" arrow>
-                        <IconButton size="small" onClick={() => setDeleteTarget(p)}
-                          sx={{ color: 'error.main', borderRadius: 2, '&:hover': { bgcolor: 'error.main', color: 'common.white' }, transition: 'all .15s ease' }}
+                        <IconButton
+                          size="small"
+                          onClick={() => setDeleteTarget(p)}
+                          sx={{
+                            color: "error.main",
+                            borderRadius: 2,
+                            "&:hover": { bgcolor: "error.main", color: "common.white" },
+                            transition: "all .15s ease",
+                          }}
                         >
                           <DeleteOutlineIcon fontSize="small" />
                         </IconButton>
