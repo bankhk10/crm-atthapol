@@ -16,7 +16,7 @@ const NAME_PREFIXES = [
   "สารป้องกันเชื้อรา",
 ] as const;
 
-const PACKAGING_SIZES = ["12x1L", "24x500ml", "6x5L", "1kg", "25kg", "10kg"] as const;
+const PACKAGING_SIZES_TEXT = ["500ml", "1L", "5L", "1kg", "10kg", "25kg"] as const;
 
 /**
  * Create a randomized, valid Product form value set for quick demo/seed.
@@ -36,7 +36,8 @@ export function makeRandomProductValues(opts: { plants: Plant[] }): Partial<Prod
 
   const price = randFloat(59, 1999, 2);
   const status: ProductFormValues["status"] = Math.random() < 0.85 ? "ACTIVE" : "INACTIVE";
-  const packagingSize = choice(PACKAGING_SIZES);
+  const packagingSize = choice(PACKAGING_SIZES_TEXT);
+  const packagingPerCarton = randInt(1, 24);
 
   const chosenPlants = pick(
     opts.plants ?? [],
@@ -57,6 +58,7 @@ export function makeRandomProductValues(opts: { plants: Plant[] }): Partial<Prod
     unit,
     status,
     packagingSize,
+    packagingPerCarton,
     plantIds,
     features,
     description,

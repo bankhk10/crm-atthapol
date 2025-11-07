@@ -81,6 +81,23 @@ export default async function ProductDetailPage({
                       จุดขายสินค้า
                     </Typography>
                     <Divider sx={{ mb: 1.5 }} />
+                    <Typography color="text.secondary">{product.description}</Typography>
+                  </Paper>
+                )}
+
+                {product.features && (
+                  <Paper
+                    variant="outlined"
+                    sx={{
+                      p: 2.5,
+                      borderRadius: 2,
+                      bgcolor: "grey.50",
+                    }}
+                  >
+                    <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>
+                      คุณสมบัติ
+                    </Typography>
+                    <Divider sx={{ mb: 1.5 }} />
                     <Typography color="text.secondary">{product.features}</Typography>
                   </Paper>
                 )}
@@ -133,6 +150,12 @@ export default async function ProductDetailPage({
                       <Info label="แบรนด์ : " value={product.brand ?? "-"} />
                       <Info label="ชื่อสามัญ : " value={product.nameEN ?? "-"} />
                       <Info label="ขนาดบรรจุ : " value={product.packagingSize ?? "-"} />
+                      {typeof (product as any).packagingPerCarton === "number" && (
+                        <Info
+                          label="ขนาดบรรจุต่อลัง : "
+                          value={(product as any).packagingPerCarton}
+                        />
+                      )}
                       <Info label="หน่วยนับ : " value={product.unit ?? "-"} />
                       <Info label="สถานะ : " value={<StatusChip status={product.status} />} />
                       {typeof product.price === "number" && (

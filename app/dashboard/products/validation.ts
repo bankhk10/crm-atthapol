@@ -22,6 +22,10 @@ export const productFormSchema = z.object({
   description: z.string().optional(),
   features: z.string().optional(),
   packagingSize: z.string().optional(),
+  packagingPerCarton: z.preprocess(
+    (v) => (v === "" || v === undefined || v === null ? undefined : Number(v)),
+    z.number().int().positive().optional(),
+  ),
   plantIds: z.array(z.string()).optional(),
 
   qtyOnHand: z

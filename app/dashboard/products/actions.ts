@@ -53,6 +53,7 @@ export async function createProduct(raw: ProductFormValues) {
         description: v.description,
         features: v.features,
         packagingSize: v.packagingSize,
+        packagingPerCarton: v.packagingPerCarton ?? null,
       },
     });
   } catch (e: any) {
@@ -122,6 +123,7 @@ export async function updateProduct(productId: string, raw: ProductFormValues) {
         description: v.description,
         features: v.features,
         packagingSize: v.packagingSize,
+        packagingPerCarton: v.packagingPerCarton ?? null,
       },
     });
   } catch (e: any) {

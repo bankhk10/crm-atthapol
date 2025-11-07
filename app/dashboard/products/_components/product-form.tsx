@@ -332,7 +332,7 @@ export function ProductForm({
             fullWidth
           />
           <TextField
-            label="ชื่อสินค้า"
+            label="ชื่อการค้า"
             required
             value={values.nameTH}
             onChange={handleChange("nameTH")}
@@ -340,7 +340,27 @@ export function ProductForm({
           />
         </Stack>
 
-        {/* ลบช่อง ราคา/จำนวนสินค้า: จัดการผ่านหน้าสต็อก/ล็อต */}
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          <TextField
+            label="ชื่อสามัญ"
+            value={values.nameEN ?? ""}
+            onChange={handleChange("nameEN")}
+            fullWidth
+          />
+          <TextField
+            select
+            label="หน่วยนับ"
+            value={values.unit}
+            onChange={handleChange("unit")}
+            fullWidth
+          >
+            {UNIT_OPTIONS.map((o) => (
+              <MenuItem key={o} value={o}>
+                {o}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Stack>
 
         {/* กลุ่มสินค้า + แบรนด์ */}
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
@@ -378,37 +398,33 @@ export function ProductForm({
           </TextField>
         </Stack>
 
-        {/* ชื่อสามัญ + ขนาดบรรจุ */}
+        {/* ขนาดบรรจุต่อลัง (ตัวเลขเท่านั้น) */}
+        {/* ชื่อสามัญ + ขนาดบรรจุ (เช่น 500ml) */} 
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           <TextField
-            label="ชื่อสามัญ"
-            value={values.nameEN ?? ""}
-            onChange={handleChange("nameEN")}
-            fullWidth
-          />
-
-          <TextField
-            label="ขนาดบรรจุต่อลัง"
+            label="ขนาดบรรจุ"
             value={values.packagingSize ?? ""}
             onChange={handleChange("packagingSize")}
             fullWidth
           />
+              <TextField
+            label="ขนาดบรรจุต่อลัง"
+            type="number"
+            inputProps={{ min: 1 }}
+            value={values.packagingPerCarton ?? ""}
+            onChange={(e) =>
+              setValues((prev) => ({
+                ...prev,
+                packagingPerCarton:
+                  e.target.value === "" ? undefined : Number((e.target as HTMLInputElement).value),
+              }))
+            }
+            fullWidth
+          />
         </Stack>
+     
         {/* หน่วยนับ + สถานะ */}
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-          <TextField
-            select
-            label="หน่วยนับ"
-            value={values.unit}
-            onChange={handleChange("unit")}
-            fullWidth
-          >
-            {UNIT_OPTIONS.map((o) => (
-              <MenuItem key={o} value={o}>
-                {o}
-              </MenuItem>
-            ))}
-          </TextField>
           <TextField
             select
             label="สถานะ"
@@ -441,10 +457,23 @@ export function ProductForm({
             <TextField {...params} label="ใช้กับพืช" placeholder="เลือกพืช" />
           )}
         />
+
         {/* จุดขายสินค้า */}
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           <TextField
             label="จุดขายสินค้า"
+            value={values.description ?? ""}
+            onChange={handleChange("description")}
+            fullWidth
+            multiline
+            minRows={3}
+          />
+        </Stack>
+
+        {/* คุณสมบัติ */}
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          <TextField
+            label="คุณสมบัติ"
             value={values.features ?? ""}
             onChange={handleChange("features")}
             fullWidth

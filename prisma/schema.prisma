@@ -120,22 +120,24 @@ enum SalesNoteStatus {
 // PRODUCT & STOCK
 // ====================
 model Product {
-  id            String        @id @default(cuid())
-  productCode   String        @unique
-  lotNumber     String?
-  nameTH        String
-  nameEN        String?
-  category      String
-  brand         String?
-  unit          String?
-  price         Float?
-  mfgDate       DateTime?
-  expDate       DateTime?
-  status        ProductStatus @default(ACTIVE)
-  imageUrl      String?
-  description   String?
-  features      String?
-  packagingSize String?
+  id                 String        @id @default(cuid())
+  productCode        String        @unique
+  lotNumber          String?
+  nameTH             String
+  nameEN             String?
+  category           String
+  brand              String?
+  unit               String?
+  price              Float?
+  mfgDate            DateTime?
+  expDate            DateTime?
+  status             ProductStatus @default(ACTIVE)
+  imageUrl           String?
+  description        String?
+  features           String?
+  packagingSize      String?
+  // จำนวนหน่วยบรรจุต่อลัง (ตัวเลข)
+  packagingPerCarton Int?
 
   stocks         Stock[]
   images         ProductImage[]

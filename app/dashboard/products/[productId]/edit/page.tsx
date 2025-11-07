@@ -47,6 +47,7 @@ export default async function ProductEditPage({
     description: p.description ?? "",
     features: p.features ?? "",
     packagingSize: p.packagingSize ?? "",
+    packagingPerCarton: (p as any).packagingPerCarton ?? undefined,
     plantIds: p.plants.map((pl) => pl.plantId),
     qtyOnHand: latest?.qtyOnHand ?? 0,
     qtyReserved: latest?.qtyReserved ?? 0,
