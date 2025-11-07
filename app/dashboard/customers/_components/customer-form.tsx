@@ -214,6 +214,11 @@ export function CustomerForm({
             <Autocomplete
               options={employeeOptions}
               getOptionLabel={(option) => option.label}
+              renderOption={(props, option) => (
+                <li {...props} key={option.id}>
+                  {option.label}
+                </li>
+              )}
               value={
                 employeeOptions.find((opt) => opt.id === (values.responsibleEmployeeId ?? "")) ??
                 null
