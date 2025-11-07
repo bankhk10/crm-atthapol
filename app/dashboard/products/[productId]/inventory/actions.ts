@@ -5,25 +5,37 @@ import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
 
+const freebiesItemSchema = z.object({
+  buyQty: z
+    .preprocess((v) => (typeof v === "string" ? v.trim() : v), z.coerce.number().int().min(0))
+    .default(0),
+  freeQty: z
+    .preprocess((v) => (typeof v === "string" ? v.trim() : v), z.coerce.number().int().min(0))
+    .default(0),
+  netPrice: z
+    .preprocess((v) => (typeof v === "string" ? v.trim() : v), z.coerce.number().min(0))
+    .default(0),
+  note: z
+    .preprocess((v) => (typeof v === "string" && v.trim().length === 0 ? undefined : v), z.string().trim().max(500))
+    .optional(),
+});
+
 const priceSchema = z.object({
   price: z
     .preprocess((v) => (typeof v === "string" ? v.trim() : v), z.coerce.number().min(0))
     .optional(),
+  // Optional legacy string freebies (kept for backward compatibility)
   freebies: z
-    .preprocess(
-      (v) => (typeof v === "string" ? v.trim() : v),
-      z.string().trim().max(2000),
-    )
+    .preprocess((v) => (typeof v === "string" ? v.trim() : v), z.string().trim().max(2000))
     .optional()
     .nullable(),
+  // New structured freebies list
+  freebiesList: z.array(freebiesItemSchema).optional(),
   promotionBudget: z
     .preprocess((v) => (typeof v === "string" ? v.trim() : v), z.coerce.number().min(0))
     .optional(),
   otherPromotion: z
-    .preprocess(
-      (v) => (typeof v === "string" ? v.trim() : v),
-      z.string().trim().max(2000),
-    )
+    .preprocess((v) => (typeof v === "string" ? v.trim() : v), z.string().trim().max(2000))
     .optional()
     .nullable(),
 });
@@ -100,11 +112,21 @@ export async function updateProductPrice(productId: string, raw: unknown) {
     const msg = (parsed.error.issues?.[0]?.message as string) || "ข้อมูลราคาไม่ถูกต้อง";
     throw new Error(msg);
   }
+  // Decide how to store freebies: prefer structured list -> JSON string in Product.freebies
+  let freebiesStored: string | null = null;
+  if (parsed.data.freebiesList && parsed.data.freebiesList.length > 0) {
+    // Only keep rows where there is at least some quantity
+    const items = parsed.data.freebiesList.filter((x) => (x.buyQty ?? 0) > 0 || (x.freeQty ?? 0) > 0);
+    freebiesStored = items.length > 0 ? JSON.stringify({ items }) : null;
+  } else if (typeof parsed.data.freebies === "string" && parsed.data.freebies.trim().length > 0) {
+    freebiesStored = parsed.data.freebies.trim();
+  }
+
   await prisma.product.update({
     where: { id },
     data: {
       price: parsed.data.price ?? null,
-      freebies: (parsed.data.freebies as string | null | undefined) ?? null,
+      freebies: freebiesStored,
       promotionBudget:
         parsed.data.promotionBudget !== undefined ? Number(parsed.data.promotionBudget) : null,
       otherPromotion: (parsed.data.otherPromotion as string | null | undefined) ?? null,

@@ -164,9 +164,58 @@ export default async function ProductDetailPage({
                           value={`฿${Number(product.price).toLocaleString("th-TH", { maximumFractionDigits: 2 })}`}
                         />
                       )}
-                      {(product as any)?.freebies && (
-                        <Info label="ของแถม : " value={(product as any).freebies} />
-                      )}
+                      {(product as any)?.freebies && (() => {
+                        const raw = String((product as any).freebies ?? "").trim();
+                        try {
+                          if (raw.startsWith("[") || raw.startsWith("{")) {
+                            const data = JSON.parse(raw);
+                            const items = Array.isArray(data)
+                              ? data
+                              : Array.isArray(data?.items)
+                                ? data.items
+                                : [];
+                            if (items.length > 0) {
+                              return (
+                                <Info
+                                  label="ของแถม : "
+                                  value={
+                                    <Stack spacing={0.5}>
+                                      {items.map((it: any, idx: number) => (
+                                        <Typography key={idx} variant="body2">
+                                          {(() => {
+                                            // Prefer new shape { buyQty, freeQty }
+                                            const hasNew = typeof it?.buyQty !== 'undefined' || typeof it?.freeQty !== 'undefined';
+                                            if (hasNew) {
+                                              const b = Number(it?.buyQty ?? 0);
+                                              const f = Number(it?.freeQty ?? 0);
+                                              return (
+                                                <>ซื้อ {b} แถม {f} — ราคาสุทธิ ฿{Number(it?.netPrice ?? 0).toLocaleString('th-TH', { maximumFractionDigits: 2 })}</>
+                                              );
+                                            }
+                                            // Legacy: quantity string possibly "30+1"
+                                            const q = String(it?.quantity ?? "");
+                                            let b = 0;
+                                            let f = 0;
+                                            if (q) {
+                                              const parts = q.split('+').map((s) => s.trim()).filter(Boolean);
+                                              if (parts.length >= 1) b = Number(parts[0]) || 0;
+                                              if (parts.length >= 2) f = Number(parts[1]) || 0;
+                                            }
+                                            return (
+                                              <>ซื้อ {b} แถม {f} — ราคาสุทธิ ฿{Number(it?.netPrice ?? 0).toLocaleString('th-TH', { maximumFractionDigits: 2 })}</>
+                                            );
+                                          })()}
+                                        </Typography>
+                                      ))}
+                                    </Stack>
+                                  }
+                                />
+                              );
+                            }
+                          }
+                        } catch {}
+                        return <Info label="ของแถม : " value={raw} />;
+                      })()}
                       {typeof (product as any)?.promotionBudget === "number" && (
                         <Info
                           label="งบส่งเสริมการขาย : "

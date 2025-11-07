@@ -86,11 +86,80 @@ export default function InventoryClient({
 }) {
   const [isPending, startTransition] = useTransition();
   const [price, setPrice] = useState<string>(product.price != null ? String(product.price) : "");
-  const [freebies, setFreebies] = useState<string>(product.freebies ?? "");
   const [promotionBudget, setPromotionBudget] = useState<string>(
     product.promotionBudget != null ? String(product.promotionBudget) : "",
   );
   const [otherPromotion, setOtherPromotion] = useState<string>(product.otherPromotion ?? "");
+  type FreebieRow = { id: string; buyQty: string; freeQty: string; netPrice: string; note: string };
+  const parseInitialFreebies = (): FreebieRow[] => {
+    const raw = product.freebies ?? "";
+    try {
+      if (raw && (raw.trim().startsWith("[") || raw.trim().startsWith("{"))) {
+        const data = JSON.parse(raw);
+        const items = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : [];
+        return items
+          .map((it: any, idx: number) => {
+            // New shape { buyQty, freeQty, netPrice }
+            if (typeof it?.buyQty !== "undefined" || typeof it?.freeQty !== "undefined") {
+              return {
+                id: `fb-${idx}-${Math.random().toString(36).slice(2)}`,
+                buyQty: String(Number(it?.buyQty ?? 0) || ""),
+                freeQty: String(Number(it?.freeQty ?? 0) || ""),
+                netPrice: it?.netPrice != null ? String(it.netPrice) : "",
+                note: String(it?.note ?? ""),
+              } as FreebieRow;
+            }
+            // Legacy shape { quantity: "30+1", netPrice }
+            const q = String(it?.quantity ?? "");
+            let buy = "";
+            let free = "";
+            if (q) {
+              const parts = q
+                .split("+")
+                .map((s) => s.trim())
+                .filter(Boolean);
+              if (parts.length >= 1) buy = String(Number(parts[0]) || "");
+              if (parts.length >= 2) free = String(Number(parts[1]) || "");
+            }
+            return {
+              id: `fb-${idx}-${Math.random().toString(36).slice(2)}`,
+              buyQty: buy,
+              freeQty: free,
+              netPrice: it?.netPrice != null ? String(it.netPrice) : "",
+              note: String(it?.description ?? ""),
+            } as FreebieRow;
+          })
+          .filter(
+            (x: FreebieRow) =>
+              String(x.buyQty).trim() !== "" ||
+              String(x.freeQty).trim() !== "" ||
+              String(x.netPrice).trim() !== "" ||
+              String(x.note).trim() !== "",
+          );
+      }
+    } catch {}
+    // fallback: plain string -> single row
+    if (raw.trim() !== "") {
+      const q = raw.trim();
+      const parts = q
+        .split("+")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const buy = parts[0] ? String(Number(parts[0]) || "") : "";
+      const free = parts[1] ? String(Number(parts[1]) || "") : "";
+      return [
+        {
+          id: `fb-0-${Math.random().toString(36).slice(2)}`,
+          buyQty: buy,
+          freeQty: free,
+          netPrice: "",
+          note: "",
+        },
+      ];
+    }
+    return [];
+  };
+  const [freebieRows, setFreebieRows] = useState<FreebieRow[]>(parseInitialFreebies);
   const [rows, setRows] = useState<LotRow[]>(() =>
     (lots || []).map((r) => ({
       id: r.id,
@@ -173,9 +242,22 @@ export default function InventoryClient({
   // [ปรับปรุง] - ใช้ Promise.all เพื่อให้บันทึกพร้อมกัน
   const saveAll = () => {
     startTransition(async () => {
+      const freebiesList = freebieRows
+        .map((r) => ({
+          buyQty: r.buyQty === "" ? 0 : Number(r.buyQty),
+          freeQty: r.freeQty === "" ? 0 : Number(r.freeQty),
+          netPrice: r.netPrice === "" ? 0 : Number(r.netPrice),
+          note: r.note?.trim() || undefined,
+        }))
+        .filter(
+          (it) =>
+            (Number.isFinite(it.buyQty) && it.buyQty > 0) ||
+            (Number.isFinite(it.freeQty) && it.freeQty > 0),
+        );
+
       const priceUpdatePromise = updateProductPrice(product.id, {
         price: price === "" ? undefined : Number(price),
-        freebies: freebies ?? undefined,
+        freebiesList,
         promotionBudget: promotionBudget === "" ? undefined : Number(promotionBudget),
         otherPromotion: otherPromotion ?? undefined,
       });
@@ -285,12 +367,6 @@ export default function InventoryClient({
                 }}
               />
               <TextField
-                label="รายการของแถม"
-                value={freebies}
-                onChange={(e) => setFreebies(e.target.value)}
-                sx={{ minWidth: 240, width: { xs: "100%", sm: 300 } }}
-              />
-              <TextField
                 label="งบส่งเสริมการขาย"
                 type="number"
                 value={promotionBudget}
@@ -310,6 +386,244 @@ export default function InventoryClient({
                 sx={{ minWidth: 240, width: { xs: "100%", sm: 300 } }}
               />
             </Stack>
+          </CardContent>
+        </Card>
+
+        {/* --- การ์ดรายการของแถม --- */}
+        <Card variant="outlined">
+          <CardHeader
+            title={
+              <Typography variant="subtitle1" fontWeight={700}>
+                รายการของแถม
+              </Typography>
+            }
+            action={
+              <Stack direction="row" spacing={1} alignItems="center">
+                {(() => {
+                  const summary = freebieRows.reduce(
+                    (acc, r) => {
+                      const countable =
+                        (r.buyQty?.trim() || r.freeQty?.trim() || r.netPrice?.trim()) !== "";
+                      if (countable) acc.count += 1;
+                      const np = Number(r.netPrice);
+                      if (Number.isFinite(np)) acc.sum += np;
+                      return acc;
+                    },
+                    { count: 0, sum: 0 },
+                  );
+                  return (
+                    <>
+                      <Chip
+                        label={`ทั้งหมด ${summary.count} รายการ`}
+                        variant="outlined"
+                        size="small"
+                      />
+                    </>
+                  );
+                })()}
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={<AddCircleOutlineIcon />}
+                  onClick={() =>
+                    setFreebieRows((prev) => [
+                      ...prev,
+                      {
+                        id: `fb-${Math.random().toString(36).slice(2)}`,
+                        buyQty: "",
+                        freeQty: "",
+                        netPrice: "",
+                        note: "",
+                      },
+                    ])
+                  }
+                  disabled={isPending}
+                  sx={{ width: { xs: "100%", sm: "auto" } }}
+                >
+                  เพิ่มรายการของแถม
+                </Button>
+              </Stack>
+            }
+          />
+          <CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}>
+            {isMobile ? (
+              <Stack spacing={1.25} sx={{ p: 1.5 }}>
+                {freebieRows.map((r) => (
+                  <Card key={r.id} variant="outlined" sx={{ p: 1.25 }}>
+                    <Stack spacing={1.25}>
+                      <TextField
+                        label="จำนวนที่ซื้อ"
+                        type="number"
+                        value={r.buyQty}
+                        onChange={(e) => {
+                          const raw = e.target.value ?? "";
+                          const digits = raw.replace(/[^0-9]/g, "");
+                          setFreebieRows((prev) =>
+                            prev.map((x) => (x.id === r.id ? { ...x, buyQty: digits } : x)),
+                          );
+                        }}
+                        size="small"
+                        inputProps={{ min: 0, step: 1 }}
+                        fullWidth
+                      />
+                      <TextField
+                        label="จำนวนที่แถม"
+                        type="number"
+                        value={r.freeQty}
+                        onChange={(e) => {
+                          const raw = e.target.value ?? "";
+                          const digits = raw.replace(/[^0-9]/g, "");
+                          setFreebieRows((prev) =>
+                            prev.map((x) => (x.id === r.id ? { ...x, freeQty: digits } : x)),
+                          );
+                        }}
+                        size="small"
+                        inputProps={{ min: 0, step: 1 }}
+                        fullWidth
+                      />
+                      <TextField
+                        label="ราคาสุทธิ"
+                        type="number"
+                        value={r.netPrice}
+                        onChange={(e) => {
+                          const v = e.target.value ?? "";
+                          setFreebieRows((prev) =>
+                            prev.map((x) => (x.id === r.id ? { ...x, netPrice: v } : x)),
+                          );
+                        }}
+                        size="small"
+                        inputProps={{ min: 0, step: 1 }}
+                        fullWidth
+                      />
+                      <TextField
+                        label="หมายเหตุ"
+                        value={r.note}
+                        onChange={(e) => {
+                          const v = e.target.value ?? "";
+                          setFreebieRows((prev) =>
+                            prev.map((x) => (x.id === r.id ? { ...x, note: v } : x)),
+                          );
+                        }}
+                        size="small"
+                        fullWidth
+                      />
+                      <Stack direction="row" justifyContent="flex-end">
+                        <Button
+                          color="error"
+                          variant="outlined"
+                          onClick={() =>
+                            setFreebieRows((prev) => prev.filter((x) => x.id !== r.id))
+                          }
+                        >
+                          ลบ
+                        </Button>
+                      </Stack>
+                    </Stack>
+                  </Card>
+                ))}
+              </Stack>
+            ) : (
+              <TableContainer>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell align="center" sx={{ width: 150 }}>
+                        จำนวนที่ซื้อ
+                      </TableCell>
+                      <TableCell align="center" sx={{ width: 150 }}>
+                        จำนวนที่แถม
+                      </TableCell>
+                      <TableCell align="center" sx={{ width: 180 }}>
+                        ราคาสุทธิ
+                      </TableCell>
+                      <TableCell align="center">หมายเหตุ</TableCell>
+                      <TableCell align="center" sx={{ width: 120 }}>
+                        ลบ
+                      </TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {freebieRows.map((r) => (
+                      <TableRow key={r.id} hover>
+                        <TableCell align="center">
+                          <TextField
+                            type="number"
+                            value={r.buyQty}
+                            onChange={(e) => {
+                              const raw = e.target.value ?? "";
+                              const digits = raw.replace(/[^0-9]/g, "");
+                              setFreebieRows((prev) =>
+                                prev.map((x) => (x.id === r.id ? { ...x, buyQty: digits } : x)),
+                              );
+                            }}
+                            size="small"
+                            inputProps={{ min: 0, step: 1 }}
+                            fullWidth
+                          />
+                        </TableCell>
+                        <TableCell align="center">
+                          <TextField
+                            type="number"
+                            value={r.freeQty}
+                            onChange={(e) => {
+                              const raw = e.target.value ?? "";
+                              const sanitized = raw.replace(/[^0-9]/g, "");
+                              setFreebieRows((prev) =>
+                                prev.map((x) => (x.id === r.id ? { ...x, freeQty: sanitized } : x)),
+                              );
+                            }}
+                            size="small"
+                            inputProps={{ min: 0, step: 1 }}
+                            fullWidth
+                          />
+                        </TableCell>
+                        <TableCell align="center">
+                          <TextField
+                            type="number"
+                            value={r.netPrice}
+                            onChange={(e) => {
+                              const v = e.target.value ?? "";
+                              setFreebieRows((prev) =>
+                                prev.map((x) => (x.id === r.id ? { ...x, netPrice: v } : x)),
+                              );
+                            }}
+                            size="small"
+                            inputProps={{ min: 0, step: 1 }}
+                            fullWidth
+                          />
+                        </TableCell>
+                        <TableCell align="center">
+                          <TextField
+                            value={r.note}
+                            onChange={(e) => {
+                              const v = e.target.value ?? "";
+                              setFreebieRows((prev) =>
+                                prev.map((x) => (x.id === r.id ? { ...x, note: v } : x)),
+                              );
+                            }}
+                            size="small"
+                            placeholder="หมายเหตุ"
+                            fullWidth
+                          />
+                        </TableCell>
+                        <TableCell align="center">
+                          <Stack direction="row" spacing={1} justifyContent="center">
+                            <IconButton
+                              color="error"
+                              onClick={() =>
+                                setFreebieRows((prev) => prev.filter((x) => x.id !== r.id))
+                              }
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Stack>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
           </CardContent>
         </Card>
 
