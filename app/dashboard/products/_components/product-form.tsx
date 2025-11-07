@@ -18,6 +18,7 @@ import {
   IconButton,
   Chip,
 } from "@mui/material";
+import { createFilterOptions } from "@mui/material/Autocomplete";
 import { useSession } from "next-auth/react";
 import {
   useEffect,
@@ -33,12 +34,15 @@ import { SaveBackButtons } from "@/components/SaveBackButtons";
 import { makeRandomProductValues } from "@/lib/random-fill/product";
 import { canShowRandomFill } from "@/lib/ui-permissions";
 
+import { ensurePlantsByNames } from "../actions";
+
 import type { ProductFormValues } from "../validation";
 
 type Plant = {
   id: string;
   name: string;
 };
+type PlantCreatable = Plant | { inputValue?: string; name: string } | string;
 
 type Props = {
   initialValues: ProductFormValues;
@@ -129,8 +133,17 @@ export function ProductForm({
         finalUrls = [];
       }
 
+      // Create missing plants (from freeSolo selections) before submit
+      const pendingNewNames = customPlantNames;
+      let extraPlantIds: string[] = [];
+      if (pendingNewNames.length > 0) {
+        const created = await ensurePlantsByNames(pendingNewNames);
+        extraPlantIds = created.map((r) => r.id);
+      }
+
       const payload = {
         ...values,
+        plantIds: Array.from(new Set([...(values.plantIds ?? []), ...extraPlantIds])),
         imageUrl: images.length === 0 ? "" : (firstUrl ?? values.imageUrl),
         imageUrls: finalUrls,
       } as ProductFormValues & { imageUrls?: string[] };
@@ -295,6 +308,15 @@ export function ProductForm({
     return base;
   }, [values.brand]);
 
+  // ---------- Creatable Autocomplete (plants) ----------
+  const filter = createFilterOptions<PlantCreatable>();
+  const [customPlantNames, setCustomPlantNames] = useState<string[]>([]);
+  const currentPlantValues: PlantCreatable[] = useMemo(() => {
+    const existing = plants?.filter((p) => (values.plantIds ?? []).includes(p.id)) ?? [];
+    const customs = customPlantNames.map((name) => ({ name }));
+    return [...existing, ...customs];
+  }, [plants, values.plantIds, customPlantNames]);
+
   return (
     <Paper
       component="form"
@@ -399,7 +421,7 @@ export function ProductForm({
         </Stack>
 
         {/* ขนาดบรรจุต่อลัง (ตัวเลขเท่านั้น) */}
-        {/* ชื่อสามัญ + ขนาดบรรจุ (เช่น 500ml) */} 
+        {/* ชื่อสามัญ + ขนาดบรรจุ (เช่น 500ml) */}
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           <TextField
             label="ขนาดบรรจุ"
@@ -407,7 +429,7 @@ export function ProductForm({
             onChange={handleChange("packagingSize")}
             fullWidth
           />
-              <TextField
+          <TextField
             label="ขนาดบรรจุต่อลัง"
             type="number"
             inputProps={{ min: 1 }}
@@ -422,7 +444,7 @@ export function ProductForm({
             fullWidth
           />
         </Stack>
-     
+
         {/* หน่วยนับ + สถานะ */}
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           <TextField
@@ -440,21 +462,72 @@ export function ProductForm({
           </TextField>
         </Stack>
 
-        {/* ใช้กับพืช */}
+        {/* ใช้กับพืช (รองรับเพิ่มตัวเลือกใหม่) */}
         <Autocomplete
           multiple
+          freeSolo
           id="plant-select"
-          options={plants ?? []}
-          getOptionLabel={(option) => option.name}
-          value={plants?.filter((p) => values.plantIds?.includes(p.id)) ?? []}
-          onChange={(_, newValue) => {
-            setValues((prev) => ({
-              ...prev,
-              plantIds: newValue.map((v) => v.id),
-            }));
+          options={(plants ?? []) as PlantCreatable[]}
+          filterOptions={(options, params) => {
+            const filtered = filter(options, params);
+            const { inputValue } = params;
+            const exists = (plants ?? []).some(
+              (p) => p.name.toLowerCase() === inputValue.toLowerCase(),
+            );
+            const alreadyCustom = customPlantNames.some(
+              (n) => n.toLowerCase() === inputValue.toLowerCase(),
+            );
+            if (inputValue !== "" && !exists && !alreadyCustom) {
+              filtered.push({ name: inputValue, inputValue });
+            }
+            return filtered;
+          }}
+          getOptionLabel={(option) => {
+            if (typeof option === "string") return option;
+            if ((option as any).inputValue) return (option as any).name;
+            return (option as Plant).name;
+          }}
+          renderOption={(props, option) => {
+            const key =
+              typeof option === "string" ? option : ((option as any).id ?? (option as any).name);
+            return (
+              <li {...props} key={key}>
+                {typeof option === "string" ? option : (option as any).name}
+              </li>
+            );
+          }}
+          isOptionEqualToValue={(opt, val) => {
+            const on = typeof opt === "string" ? opt : (opt as any).name;
+            const vn = typeof val === "string" ? val : (val as any).name;
+            const oi = (opt as any).id;
+            const vi = (val as any).id;
+            if (oi && vi) return oi === vi;
+            return on?.toLowerCase() === vn?.toLowerCase();
+          }}
+          value={currentPlantValues}
+          onChange={(_e, newValue) => {
+            // Split into existing IDs and custom names
+            const nextIds: string[] = [];
+            const nextCustoms: string[] = [];
+            for (const v of newValue as PlantCreatable[]) {
+              if (!v) continue;
+              if (typeof v === "string") {
+                nextCustoms.push(v);
+              } else if ((v as any).id) {
+                nextIds.push((v as any).id);
+              } else if ((v as any).name) {
+                nextCustoms.push((v as any).name);
+              }
+            }
+            setValues((prev) => ({ ...prev, plantIds: Array.from(new Set(nextIds)) }));
+            setCustomPlantNames(Array.from(new Set(nextCustoms)));
           }}
           renderInput={(params) => (
-            <TextField {...params} label="ใช้กับพืช" placeholder="เลือกพืช" />
+            <TextField
+              {...params}
+              label="ใช้กับพืช"
+              placeholder="เลือกพืชหรือพิมพ์เพื่อเพิ่มใหม่"
+            />
           )}
         />
 

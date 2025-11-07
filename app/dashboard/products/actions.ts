@@ -91,6 +91,31 @@ export async function createProduct(raw: ProductFormValues) {
   return product.id;
 }
 
+/**
+ * Ensure plants exist for given names. Creates records when missing and returns mapping.
+ */
+export async function ensurePlantsByNames(namesRaw: string[]) {
+  const names = Array.from(
+    new Set(
+      (namesRaw || [])
+        .map((n) => (typeof n === "string" ? n.trim() : ""))
+        .filter((n) => n.length > 0),
+    ),
+  );
+  if (names.length === 0) return [] as { id: string; name: string }[];
+  const rows = await Promise.all(
+    names.map((name) =>
+      prisma.plant.upsert({
+        where: { name },
+        update: {},
+        create: { name },
+        select: { id: true, name: true },
+      }),
+    ),
+  );
+  return rows;
+}
+
 export async function updateProduct(productId: string, raw: ProductFormValues) {
   const v = productFormSchema.parse(raw);
   const id = String(productId);
