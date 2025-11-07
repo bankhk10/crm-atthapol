@@ -1,10 +1,3 @@
-pnpm prisma generate
-pnpm prisma migrate dev --name init
-pnpm run seed
-pnpm dev
-
-ใช้ quick push (เฉพาะ dev): npx prisma db push
-
 <!-- Tree -->
 
 Project tree (key folders):
@@ -35,12 +28,6 @@ crm-atthapol/
 └── README.md
 ```
 
-1.แก้ schema.prisma
-npx prisma migrate dev --name add_user_table
-
-2.(ออปชัน) seed ข้อมูล
-pnpm seed
-
 Dev
 npx prisma generate
 pnpm prisma:migrate
@@ -49,7 +36,7 @@ npx prisma db push
 
 pnpm run seed
 
-<!-- ล้าง -->
+<!-- reset -->
 
 npx prisma migrate reset
 
