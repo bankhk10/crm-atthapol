@@ -472,13 +472,14 @@ export function ProductForm({
             const filtered = filter(options, params);
             const { inputValue } = params;
             const exists = (plants ?? []).some(
-              (p) => p.name.toLowerCase() === inputValue.toLowerCase(),
+              (p) => p.name.toLowerCase() === String(inputValue).toLowerCase(),
             );
             const alreadyCustom = customPlantNames.some(
-              (n) => n.toLowerCase() === inputValue.toLowerCase(),
+              (n) => n.toLowerCase() === String(inputValue).toLowerCase(),
             );
-            if (inputValue !== "" && !exists && !alreadyCustom) {
-              filtered.push({ name: inputValue, inputValue });
+            if (inputValue && String(inputValue).trim().length > 0 && !exists && !alreadyCustom) {
+              const createOption = { name: String(inputValue).trim(), inputValue, create: true };
+              return [createOption as PlantCreatable, ...filtered];
             }
             return filtered;
           }}
@@ -490,9 +491,11 @@ export function ProductForm({
           renderOption={(props, option) => {
             const key =
               typeof option === "string" ? option : ((option as any).id ?? (option as any).name);
+            const label = typeof option === "string" ? option : (option as any).name;
+            const isCreate = typeof option !== "string" && Boolean((option as any).create);
             return (
               <li {...props} key={key}>
-                {typeof option === "string" ? option : (option as any).name}
+                {isCreate ? `+ เพิ่มพืชใหม่: ${label}` : label}
               </li>
             );
           }}
