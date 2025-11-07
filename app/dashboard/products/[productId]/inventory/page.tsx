@@ -37,6 +37,9 @@ export default async function ProductInventoryPage({
                 productCode: product.productCode,
                 unit: product.unit ?? undefined,
                 price: product.price ?? undefined,
+                freebies: (product as any).freebies ?? null,
+                promotionBudget: (product as any).promotionBudget ?? null,
+                otherPromotion: (product as any).otherPromotion ?? null,
               }}
               lots={(product.stocks || []).map((s: any) => ({
                 id: s.id,

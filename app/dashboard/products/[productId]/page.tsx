@@ -164,6 +164,18 @@ export default async function ProductDetailPage({
                           value={`฿${Number(product.price).toLocaleString("th-TH", { maximumFractionDigits: 2 })}`}
                         />
                       )}
+                      {(product as any)?.freebies && (
+                        <Info label="ของแถม : " value={(product as any).freebies} />
+                      )}
+                      {typeof (product as any)?.promotionBudget === "number" && (
+                        <Info
+                          label="งบส่งเสริมการขาย : "
+                          value={`฿${Number((product as any).promotionBudget).toLocaleString("th-TH", { maximumFractionDigits: 2 })}`}
+                        />
+                      )}
+                      {(product as any)?.otherPromotion && (
+                        <Info label="ส่งเสริมการขายอื่น : " value={(product as any).otherPromotion} />
+                      )}
                       {product.mfgDate && (
                         <Info
                           label="วันที่ผลิต : "

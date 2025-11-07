@@ -40,6 +40,9 @@ type ProductInfo = {
   productCode: string;
   price?: number;
   unit?: string;
+  freebies?: string | null;
+  promotionBudget?: number | null;
+  otherPromotion?: string | null;
 };
 
 // Row type from DB
@@ -83,6 +86,11 @@ export default function InventoryClient({
 }) {
   const [isPending, startTransition] = useTransition();
   const [price, setPrice] = useState<string>(product.price != null ? String(product.price) : "");
+  const [freebies, setFreebies] = useState<string>(product.freebies ?? "");
+  const [promotionBudget, setPromotionBudget] = useState<string>(
+    product.promotionBudget != null ? String(product.promotionBudget) : "",
+  );
+  const [otherPromotion, setOtherPromotion] = useState<string>(product.otherPromotion ?? "");
   const [rows, setRows] = useState<LotRow[]>(() =>
     (lots || []).map((r) => ({
       id: r.id,
@@ -167,6 +175,9 @@ export default function InventoryClient({
     startTransition(async () => {
       const priceUpdatePromise = updateProductPrice(product.id, {
         price: price === "" ? undefined : Number(price),
+        freebies: freebies ?? undefined,
+        promotionBudget: promotionBudget === "" ? undefined : Number(promotionBudget),
+        otherPromotion: otherPromotion ?? undefined,
       });
 
       const lotUpdatePromises = rows
@@ -251,28 +262,54 @@ export default function InventoryClient({
             subheader={`รหัสสินค้า: ${product.productCode}`}
           />
           <CardContent>
-            <TextField
-              label="ราคา"
-              type="number"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              sx={{ minWidth: 240, width: { xs: "100%", sm: 240 } }}
-              inputProps={{ min: 0, step: 1 }}
-              InputProps={{
-                startAdornment: (
-                  <Typography
-                    sx={{
-                      mr: 1,
-                      fontWeight: 600,
-                      // color: "text.secondary",
-                      fontSize: 18,
-                    }}
-                  >
-                    ฿
-                  </Typography>
-                ),
-              }}
-            />
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2} useFlexGap flexWrap="wrap">
+              <TextField
+                label="ราคา"
+                type="number"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                sx={{ minWidth: 240, width: { xs: "100%", sm: 240 } }}
+                inputProps={{ min: 0, step: 1 }}
+                InputProps={{
+                  startAdornment: (
+                    <Typography
+                      sx={{
+                        mr: 1,
+                        fontWeight: 600,
+                        fontSize: 18,
+                      }}
+                    >
+                      ฿
+                    </Typography>
+                  ),
+                }}
+              />
+              <TextField
+                label="รายการของแถม"
+                value={freebies}
+                onChange={(e) => setFreebies(e.target.value)}
+                sx={{ minWidth: 240, width: { xs: "100%", sm: 300 } }}
+              />
+              <TextField
+                label="งบส่งเสริมการขาย"
+                type="number"
+                value={promotionBudget}
+                onChange={(e) => setPromotionBudget(e.target.value)}
+                sx={{ minWidth: 240, width: { xs: "100%", sm: 260 } }}
+                inputProps={{ min: 0, step: 1 }}
+                InputProps={{
+                  startAdornment: (
+                    <Typography sx={{ mr: 1, fontWeight: 600, fontSize: 18 }}>฿</Typography>
+                  ),
+                }}
+              />
+              <TextField
+                label="รายการส่งเสริมการขายอื่น"
+                value={otherPromotion}
+                onChange={(e) => setOtherPromotion(e.target.value)}
+                sx={{ minWidth: 240, width: { xs: "100%", sm: 300 } }}
+              />
+            </Stack>
           </CardContent>
         </Card>
 

@@ -9,6 +9,23 @@ const priceSchema = z.object({
   price: z
     .preprocess((v) => (typeof v === "string" ? v.trim() : v), z.coerce.number().min(0))
     .optional(),
+  freebies: z
+    .preprocess(
+      (v) => (typeof v === "string" ? v.trim() : v),
+      z.string().trim().max(2000),
+    )
+    .optional()
+    .nullable(),
+  promotionBudget: z
+    .preprocess((v) => (typeof v === "string" ? v.trim() : v), z.coerce.number().min(0))
+    .optional(),
+  otherPromotion: z
+    .preprocess(
+      (v) => (typeof v === "string" ? v.trim() : v),
+      z.string().trim().max(2000),
+    )
+    .optional()
+    .nullable(),
 });
 
 const lotSchema = z.object({
@@ -83,7 +100,16 @@ export async function updateProductPrice(productId: string, raw: unknown) {
     const msg = (parsed.error.issues?.[0]?.message as string) || "ข้อมูลราคาไม่ถูกต้อง";
     throw new Error(msg);
   }
-  await prisma.product.update({ where: { id }, data: { price: parsed.data.price ?? null } });
+  await prisma.product.update({
+    where: { id },
+    data: {
+      price: parsed.data.price ?? null,
+      freebies: (parsed.data.freebies as string | null | undefined) ?? null,
+      promotionBudget:
+        parsed.data.promotionBudget !== undefined ? Number(parsed.data.promotionBudget) : null,
+      otherPromotion: (parsed.data.otherPromotion as string | null | undefined) ?? null,
+    },
+  });
   revalidatePath(`/dashboard/products/${id}`);
   revalidatePath(`/dashboard/products/${id}/inventory`);
 }
