@@ -505,6 +505,10 @@ export function ProductForm({
                       gap: 1,
                       color: "success.main",
                       fontWeight: 700,
+                      bgcolor: "rgba(46, 125, 50, 0.08)",
+                      px: 1,
+                      py: 0.5,
+                      borderRadius: 1,
                     }}
                   >
                     <AddIcon fontSize="small" color="success" />
