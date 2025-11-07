@@ -1,5 +1,6 @@
 "use client";
 
+import AddIcon from "@mui/icons-material/Add";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import DeleteIcon from "@mui/icons-material/Close";
@@ -42,7 +43,7 @@ type Plant = {
   id: string;
   name: string;
 };
-type PlantCreatable = Plant | { inputValue?: string; name: string } | string;
+type PlantCreatable = Plant | { inputValue?: string; name: string; create?: boolean } | string;
 
 type Props = {
   initialValues: ProductFormValues;
@@ -495,7 +496,23 @@ export function ProductForm({
             const isCreate = typeof option !== "string" && Boolean((option as any).create);
             return (
               <li {...props} key={key}>
-                {isCreate ? `+ เพิ่มพืชใหม่: ${label}` : label}
+                {isCreate ? (
+                  <Box
+                    component="span"
+                    sx={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 1,
+                      color: "success.main",
+                      fontWeight: 700,
+                    }}
+                  >
+                    <AddIcon fontSize="small" color="success" />
+                    <span>{`เพิ่มพืชใหม่: ${label}`}</span>
+                  </Box>
+                ) : (
+                  label
+                )}
               </li>
             );
           }}
