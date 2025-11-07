@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { Box, Button, Stack, TextField } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
+import { Box, Button, Stack, TextField } from "@mui/material";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { hasPermission } from "@/lib/permissions";
-import type { CustomerListItem } from "../data";
+import { useState } from "react";
+
 import { CustomersTable } from "./customers-table";
+
+import type { CustomerListItem } from "../data";
 
 export default function CustomersListClient({ customers }: { customers: CustomerListItem[] }) {
   const { data: session } = useSession();
@@ -37,30 +38,57 @@ export default function CustomersListClient({ customers }: { customers: Customer
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="ค้นหา (ชื่อ/โทร/อีเมล/ที่อยู่)"
-            InputProps={{ startAdornment: <SearchIcon fontSize="small" style={{ marginRight: 8 }} /> }}
+            InputProps={{
+              startAdornment: <SearchIcon fontSize="small" style={{ marginRight: 8 }} />,
+            }}
             size="small"
           />
         </Box>
 
         {/* add buttons group */}
-        <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{ width: { xs: "100%", sm: "auto" } }}>
+        <Stack
+          direction="row"
+          spacing={1}
+          justifyContent="flex-end"
+          sx={{ width: { xs: "100%", sm: "auto" } }}
+        >
           {canCreateDealer && (
-            <Button component={Link} href="/dashboard/customers/new/dealer" variant="contained" color="primary">
+            <Button
+              component={Link}
+              href="/dashboard/customers/new/dealer"
+              variant="contained"
+              color="primary"
+            >
               เพิ่ม Dealer
             </Button>
           )}
           {canCreateSubDealer && (
-            <Button component={Link} href="/dashboard/customers/new/subdealer" variant="contained" color="secondary">
+            <Button
+              component={Link}
+              href="/dashboard/customers/new/subdealer"
+              variant="contained"
+              color="secondary"
+            >
               เพิ่ม SubDealer
             </Button>
           )}
           {canCreateFarmer && (
-            <Button component={Link} href="/dashboard/customers/new/farmer" variant="contained" color="success">
+            <Button
+              component={Link}
+              href="/dashboard/customers/new/farmer"
+              variant="contained"
+              color="success"
+            >
               เพิ่ม Farmer
             </Button>
           )}
           {canCreateBroker && (
-            <Button component={Link} href="/dashboard/customers/new/broker" variant="contained" color="warning">
+            <Button
+              component={Link}
+              href="/dashboard/customers/new/broker"
+              variant="contained"
+              color="warning"
+            >
               เพิ่ม Broker
             </Button>
           )}

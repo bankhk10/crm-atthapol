@@ -1,20 +1,13 @@
 "use client";
 
-import { useState, useTransition, type ChangeEvent } from "react";
-import {
-  Box,
-  Paper,
-  Stack,
-  Typography,
-  Button,
-  IconButton,
-  Chip,
-} from "@mui/material";
-import Image from "next/image";
-import DeleteIcon from "@mui/icons-material/Delete";
+import AddPhotoAlternateIcon from "@mui/icons-material/AddPhotoAlternate";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import AddPhotoAlternateIcon from "@mui/icons-material/AddPhotoAlternate";
+import DeleteIcon from "@mui/icons-material/Delete";
+import { Box, Paper, Stack, Typography, Button, IconButton, Chip } from "@mui/material";
+import Image from "next/image";
+import { useState, useTransition, type ChangeEvent } from "react";
+
 import { replaceProductImages } from "../actions";
 
 type Img = { id: string; url: string };
@@ -69,8 +62,8 @@ export default function ProductImagesManager({ productId, initialImages }: Props
     const invalidNames: string[] = [];
     const picked = files.filter((f) => {
       const name = f.name || "(ไม่มีชื่อไฟล์)";
-      const ext = ((name.split(".").pop() || "").toLowerCase());
-      const mimeOk = f.type ? (ALLOWED_MIME.has(f.type) || f.type.startsWith("image/")) : false;
+      const ext = (name.split(".").pop() || "").toLowerCase();
+      const mimeOk = f.type ? ALLOWED_MIME.has(f.type) || f.type.startsWith("image/") : false;
       const extOk = ext ? ALLOWED_EXT.has(ext) : false;
       if (!(mimeOk || extOk)) {
         invalidNames.push(name);
@@ -86,7 +79,9 @@ export default function ProductImagesManager({ productId, initialImages }: Props
     if (invalidNames.length > 0) {
       const msg = `ไฟล์ไม่รองรับ: ${invalidNames.join(", ")} (รองรับ: JPG, PNG, WebP, AVIF, SVG, GIF)`;
       setError(msg);
-      try { alert(msg); } catch {}
+      try {
+        alert(msg);
+      } catch {}
     }
     const slice = picked.slice(0, allowed);
     if (slice.length < picked.length) setError("เลือกรูปได้สูงสุด 10 รูป");
@@ -110,7 +105,10 @@ export default function ProductImagesManager({ productId, initialImages }: Props
     setError(null);
     startTransition(async () => {
       try {
-        await replaceProductImages(productId, images.map((i) => i.url));
+        await replaceProductImages(
+          productId,
+          images.map((i) => i.url),
+        );
       } catch (e) {
         const msg = e instanceof Error ? e.message : "บันทึกรูปไม่สำเร็จ";
         setError(msg);
@@ -124,20 +122,51 @@ export default function ProductImagesManager({ productId, initialImages }: Props
     <Paper sx={{ p: 2 }}>
       <Stack spacing={1.5}>
         <Stack direction="row" alignItems="center" spacing={1}>
-          <Typography variant="h6" fontWeight={700}>จัดการรูปภาพ</Typography>
+          <Typography variant="h6" fontWeight={700}>
+            จัดการรูปภาพ
+          </Typography>
           <Chip label={`${images.length}/10 รูป`} size="small" />
         </Stack>
-        {error && <Typography color="error.main" variant="body2">{error}</Typography>}
+        {error && (
+          <Typography color="error.main" variant="body2">
+            {error}
+          </Typography>
+        )}
 
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5 }}>
           {images.map((img, idx) => (
-            <Box key={img.id} sx={{ position: "relative", width: 140, height: 140, borderRadius: 1.5, overflow: "hidden", border: "1px solid", borderColor: "divider" }}>
+            <Box
+              key={img.id}
+              sx={{
+                position: "relative",
+                width: 140,
+                height: 140,
+                borderRadius: 1.5,
+                overflow: "hidden",
+                border: "1px solid",
+                borderColor: "divider",
+              }}
+            >
               <Image src={img.url} alt={`image-${idx}`} fill style={{ objectFit: "cover" }} />
-              <Stack direction="row" spacing={0.5} sx={{ position: "absolute", bottom: 4, left: 4, bgcolor: "rgba(255,255,255,0.85)", borderRadius: 1 }}>
+              <Stack
+                direction="row"
+                spacing={0.5}
+                sx={{
+                  position: "absolute",
+                  bottom: 4,
+                  left: 4,
+                  bgcolor: "rgba(255,255,255,0.85)",
+                  borderRadius: 1,
+                }}
+              >
                 <IconButton size="small" onClick={() => move(idx, -1)} disabled={idx === 0}>
                   <ArrowBackIcon fontSize="small" />
                 </IconButton>
-                <IconButton size="small" onClick={() => move(idx, +1)} disabled={idx === images.length - 1}>
+                <IconButton
+                  size="small"
+                  onClick={() => move(idx, +1)}
+                  disabled={idx === images.length - 1}
+                >
                   <ArrowForwardIcon fontSize="small" />
                 </IconButton>
                 <IconButton size="small" color="error" onClick={() => removeAt(idx)}>
@@ -151,10 +180,20 @@ export default function ProductImagesManager({ productId, initialImages }: Props
         <Stack direction="row" spacing={1}>
           <Button variant="outlined" component="label" startIcon={<AddPhotoAlternateIcon />}>
             เพิ่มรูป
-            <input hidden type="file" accept=".jpg,.jpeg,.png,.webp,.avif,.svg,.gif,image/*" multiple onChange={handleAddFiles} />
+            <input
+              hidden
+              type="file"
+              accept=".jpg,.jpeg,.png,.webp,.avif,.svg,.gif,image/*"
+              multiple
+              onChange={handleAddFiles}
+            />
           </Button>
-          <Button variant="contained" onClick={handleSave} disabled={pending}>บันทึกรูป</Button>
-          <Button variant="text" onClick={handleReset} disabled={pending}>รีเซ็ต</Button>
+          <Button variant="contained" onClick={handleSave} disabled={pending}>
+            บันทึกรูป
+          </Button>
+          <Button variant="text" onClick={handleReset} disabled={pending}>
+            รีเซ็ต
+          </Button>
         </Stack>
 
         {/* ข้อความอนุญาต/เงื่อนไขการอัปโหลด */}
@@ -165,4 +204,3 @@ export default function ProductImagesManager({ productId, initialImages }: Props
     </Paper>
   );
 }
-

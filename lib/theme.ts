@@ -5,12 +5,7 @@ import { createTheme, responsiveFontSizes } from "@mui/material/styles";
 // (provided by next/font in app/layout.tsx) for the primary font.
 const baseTheme = createTheme({
   typography: {
-    fontFamily: [
-      "var(--font-prompt)",
-      "Inter",
-      "Roboto",
-      "sans-serif",
-    ].join(","),
+    fontFamily: ["var(--font-prompt)", "Inter", "Roboto", "sans-serif"].join(","),
     // Optional: adjust default weights for better Thai readability
     h1: { fontWeight: 600 },
     h2: { fontWeight: 600 },
@@ -74,7 +69,7 @@ const baseTheme = createTheme({
         ":root": { colorScheme: "light" },
         body: {
           // Ensure baseline uses the theme font family
-          fontFamily: 'var(--font-prompt), Inter, Roboto, sans-serif',
+          fontFamily: "var(--font-prompt), Inter, Roboto, sans-serif",
         },
       },
     },

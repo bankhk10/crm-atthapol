@@ -1,5 +1,6 @@
-import type { Option, ProductOption, OrderItemInput } from "@/app/dashboard/sales/orders/types";
 import { choice, pick, randInt } from "@/lib/random";
+
+import type { Option, ProductOption, OrderItemInput } from "@/app/dashboard/sales/orders/types";
 
 export function fillOrderFormRandom(ctx: {
   customerOptions: Option[];
@@ -150,4 +151,3 @@ export function fillOrderFormRandom(ctx: {
   setUsePromotion(true);
   setAutoPromotion(true);
 }
-

@@ -1,18 +1,25 @@
 import { Box, Stack } from "@mui/material";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
 import { redirect } from "next/navigation";
 import { notFound } from "next/navigation";
+import { getServerSession } from "next-auth";
+
+import { getEmployees } from "@/app/dashboard/employees/data";
+import { authOptions } from "@/lib/auth";
+import { hasPermission } from "@/lib/permissions";
+
 import { CustomerEditClient } from "../../_components/customer-edit-client";
 import { getCustomer } from "../../data";
 import { getDealerOptions } from "../../data";
-import { getEmployees } from "@/app/dashboard/employees/data";
+
 import type { CustomerFormValues } from "../../types";
 
 type EmployeesWithUser = Awaited<ReturnType<typeof getEmployees>>;
 
-export default async function CustomerEditPage({ params }: { params: Promise<{ customerId: string }> }) {
+export default async function CustomerEditPage({
+  params,
+}: {
+  params: Promise<{ customerId: string }>;
+}) {
   const { customerId } = await params;
   const session = await getServerSession(authOptions);
   const perms = session?.user?.permissions ?? [];
@@ -28,9 +35,10 @@ export default async function CustomerEditPage({ params }: { params: Promise<{ c
     .map((e: EmployeesWithUser[number]) => ({
       id: e.id,
       label:
-        [e.prefix, e.firstName, e.lastName]
-          .filter(Boolean)
-          .join(" ") || e.user?.name || e.user?.email || e.id,
+        [e.prefix, e.firstName, e.lastName].filter(Boolean).join(" ") ||
+        e.user?.name ||
+        e.user?.email ||
+        e.id,
     }));
 
   const initialValues: CustomerFormValues = {
@@ -55,14 +63,14 @@ export default async function CustomerEditPage({ params }: { params: Promise<{ c
     companyName: (customer as any).companyName ?? "",
     contactPerson: (customer as any).contactPerson ?? "",
     contactPhone:
-      (customer.type === "FARMER" || customer.type === "BROKER")
+      customer.type === "FARMER" || customer.type === "BROKER"
         ? (customer.phone ?? "")
         : ((customer as any).contactPhone ?? ""),
     // Autofill personal email for DEALER/SUBDEALER from company email when missing
     contactEmail:
-      (customer.type === "FARMER" || customer.type === "BROKER")
+      customer.type === "FARMER" || customer.type === "BROKER"
         ? (customer.email ?? "")
-        : (((customer as any).contactEmail ?? null) ?? (customer.email ?? "")),
+        : ((customer as any).contactEmail ?? null ?? customer.email ?? ""),
     creditLimit: (customer as any).creditLimit ?? "",
     promotionBudget: (customer as any).promotionBudget ?? "",
     parentDealer: (customer as any).parentDealer ?? "",
@@ -105,7 +113,12 @@ export default async function CustomerEditPage({ params }: { params: Promise<{ c
       }}
     >
       <Stack spacing={3} sx={{ width: "100%", maxWidth: 960 }}>
-        <CustomerEditClient customerId={customer.id} initialValues={initialValues} employeeOptions={employeeOptions} dealerOptions={dealers} />
+        <CustomerEditClient
+          customerId={customer.id}
+          initialValues={initialValues}
+          employeeOptions={employeeOptions}
+          dealerOptions={dealers}
+        />
       </Stack>
     </Box>
   );

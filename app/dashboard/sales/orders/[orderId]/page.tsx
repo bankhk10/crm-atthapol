@@ -1,10 +1,26 @@
-import { prisma } from "@/lib/prisma";
+import {
+  Box,
+  Chip,
+  Divider,
+  Paper,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Typography,
+  Button,
+} from "@mui/material";
+import Link from "next/link";
 import { getServerSession } from "next-auth";
+
 import { authOptions } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
+import { prisma } from "@/lib/prisma";
 import { buildSaleOrderVisibilityWhere } from "@/lib/sales-visibility";
-import { Box, Chip, Divider, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, Button } from "@mui/material";
-import Link from "next/link";
+
 import { ActionsBar } from "./_components/actions-bar";
 
 // UI workflow status options and helper mapping from backend enums
@@ -51,15 +67,23 @@ function displayCustomerName(c: any) {
   return parts.length ? parts.join(" ") : c.id;
 }
 
-export default async function SalesOrderDetailPage({ params }: { params: Promise<{ orderId: string }> }) {
+export default async function SalesOrderDetailPage({
+  params,
+}: {
+  params: Promise<{ orderId: string }>;
+}) {
   const { orderId: id } = await params;
   const session = await getServerSession(authOptions);
   const permissions = session?.user?.permissions ?? [];
   if (!hasPermission(permissions, "sales", "view")) {
     return (
       <Stack spacing={2}>
-        <Typography variant="h5" fontWeight={700}>ไม่มีสิทธิ์เข้าถึงใบสั่งขาย</Typography>
-        <Button component={Link as any} href="/dashboard/sales/orders" variant="outlined">กลับรายการขาย</Button>
+        <Typography variant="h5" fontWeight={700}>
+          ไม่มีสิทธิ์เข้าถึงใบสั่งขาย
+        </Typography>
+        <Button component={Link as any} href="/dashboard/sales/orders" variant="outlined">
+          กลับรายการขาย
+        </Button>
       </Stack>
     );
   }
@@ -77,8 +101,12 @@ export default async function SalesOrderDetailPage({ params }: { params: Promise
   if (!so || so.deletedAt) {
     return (
       <Stack spacing={2}>
-        <Typography variant="h5" fontWeight={700}>ไม่พบใบสั่งขาย</Typography>
-        <Button component={Link as any} href="/dashboard/sales/orders" variant="outlined">กลับรายการขาย</Button>
+        <Typography variant="h5" fontWeight={700}>
+          ไม่พบใบสั่งขาย
+        </Typography>
+        <Button component={Link as any} href="/dashboard/sales/orders" variant="outlined">
+          กลับรายการขาย
+        </Button>
       </Stack>
     );
   }
@@ -88,31 +116,53 @@ export default async function SalesOrderDetailPage({ params }: { params: Promise
 
   return (
     <Stack spacing={2}>
-      <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "flex-start", sm: "center" }}>
-        <Typography variant="h4" fontWeight={700}>ใบสั่งขาย #{so.soNumber}</Typography>
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        justifyContent="space-between"
+        alignItems={{ xs: "flex-start", sm: "center" }}
+      >
+        <Typography variant="h4" fontWeight={700}>
+          ใบสั่งขาย #{so.soNumber}
+        </Typography>
         <Stack direction="row" spacing={1} alignItems="center">
           {(() => {
-            const baseWf = workflowFromBackend(String(so.status || ""), String(so.paymentStatus || ""));
+            const baseWf = workflowFromBackend(
+              String(so.status || ""),
+              String(so.paymentStatus || ""),
+            );
             const wf = so.status === "CANCELLED" && (so as any)?.rejectReason ? "REJECTED" : baseWf;
-            const label = WORKFLOW_STATUS_OPTIONS.find((x) => x.value === wf)?.label || String(so.status);
+            const label =
+              WORKFLOW_STATUS_OPTIONS.find((x) => x.value === wf)?.label || String(so.status);
             const isCancelled = wf === "CANCELLED" || wf === "REJECTED";
-            return <Chip label={label} color={isCancelled ? "default" : "primary"} variant={isCancelled ? "outlined" : "filled"} />;
+            return (
+              <Chip
+                label={label}
+                color={isCancelled ? "default" : "primary"}
+                variant={isCancelled ? "outlined" : "filled"}
+              />
+            );
           })()}
-          <Chip label={`ชำระเงิน: ${PAYMENT_STATUS_LABEL[String(so.paymentStatus || "")] || String(so.paymentStatus)}`} variant="outlined" />
-          <ActionsBar orderId={so.id} status={String(so.status)} canApprove={canApprove} canReject={canReject} />
+          <Chip
+            label={`ชำระเงิน: ${PAYMENT_STATUS_LABEL[String(so.paymentStatus || "")] || String(so.paymentStatus)}`}
+            variant="outlined"
+          />
+          <ActionsBar
+            orderId={so.id}
+            status={String(so.status)}
+            canApprove={canApprove}
+            canReject={canReject}
+          />
         </Stack>
       </Stack>
 
       {(so as any).rejectReason || (so as any).cancelReason ? (
         <Paper variant="outlined" sx={{ p: 2 }}>
-          <Typography fontWeight={700} mb={1}>เหตุผล</Typography>
+          <Typography fontWeight={700} mb={1}>
+            เหตุผล
+          </Typography>
           <Stack spacing={0.5}>
-            {(so as any).rejectReason && (
-              <div>เหตุผลการปฏิเสธ: {(so as any).rejectReason}</div>
-            )}
-            {(so as any).cancelReason && (
-              <div>เหตุผลการยกเลิก: {(so as any).cancelReason}</div>
-            )}
+            {(so as any).rejectReason && <div>เหตุผลการปฏิเสธ: {(so as any).rejectReason}</div>}
+            {(so as any).cancelReason && <div>เหตุผลการยกเลิก: {(so as any).cancelReason}</div>}
           </Stack>
         </Paper>
       ) : null}
@@ -120,31 +170,47 @@ export default async function SalesOrderDetailPage({ params }: { params: Promise
       <Paper variant="outlined" sx={{ p: 2 }}>
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           <Box flex={1}>
-            <Typography fontWeight={700} mb={1}>ข้อมูลเอกสาร</Typography>
+            <Typography fontWeight={700} mb={1}>
+              ข้อมูลเอกสาร
+            </Typography>
             <Stack spacing={0.5}>
               <div>เลขที่เอกสาร: {so.soNumber}</div>
               <div>วันที่สั่งซื้อ: {new Date(so.orderDate).toLocaleDateString()}</div>
-              <div>วันที่จัดส่ง: {so.shippingDate ? new Date(so.shippingDate).toLocaleDateString() : '-'}</div>
-              <div>ครบกำหนด: {so.dueDate ? new Date(so.dueDate).toLocaleDateString() : '-'}</div>
-              <div>สกุลเงิน: {so.currency} | VAT: {so.vatRate}% ({so.vatIncluded ? 'รวม' : 'ไม่รวม'})</div>
+              <div>
+                วันที่จัดส่ง:{" "}
+                {so.shippingDate ? new Date(so.shippingDate).toLocaleDateString() : "-"}
+              </div>
+              <div>ครบกำหนด: {so.dueDate ? new Date(so.dueDate).toLocaleDateString() : "-"}</div>
+              <div>
+                สกุลเงิน: {so.currency} | VAT: {so.vatRate}% ({so.vatIncluded ? "รวม" : "ไม่รวม"})
+              </div>
             </Stack>
           </Box>
           <Box flex={1}>
-            <Typography fontWeight={700} mb={1}>ลูกค้า</Typography>
+            <Typography fontWeight={700} mb={1}>
+              ลูกค้า
+            </Typography>
             <Stack spacing={0.5}>
               <div>ชื่อลูกค้า: {displayCustomerName(so.customer)}</div>
-              <div>ที่อยู่วางบิล: {so.billTo || '-'}</div>
-              <div>ที่อยู่จัดส่ง: {so.shipTo || '-'}</div>
-              <div>เลขที่ PO: {so.poNumber || '-'}</div>
+              <div>ที่อยู่วางบิล: {so.billTo || "-"}</div>
+              <div>ที่อยู่จัดส่ง: {so.shipTo || "-"}</div>
+              <div>เลขที่ PO: {so.poNumber || "-"}</div>
             </Stack>
           </Box>
           <Box flex={1}>
-            <Typography fontWeight={700} mb={1}>พนักงานขาย</Typography>
+            <Typography fontWeight={700} mb={1}>
+              พนักงานขาย
+            </Typography>
             <Stack spacing={0.5}>
               <div>
                 {(so as any).salesperson
-                  ? ([so.salesperson.prefix, so.salesperson.firstName, so.salesperson.lastName].filter(Boolean).join(' ') || so.salesperson.user?.name || so.salesperson.user?.email || so.salesperson.id)
-                  : '-'}
+                  ? [so.salesperson.prefix, so.salesperson.firstName, so.salesperson.lastName]
+                      .filter(Boolean)
+                      .join(" ") ||
+                    so.salesperson.user?.name ||
+                    so.salesperson.user?.email ||
+                    so.salesperson.id
+                  : "-"}
               </div>
               <div>สร้างเมื่อ: {new Date(so.createdAt).toLocaleString()}</div>
               <div>แก้ไขล่าสุด: {new Date(so.updatedAt).toLocaleString()}</div>
@@ -154,7 +220,9 @@ export default async function SalesOrderDetailPage({ params }: { params: Promise
       </Paper>
 
       <Paper variant="outlined" sx={{ p: 2 }}>
-        <Typography fontWeight={700} mb={1}>รายการสินค้า</Typography>
+        <Typography fontWeight={700} mb={1}>
+          รายการสินค้า
+        </Typography>
         <TableContainer>
           <Table size="small">
             <TableHead>
@@ -171,12 +239,16 @@ export default async function SalesOrderDetailPage({ params }: { params: Promise
             <TableBody>
               {so.items.map((it: any) => (
                 <TableRow key={it.id}>
-                  <TableCell>{it.productCodeSnapshot || '-'}</TableCell>
-                  <TableCell>{it.nameSnapshot || '-'}</TableCell>
-                  <TableCell>{it.unit || '-'}</TableCell>
+                  <TableCell>{it.productCodeSnapshot || "-"}</TableCell>
+                  <TableCell>{it.nameSnapshot || "-"}</TableCell>
+                  <TableCell>{it.unit || "-"}</TableCell>
                   <TableCell align="right">{it.qty}</TableCell>
                   <TableCell align="right">{fmtCurrency(it.unitPrice)}</TableCell>
-                  <TableCell align="right">{(it.discountPercent || 0) > 0 ? `${it.discountPercent}%` : fmtCurrency(it.discountAmount || 0)}</TableCell>
+                  <TableCell align="right">
+                    {(it.discountPercent || 0) > 0
+                      ? `${it.discountPercent}%`
+                      : fmtCurrency(it.discountAmount || 0)}
+                  </TableCell>
                   <TableCell align="right">{fmtCurrency(it.amount)}</TableCell>
                 </TableRow>
               ))}
@@ -188,7 +260,9 @@ export default async function SalesOrderDetailPage({ params }: { params: Promise
       <Paper variant="outlined" sx={{ p: 2 }}>
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           <Box flex={1}>
-            <Typography fontWeight={700} mb={1}>สรุปยอด</Typography>
+            <Typography fontWeight={700} mb={1}>
+              สรุปยอด
+            </Typography>
             <Stack spacing={0.5}>
               <div>ยอดก่อนภาษี: {fmtCurrency(so.subTotal)}</div>
               <div>ส่วนลดรายการ: {fmtCurrency(so.discountTotal)}</div>
@@ -197,11 +271,15 @@ export default async function SalesOrderDetailPage({ params }: { params: Promise
               <div>ค่าขนส่ง: {fmtCurrency(so.shippingFee)}</div>
               <div>ค่าใช้จ่ายอื่น: {fmtCurrency(so.otherCharges)}</div>
               <Divider sx={{ my: 1 }} />
-              <div><strong>ยอดสุทธิ: {fmtCurrency(so.grandTotal)}</strong></div>
+              <div>
+                <strong>ยอดสุทธิ: {fmtCurrency(so.grandTotal)}</strong>
+              </div>
             </Stack>
           </Box>
           <Box flex={1}>
-            <Typography fontWeight={700} mb={1}>การจองสต็อก</Typography>
+            <Typography fontWeight={700} mb={1}>
+              การจองสต็อก
+            </Typography>
             {so.reservations.length === 0 ? (
               <Typography color="text.secondary">ไม่มีรายการจอง</Typography>
             ) : (
@@ -217,9 +295,11 @@ export default async function SalesOrderDetailPage({ params }: { params: Promise
                   <TableBody>
                     {so.reservations.map((r: any) => (
                       <TableRow key={r.id}>
-                        <TableCell>{r.stock?.lotNumber || '-'}</TableCell>
+                        <TableCell>{r.stock?.lotNumber || "-"}</TableCell>
                         <TableCell align="right">{r.qty}</TableCell>
-                        <TableCell>{r.releasedAt ? new Date(r.releasedAt).toLocaleString() : '-'}</TableCell>
+                        <TableCell>
+                          {r.releasedAt ? new Date(r.releasedAt).toLocaleString() : "-"}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -231,7 +311,9 @@ export default async function SalesOrderDetailPage({ params }: { params: Promise
       </Paper>
 
       <Stack direction="row" spacing={1}>
-        <Button component={Link as any} href="/dashboard/sales/orders" variant="outlined">กลับรายการขาย</Button>
+        <Button component={Link as any} href="/dashboard/sales/orders" variant="outlined">
+          กลับรายการขาย
+        </Button>
       </Stack>
     </Stack>
   );

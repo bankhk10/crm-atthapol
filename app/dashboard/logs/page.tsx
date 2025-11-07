@@ -1,9 +1,12 @@
+import { Box, Stack } from "@mui/material";
+
+import { requirePermission } from "@/lib/require-permission";
+
 import { LogsTable } from "./_components/logs-table";
 import { getAuditLogsPage, type AuditLogFilters } from "./data";
-import type { AuditLogListItem } from "./types";
 import { ActionButtons } from "../_components/action-buttons";
-import { Box, Stack } from "@mui/material";
-import { requirePermission } from "@/lib/require-permission";
+
+import type { AuditLogListItem } from "./types";
 
 export default async function AuditLogsPage({
   searchParams,

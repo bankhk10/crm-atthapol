@@ -1,7 +1,7 @@
 "use client";
 
-import { Stack, Typography, Box, Paper } from "@mui/material";
 import ConstructionIcon from "@mui/icons-material/Construction";
+import { Stack, Typography, Box, Paper } from "@mui/material";
 
 export default function InProgressPage() {
   return (

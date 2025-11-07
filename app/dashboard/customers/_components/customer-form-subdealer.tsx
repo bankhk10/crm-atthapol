@@ -1,17 +1,18 @@
 "use client";
 
-import type { Dispatch, SetStateAction } from "react";
 import { Box, Stack, TextField, Typography, MenuItem } from "@mui/material";
-import { FillRandomButton } from "@/components/FillRandomButton";
-import { useSession } from "next-auth/react";
-import { canShowRandomFill } from "@/lib/ui-permissions";
 import Autocomplete from "@mui/material/Autocomplete";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { th } from "date-fns/locale";
+import { useSession } from "next-auth/react";
+
+import { FillRandomButton } from "@/components/FillRandomButton";
+import { canShowRandomFill } from "@/lib/ui-permissions";
 
 import type { CustomerFormValues } from "../types";
+import type { Dispatch, SetStateAction } from "react";
 
 type SubDealerFormSectionProps = {
   values: CustomerFormValues;
@@ -39,9 +40,40 @@ export default function SubDealerFormSection({
 
     const companyPrefixes = ["หจก.", "บจก.", "บริษัท", "ห้างหุ้นส่วนจำกัด"];
     const companyBodies = ["ซับดีลเซ็นเตอร์", "ไทยซัพพลาย", "ตลาดเกษตร", "ฟาร์มโปร", "อีสานเทรด"];
-    const firstNames = ["สมชาย", "วิชัย", "กิตติ", "อรทัย", "วาสนา", "ชลธิชา", "ปิยพงษ์", "สุรีย์พร", "นพดล", "ชุติมา"];
-    const lastNames = ["ใจดี", "มีสุข", "วงศ์ไทย", "เกษมสุข", "ทวีทรัพย์", "สวัสดิ์", "ศรีทอง", "สุขสันต์", "รุ่งโรจน์", "รุ่งเรือง"];
-    const streets = ["สุขุมวิท", "เพชรเกษม", "พหลโยธิน", "งามวงศ์วาน", "ลาดพร้าว", "รามคำแหง", "ศรีนครินทร์", "เจริญกรุง"]; 
+    const firstNames = [
+      "สมชาย",
+      "วิชัย",
+      "กิตติ",
+      "อรทัย",
+      "วาสนา",
+      "ชลธิชา",
+      "ปิยพงษ์",
+      "สุรีย์พร",
+      "นพดล",
+      "ชุติมา",
+    ];
+    const lastNames = [
+      "ใจดี",
+      "มีสุข",
+      "วงศ์ไทย",
+      "เกษมสุข",
+      "ทวีทรัพย์",
+      "สวัสดิ์",
+      "ศรีทอง",
+      "สุขสันต์",
+      "รุ่งโรจน์",
+      "รุ่งเรือง",
+    ];
+    const streets = [
+      "สุขุมวิท",
+      "เพชรเกษม",
+      "พหลโยธิน",
+      "งามวงศ์วาน",
+      "ลาดพร้าว",
+      "รามคำแหง",
+      "ศรีนครินทร์",
+      "เจริญกรุง",
+    ];
 
     const companyName = `${choice(companyPrefixes)} ${choice(companyBodies)}`;
     const taxId = Array.from({ length: 13 }, () => String(randInt(0, 9))).join("");
@@ -50,7 +82,8 @@ export default function SubDealerFormSection({
 
     const firstName = choice(firstNames);
     const lastName = choice(lastNames);
-    const asciiId = (len: number) => Array.from({ length: len }, () => String.fromCharCode(97 + randInt(0, 25))).join("");
+    const asciiId = (len: number) =>
+      Array.from({ length: len }, () => String.fromCharCode(97 + randInt(0, 25))).join("");
     const emailLocal = `${asciiId(6)}${randInt(1, 99)}`;
     const email = `${emailLocal}@example.com`;
     const contactEmail = `${asciiId(5)}.${asciiId(4)}@mail.com`;
@@ -68,7 +101,12 @@ export default function SubDealerFormSection({
     const competitor = choice(["ร้านเกษตรรุ่งเรือง", "ไทยการเกษตร", "กรีนฟีลด์", "ฟาร์มพลัส"]);
     const cropsInArea = choice(["ข้าว", "มันสำปะหลัง", "ยางพารา", "อ้อย", "ข้าวโพด"]);
     const averageMonthlyPurchase = String(randInt(10000, 200000));
-    const mainProducts = choice(["ปุ๋ยเคมี", "ยาป้องกันศัตรูพืช", "เมล็ดพันธุ์", "อุปกรณ์การเกษตร"]);
+    const mainProducts = choice([
+      "ปุ๋ยเคมี",
+      "ยาป้องกันศัตรูพืช",
+      "เมล็ดพันธุ์",
+      "อุปกรณ์การเกษตร",
+    ]);
     const brandsSold = choice(["ยารักษ์พืช", "ไทยกรีน", "เกษตรโปร", "อีโคฟาร์ม"]);
     const areaType = choice(["ในเมือง", "ชานเมือง", "ชนบท"]);
     const relationshipScore = randInt(1, 5);
@@ -80,7 +118,7 @@ export default function SubDealerFormSection({
     const subdistrict = "ในเมือง";
     const postalCode = "40000";
 
-    const dealerId = dealerOptions.length > 0 ? choice(dealerOptions).id : undefined as any;
+    const dealerId = dealerOptions.length > 0 ? choice(dealerOptions).id : (undefined as any);
 
     setValues((prev) => ({
       ...prev,
@@ -117,7 +155,9 @@ export default function SubDealerFormSection({
   return (
     <Stack spacing={3}>
       <Stack direction="row" justifyContent="flex-end">
-        {canShowRandomFill(perms, "customers", "create") && <FillRandomButton onClick={fillRandom} />}
+        {canShowRandomFill(perms, "customers", "create") && (
+          <FillRandomButton onClick={fillRandom} />
+        )}
       </Stack>
       <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
         <Typography variant="h6" fontWeight={960}>
@@ -338,7 +378,9 @@ export default function SubDealerFormSection({
         <Autocomplete
           options={employeeOptions}
           getOptionLabel={(option) => option.label}
-          value={employeeOptions.find((opt) => opt.id === (values.responsibleEmployeeId ?? "")) ?? null}
+          value={
+            employeeOptions.find((opt) => opt.id === (values.responsibleEmployeeId ?? "")) ?? null
+          }
           onChange={(_e, option) =>
             setValues((prev) => ({
               ...prev,
@@ -346,7 +388,12 @@ export default function SubDealerFormSection({
             }))
           }
           renderInput={(params) => (
-            <TextField {...params} label="พนักงานที่รับผิดชอบ" placeholder="ค้นหาชื่อพนักงาน" fullWidth />
+            <TextField
+              {...params}
+              label="พนักงานที่รับผิดชอบ"
+              placeholder="ค้นหาชื่อพนักงาน"
+              fullWidth
+            />
           )}
           isOptionEqualToValue={(opt, val) => opt.id === val.id}
           fullWidth

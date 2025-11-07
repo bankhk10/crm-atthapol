@@ -1,6 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import FirstPageIcon from "@mui/icons-material/FirstPage";
+import FormatListBulletedAddIcon from "@mui/icons-material/FormatListBulletedAdd";
+import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
+import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
+import LastPageIcon from "@mui/icons-material/LastPage";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import {
   Box,
   Chip,
@@ -24,20 +31,15 @@ import {
   TablePagination,
   Tooltip,
 } from "@mui/material";
-
-import { useSession } from "next-auth/react";
-import { hasPermission } from "@/lib/permissions";
-import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
-import FormatListBulletedAddIcon from "@mui/icons-material/FormatListBulletedAdd";
 import Link from "next/link";
-import type { ProductListItem } from "../data";
+import { useSession } from "next-auth/react";
+import { useMemo, useState } from "react";
+
+import { hasPermission } from "@/lib/permissions";
+
 import { deleteProduct } from "../delete";
-import FirstPageIcon from "@mui/icons-material/FirstPage";
-import LastPageIcon from "@mui/icons-material/LastPage";
-import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
-import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
+
+import type { ProductListItem } from "../data";
 
 type Props = { products: ProductListItem[]; query?: string };
 

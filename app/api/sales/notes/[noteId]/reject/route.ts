@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
+
 import { authOptions } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
+import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
@@ -49,4 +50,3 @@ export async function POST(req: NextRequest, context: { params: Promise<{ noteId
     return NextResponse.json({ error: "ปฏิเสธไม่สำเร็จ" }, { status: 500 });
   }
 }
-

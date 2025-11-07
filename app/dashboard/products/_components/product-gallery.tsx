@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
-import { Box, Chip, Dialog, IconButton, Stack } from "@mui/material";
-import Image from "next/image";
-import CloseIcon from "@mui/icons-material/Close";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
+import CloseIcon from "@mui/icons-material/Close";
+import { Box, Chip, Dialog, IconButton, Stack } from "@mui/material";
+import Image from "next/image";
+import { useState, useRef, useEffect, useCallback } from "react";
 
 type Img = { id: string; url: string; alt?: string };
 
@@ -158,12 +158,7 @@ export default function ProductGallery({ images, productCode, name }: Props) {
                 },
               }}
             >
-              <Image
-                src={img.url}
-                alt={img.alt || "thumb"}
-                fill
-                style={{ objectFit: "cover" }}
-              />
+              <Image src={img.url} alt={img.alt || "thumb"} fill style={{ objectFit: "cover" }} />
             </Box>
           ))}
         </Box>
@@ -220,9 +215,7 @@ export default function ProductGallery({ images, productCode, name }: Props) {
             <>
               <IconButton
                 aria-label="Prev"
-                onClick={() =>
-                  setActive((i) => (i - 1 + imgs.length) % imgs.length)
-                }
+                onClick={() => setActive((i) => (i - 1 + imgs.length) % imgs.length)}
                 sx={{
                   position: "absolute",
                   left: 8,

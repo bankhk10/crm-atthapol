@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { OrderForm } from "../../../_components/order-form";
-import type { Option, ProductOption, OrderFormInitial } from "../../../types";
-import Loader from "@/components/Loader";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+
+import Loader from "@/components/Loader";
+
+import { OrderForm } from "../../../_components/order-form";
+
+import type { Option, ProductOption, OrderFormInitial } from "../../../types";
 
 type Props = {
   orderId: string;
@@ -13,7 +16,12 @@ type Props = {
   productOptions: ProductOption[];
 };
 
-export function EditOrderPageClient({ orderId, customerOptions, employeeOptions, productOptions }: Props) {
+export function EditOrderPageClient({
+  orderId,
+  customerOptions,
+  employeeOptions,
+  productOptions,
+}: Props) {
   const router = useRouter();
   const [initial, setInitial] = useState<OrderFormInitial | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +47,9 @@ export function EditOrderPageClient({ orderId, customerOptions, employeeOptions,
           salespersonId: so.salespersonId || "",
           orderDate: so.orderDate ? new Date(so.orderDate).toISOString().slice(0, 10) : null,
           dueDate: so.dueDate ? new Date(so.dueDate).toISOString().slice(0, 10) : null,
-          shippingDate: so.shippingDate ? new Date(so.shippingDate).toISOString().slice(0, 10) : null,
+          shippingDate: so.shippingDate
+            ? new Date(so.shippingDate).toISOString().slice(0, 10)
+            : null,
           creditTermDays: typeof so.creditTermDays === "number" ? so.creditTermDays : "",
           paymentCondition: (so.paymentCondition as any) === "POSTPAID" ? "POSTPAID" : "PREPAID",
           currency: so.currency || "THB",

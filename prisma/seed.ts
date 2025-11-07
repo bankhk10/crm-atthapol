@@ -263,7 +263,11 @@ async function main() {
       // Add UI feature flags as permissions
       const uiPerms = [
         { category: "ui", name: "random_fill", description: "ใช้ปุ่มกรอกแบบสุ่ม (ทุกหน้า)" },
-        { category: "employees_ui", name: "random_fill", description: "ใช้ปุ่มกรอกแบบสุ่มในหน้าพนักงาน" },
+        {
+          category: "employees_ui",
+          name: "random_fill",
+          description: "ใช้ปุ่มกรอกแบบสุ่มในหน้าพนักงาน",
+        },
       ];
       for (const u of uiPerms) {
         const perm = await tx.permission.upsert({

@@ -1,5 +1,6 @@
-import type { Prisma, AuditAction } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+
+import type { Prisma, AuditAction } from "@prisma/client";
 
 export type AuditLogFilters = {
   q?: string;

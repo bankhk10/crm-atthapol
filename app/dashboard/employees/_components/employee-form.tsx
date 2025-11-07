@@ -1,31 +1,24 @@
 "use client";
 
-import type { ChangeEvent, FormEvent } from "react";
-import { useEffect, useMemo, useState } from "react";
-import { useSession } from "next-auth/react";
-import {
-  Alert,
-  MenuItem,
-  Paper,
-  Stack,
-  TextField,
-  Typography,
-  Divider,
-} from "@mui/material";
-
-import type { EmployeeFormValues, EmployeeRoleOption, RoleDefinitionOption } from "../types";
-import { DEPARTMENTS } from "@/lib/departments";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { Alert, MenuItem, Paper, Stack, TextField, Typography, Divider } from "@mui/material";
+import { Box } from "@mui/material";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { th } from "date-fns/locale";
-import { Box } from "@mui/material";
-import ThaiAddressPicker from "@/components/ThaiAddressPicker";
-import { SaveBackButtons } from "@/components/SaveBackButtons";
+import { useSession } from "next-auth/react";
+import { useEffect, useMemo, useState } from "react";
+
 import { FillRandomButton } from "@/components/FillRandomButton";
-import { makeRandomEmployeeValues } from "@/lib/random-fill/employee";
 import Loader from "@/components/Loader";
+import { SaveBackButtons } from "@/components/SaveBackButtons";
+import ThaiAddressPicker from "@/components/ThaiAddressPicker";
+import { DEPARTMENTS } from "@/lib/departments";
+import { makeRandomEmployeeValues } from "@/lib/random-fill/employee";
 import { canShowRandomFill } from "@/lib/ui-permissions";
+
+import type { EmployeeFormValues, EmployeeRoleOption, RoleDefinitionOption } from "../types";
+import type { ChangeEvent, FormEvent } from "react";
 
 export type EmployeeFormProps = {
   title: string;

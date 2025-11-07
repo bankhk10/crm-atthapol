@@ -1,18 +1,19 @@
 "use client";
 
-import type { Dispatch, SetStateAction } from "react";
-import { Box, Stack, TextField, Typography, MenuItem, Paper, Button } from "@mui/material";
-import { FillRandomButton } from "@/components/FillRandomButton";
-import { useSession } from "next-auth/react";
-import { canShowRandomFill } from "@/lib/ui-permissions";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { Box, Stack, TextField, Typography, MenuItem, Paper, Button } from "@mui/material";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { th } from "date-fns/locale";
+import { useSession } from "next-auth/react";
+
+import { FillRandomButton } from "@/components/FillRandomButton";
+import { canShowRandomFill } from "@/lib/ui-permissions";
 
 import type { CustomerFormValues } from "../types";
+import type { Dispatch, SetStateAction } from "react";
 
 type FarmerFormSectionProps = {
   values: CustomerFormValues;
@@ -34,19 +35,51 @@ export default function FarmerFormSection({
     const choice = <T,>(arr: T[]) => arr[randInt(0, arr.length - 1)];
     const pad = (n: number, len: number) => String(n).padStart(len, "0");
 
-    const firstNames = ["สมชาย", "วิชัย", "กิตติ", "อรทัย", "วาสนา", "ชลธิชา", "ปิยพงษ์", "สุรีย์พร", "นพดล", "ชุติมา"];
-    const lastNames = ["ใจดี", "มีสุข", "วงศ์ไทย", "เกษมสุข", "ทวีทรัพย์", "สวัสดิ์", "ศรีทอง", "สุขสันต์", "รุ่งโรจน์", "รุ่งเรือง"];
+    const firstNames = [
+      "สมชาย",
+      "วิชัย",
+      "กิตติ",
+      "อรทัย",
+      "วาสนา",
+      "ชลธิชา",
+      "ปิยพงษ์",
+      "สุรีย์พร",
+      "นพดล",
+      "ชุติมา",
+    ];
+    const lastNames = [
+      "ใจดี",
+      "มีสุข",
+      "วงศ์ไทย",
+      "เกษมสุข",
+      "ทวีทรัพย์",
+      "สวัสดิ์",
+      "ศรีทอง",
+      "สุขสันต์",
+      "รุ่งโรจน์",
+      "รุ่งเรือง",
+    ];
     const prefixes = ["นาย", "นาง", "นางสาว"];
     const cropKinds = ["ข้าว", "มันสำปะหลัง", "ยางพารา", "อ้อย", "ข้าวโพด", "ผักสวนครัว"];
     const soilTypes = ["ดินร่วน", "ดินเหนียว", "ดินทราย"];
     const waterSources = ["ชลประทาน", "สระน้ำ", "บ่อบาดาล", "แม่น้ำ"];
-    const streets = ["สุขุมวิท", "เพชรเกษม", "พหลโยธิน", "งามวงศ์วาน", "ลาดพร้าว", "รามคำแหง", "ศรีนครินทร์", "เจริญกรุง"]; 
+    const streets = [
+      "สุขุมวิท",
+      "เพชรเกษม",
+      "พหลโยธิน",
+      "งามวงศ์วาน",
+      "ลาดพร้าว",
+      "รามคำแหง",
+      "ศรีนครินทร์",
+      "เจริญกรุง",
+    ];
 
     const prefix = choice(prefixes);
     const firstName = choice(firstNames);
     const lastName = choice(lastNames);
     const contactPhone = `0${String(randInt(600000000, 999999999))}`;
-    const asciiId = (len: number) => Array.from({ length: len }, () => String.fromCharCode(97 + randInt(0, 25))).join("");
+    const asciiId = (len: number) =>
+      Array.from({ length: len }, () => String.fromCharCode(97 + randInt(0, 25))).join("");
     const contactEmail = `${asciiId(6)}.${asciiId(4)}@mail.com`;
 
     const year = randInt(1965, 2003);
@@ -100,7 +133,9 @@ export default function FarmerFormSection({
   return (
     <Stack spacing={3}>
       <Stack direction="row" justifyContent="flex-end">
-        {canShowRandomFill(perms, "customers", "create") && <FillRandomButton onClick={fillRandom} />}
+        {canShowRandomFill(perms, "customers", "create") && (
+          <FillRandomButton onClick={fillRandom} />
+        )}
       </Stack>
       <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
         <Typography variant="h6" fontWeight={960}>

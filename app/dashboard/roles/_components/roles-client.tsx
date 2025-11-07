@@ -1,16 +1,12 @@
 "use client";
 
-import { useMemo, useState, Fragment } from "react";
-import Collapse from "@mui/material/Collapse";
-import IconButton from "@mui/material/IconButton";
+import AddIcon from "@mui/icons-material/Add";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
-import Tooltip from "@mui/material/Tooltip";
-import AddIcon from "@mui/icons-material/Add";
 import ShieldOutlinedIcon from "@mui/icons-material/ShieldOutlined";
 import TaskAltOutlinedIcon from "@mui/icons-material/TaskAltOutlined";
-import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import {
   Box,
   Button,
@@ -20,7 +16,6 @@ import {
   DialogContentText,
   DialogTitle,
   Chip,
-  Divider,
   Paper,
   Stack,
   Table,
@@ -31,14 +26,20 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
+import Collapse from "@mui/material/Collapse";
+import IconButton from "@mui/material/IconButton";
+import Tooltip from "@mui/material/Tooltip";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { useMemo, useState, Fragment } from "react";
 
-import { createRole, updateRole } from "../actions";
-import { deleteRole } from "../delete";
-import type { PermissionLibraryGroup, RoleFormValues, RoleListItem } from "../types";
-import { RoleFormDialog } from "./role-form-dialog";
 import { hasPermission } from "@/lib/permissions";
+
+import { deleteRole } from "../delete";
+import { RoleFormDialog } from "./role-form-dialog";
+import { createRole, updateRole } from "../actions";
+
+import type { PermissionLibraryGroup, RoleFormValues, RoleListItem } from "../types";
 
 type RolesClientProps = {
   roles: RoleListItem[];
@@ -211,7 +212,8 @@ export function RolesClient({ roles, permissionLibrary }: RolesClientProps) {
                   ภาพรวมสิทธิ์การใช้งาน
                 </Typography>
                 <Typography color="text.secondary">
-                  ระบบมีบทบาททั้งหมด {roles.length} บทบาท และสิทธิ์ไม่ซ้ำกัน {totalUniquePermissions} รายการ
+                  ระบบมีบทบาททั้งหมด {roles.length} บทบาท และสิทธิ์ไม่ซ้ำกัน{" "}
+                  {totalUniquePermissions} รายการ
                 </Typography>
               </Stack>
             </Stack>
@@ -251,101 +253,107 @@ export function RolesClient({ roles, permissionLibrary }: RolesClientProps) {
           <TableBody>
             {roles.map((role) => (
               <Fragment key={role.id}>
-              <TableRow hover sx={{ '& > *': { borderBottom: 'unset' } }}>
-                <TableCell sx={{ whiteSpace: "nowrap" }}>
-                  <Stack spacing={0.5}>
-                    <Typography fontWeight={600}>{role.name}</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      KEY: {role.key}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      แผนก: {role.department ? role.department : "ทั้งหมด"}
-                    </Typography>
-                  </Stack>
-                </TableCell>
-                <TableCell>
-                  <Typography color="text.secondary">
-                    {role.description || "ยังไม่มีรายละเอียด"}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  {role.permissions.length === 0 ? (
-                    <Typography color="text.secondary" variant="body2">
-                      ยังไม่มีการกำหนดสิทธิ์สำหรับบทบาทนี้
-                    </Typography>
-                  ) : (
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      {(() => {
-                        const { categories, items } = getPermissionCounts(role);
-                        return (
-                          <Chip label={`หมวด ${categories} / รายการ ${items}`} size="small" />
-                        );
-                      })()}
-                      <Tooltip title={openRoleIds.has(role.id) ? "ซ่อนสิทธิ์" : "ดูสิทธิ์ทั้งหมด"}>
-                        <IconButton size="small" onClick={() => toggleOpen(role.id)}>
-                          {openRoleIds.has(role.id) ? (
-                            <KeyboardArrowUpIcon fontSize="small" />
-                          ) : (
-                            <KeyboardArrowDownIcon fontSize="small" />
-                          )}
-                        </IconButton>
-                      </Tooltip>
+                <TableRow hover sx={{ "& > *": { borderBottom: "unset" } }}>
+                  <TableCell sx={{ whiteSpace: "nowrap" }}>
+                    <Stack spacing={0.5}>
+                      <Typography fontWeight={600}>{role.name}</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        KEY: {role.key}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        แผนก: {role.department ? role.department : "ทั้งหมด"}
+                      </Typography>
                     </Stack>
-                  )}
-                </TableCell>
-                <TableCell align="center">
-                  <Typography fontWeight={600}>{role.assignedUsers}</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    ผู้ใช้ที่เชื่อมบทบาทนี้
-                  </Typography>
-                </TableCell>
-                <TableCell align="right">
-                  <Stack direction="row" spacing={1} justifyContent="flex-end">
-                    {canEditRole && (
-                      <Button
-                        startIcon={<EditOutlinedIcon />}
-                        variant="text"
-                        onClick={() => handleOpenEdit(role)}
-                      >
-                        แก้ไขบทบาท
-                      </Button>
+                  </TableCell>
+                  <TableCell>
+                    <Typography color="text.secondary">
+                      {role.description || "ยังไม่มีรายละเอียด"}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    {role.permissions.length === 0 ? (
+                      <Typography color="text.secondary" variant="body2">
+                        ยังไม่มีการกำหนดสิทธิ์สำหรับบทบาทนี้
+                      </Typography>
+                    ) : (
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        {(() => {
+                          const { categories, items } = getPermissionCounts(role);
+                          return (
+                            <Chip label={`หมวด ${categories} / รายการ ${items}`} size="small" />
+                          );
+                        })()}
+                        <Tooltip
+                          title={openRoleIds.has(role.id) ? "ซ่อนสิทธิ์" : "ดูสิทธิ์ทั้งหมด"}
+                        >
+                          <IconButton size="small" onClick={() => toggleOpen(role.id)}>
+                            {openRoleIds.has(role.id) ? (
+                              <KeyboardArrowUpIcon fontSize="small" />
+                            ) : (
+                              <KeyboardArrowDownIcon fontSize="small" />
+                            )}
+                          </IconButton>
+                        </Tooltip>
+                      </Stack>
                     )}
-                    {canDeleteRole && (
-                      <Button
-                        startIcon={<DeleteOutlineIcon />}
-                        color="error"
-                        variant="text"
-                        onClick={() => setDeleteTarget(role)}
-                        disabled={role.assignedUsers > 0}
-                      >
-                        ลบบทบาท
-                      </Button>
-                    )}
-                  </Stack>
-                </TableCell>
-              </TableRow>
-              {role.permissions.length > 0 && (
-                <TableRow>
-                  <TableCell colSpan={5} sx={{ py: 0, bgcolor: "#fafafa" }}>
-                    <Collapse in={openRoleIds.has(role.id)} timeout="auto" unmountOnExit>
-                      <Box sx={{ p: 2 }}>
-                        <Stack spacing={2}>
-                          {role.permissions.map((group) => (
-                            <Stack key={`${role.id}-${group.category}`} spacing={1}>
-                              <Typography fontWeight={700}>{group.category}</Typography>
-                              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                                {group.items.map((item) => (
-                                  <Chip key={`${role.id}-${group.category}-${item}`} label={item} size="small" />
-                                ))}
-                              </Stack>
-                            </Stack>
-                          ))}
-                        </Stack>
-                      </Box>
-                    </Collapse>
+                  </TableCell>
+                  <TableCell align="center">
+                    <Typography fontWeight={600}>{role.assignedUsers}</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      ผู้ใช้ที่เชื่อมบทบาทนี้
+                    </Typography>
+                  </TableCell>
+                  <TableCell align="right">
+                    <Stack direction="row" spacing={1} justifyContent="flex-end">
+                      {canEditRole && (
+                        <Button
+                          startIcon={<EditOutlinedIcon />}
+                          variant="text"
+                          onClick={() => handleOpenEdit(role)}
+                        >
+                          แก้ไขบทบาท
+                        </Button>
+                      )}
+                      {canDeleteRole && (
+                        <Button
+                          startIcon={<DeleteOutlineIcon />}
+                          color="error"
+                          variant="text"
+                          onClick={() => setDeleteTarget(role)}
+                          disabled={role.assignedUsers > 0}
+                        >
+                          ลบบทบาท
+                        </Button>
+                      )}
+                    </Stack>
                   </TableCell>
                 </TableRow>
-              )}
+                {role.permissions.length > 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} sx={{ py: 0, bgcolor: "#fafafa" }}>
+                      <Collapse in={openRoleIds.has(role.id)} timeout="auto" unmountOnExit>
+                        <Box sx={{ p: 2 }}>
+                          <Stack spacing={2}>
+                            {role.permissions.map((group) => (
+                              <Stack key={`${role.id}-${group.category}`} spacing={1}>
+                                <Typography fontWeight={700}>{group.category}</Typography>
+                                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                                  {group.items.map((item) => (
+                                    <Chip
+                                      key={`${role.id}-${group.category}-${item}`}
+                                      label={item}
+                                      size="small"
+                                    />
+                                  ))}
+                                </Stack>
+                              </Stack>
+                            ))}
+                          </Stack>
+                        </Box>
+                      </Collapse>
+                    </TableCell>
+                  </TableRow>
+                )}
               </Fragment>
             ))}
             {roles.length === 0 && (

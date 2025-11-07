@@ -10,7 +10,10 @@ export const productFormSchema = z.object({
   category: z.string().default(""),
   brand: z.string().default(""),
   unit: z.enum(["อัน", "ชิ้น", "ถุง"]).default("ชิ้น"),
-  price: z.preprocess((v) => (v === "" || v === undefined || v === null ? undefined : Number(v)), z.number().nonnegative().optional()),
+  price: z.preprocess(
+    (v) => (v === "" || v === undefined || v === null ? undefined : Number(v)),
+    z.number().nonnegative().optional(),
+  ),
   mfgDate: z.string().optional(),
   expDate: z.string().optional(),
   status: z.enum(["ACTIVE", "INACTIVE", "EXPIRED"]).default("ACTIVE"),
@@ -21,11 +24,25 @@ export const productFormSchema = z.object({
   packagingSize: z.string().optional(),
   plantIds: z.array(z.string()).optional(),
 
-  qtyOnHand: z.preprocess((v) => (v === "" || v === undefined || v === null ? 0 : Number(v)), z.number().int().nonnegative()).default(0),
-  qtyReserved: z.preprocess((v) => (v === "" || v === undefined || v === null ? 0 : Number(v)), z.number().int().nonnegative()).default(0),
-  qtyVirtual: z.preprocess((v) => (v === "" || v === undefined || v === null ? 0 : Number(v)), z.number().int().nonnegative()).default(0),
+  qtyOnHand: z
+    .preprocess(
+      (v) => (v === "" || v === undefined || v === null ? 0 : Number(v)),
+      z.number().int().nonnegative(),
+    )
+    .default(0),
+  qtyReserved: z
+    .preprocess(
+      (v) => (v === "" || v === undefined || v === null ? 0 : Number(v)),
+      z.number().int().nonnegative(),
+    )
+    .default(0),
+  qtyVirtual: z
+    .preprocess(
+      (v) => (v === "" || v === undefined || v === null ? 0 : Number(v)),
+      z.number().int().nonnegative(),
+    )
+    .default(0),
   stockNote: z.string().optional(),
 });
 
 export type ProductFormValues = z.infer<typeof productFormSchema>;
-

@@ -1,8 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Tooltip } from "@mui/material";
+import {
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Stack,
+  TextField,
+  Tooltip,
+} from "@mui/material";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+
 import Loader from "@/components/Loader";
 
 type Props = {
@@ -28,7 +38,6 @@ export function ActionsBar({ orderId, status, canApprove, canReject }: Props) {
       }
       router.refresh();
     } catch (e) {
-      // eslint-disable-next-line no-alert
       alert(e instanceof Error ? e.message : "อนุมัติไม่สำเร็จ");
     } finally {
       setBusy(null);
@@ -52,7 +61,6 @@ export function ActionsBar({ orderId, status, canApprove, canReject }: Props) {
       setReason("");
       router.refresh();
     } catch (e) {
-      // eslint-disable-next-line no-alert
       alert(e instanceof Error ? e.message : "ปฏิเสธไม่สำเร็จ");
     } finally {
       setBusy(null);
@@ -70,7 +78,12 @@ export function ActionsBar({ orderId, status, canApprove, canReject }: Props) {
         {showApprove && (
           <Tooltip title="อนุมัติเอกสาร" arrow>
             <span>
-              <Button variant="contained" color="primary" disabled={busy === "approve"} onClick={doApprove}>
+              <Button
+                variant="contained"
+                color="primary"
+                disabled={busy === "approve"}
+                onClick={doApprove}
+              >
                 อนุมัติ
               </Button>
             </span>
@@ -79,7 +92,12 @@ export function ActionsBar({ orderId, status, canApprove, canReject }: Props) {
         {showReject && (
           <Tooltip title="ปฏิเสธเอกสาร" arrow>
             <span>
-              <Button variant="outlined" color="warning" disabled={busy === "reject"} onClick={() => setOpenReject(true)}>
+              <Button
+                variant="outlined"
+                color="warning"
+                disabled={busy === "reject"}
+                onClick={() => setOpenReject(true)}
+              >
                 ปฏิเสธ
               </Button>
             </span>
@@ -106,7 +124,12 @@ export function ActionsBar({ orderId, status, canApprove, canReject }: Props) {
           <Button onClick={() => setOpenReject(false)} color="inherit">
             ปิด
           </Button>
-          <Button onClick={doReject} variant="contained" color="warning" disabled={busy === "reject"}>
+          <Button
+            onClick={doReject}
+            variant="contained"
+            color="warning"
+            disabled={busy === "reject"}
+          >
             ยืนยันปฏิเสธ
           </Button>
         </DialogActions>
@@ -114,4 +137,3 @@ export function ActionsBar({ orderId, status, canApprove, canReject }: Props) {
     </>
   );
 }
-

@@ -1,10 +1,12 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { Stack } from "@mui/material";
+import { useRouter } from "next/navigation";
+
 import { ProductForm } from "./product-form";
-import type { ProductFormValues } from "../validation";
 import { updateProduct } from "../actions";
+
+import type { ProductFormValues } from "../validation";
 
 type Plant = {
   id: string;

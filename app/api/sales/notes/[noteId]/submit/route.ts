@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
+
 import { authOptions } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
+import { prisma } from "@/lib/prisma";
 import { getVisibilityScope, getCurrentEmployeeId } from "@/lib/sales-visibility";
 
 export const runtime = "nodejs";
 
-function buildVisibilityWhere(scope: "ALL" | "DEPARTMENT" | "OWN", department: string | null, employeeId: string | null) {
+function buildVisibilityWhere(
+  scope: "ALL" | "DEPARTMENT" | "OWN",
+  department: string | null,
+  employeeId: string | null,
+) {
   if (scope === "ALL") return {} as Record<string, unknown>;
   if (scope === "DEPARTMENT") {
     if (!department) return { id: { equals: "__NO_MATCH__" } } as any;
@@ -32,12 +37,17 @@ export async function POST(_req: NextRequest, context: { params: Promise<{ noteI
     const dept = session?.user?.department ?? null;
     const scopeWhere = buildVisibilityWhere(scope, dept, empId);
 
-    const exists = await prisma.salesNote.findFirst({ where: { id: noteId, ...(scopeWhere as any) } });
+    const exists = await prisma.salesNote.findFirst({
+      where: { id: noteId, ...(scopeWhere as any) },
+    });
     if (!exists) return NextResponse.json({ error: "ไม่พบบันทึกการขาย" }, { status: 404 });
 
     const status = String((exists as any).status || "");
     if (status !== "DRAFT") {
-      return NextResponse.json({ error: "ส่งเพื่ออนุมัติได้เฉพาะสถานะร่างเท่านั้น" }, { status: 400 });
+      return NextResponse.json(
+        { error: "ส่งเพื่ออนุมัติได้เฉพาะสถานะร่างเท่านั้น" },
+        { status: 400 },
+      );
     }
 
     const updated = await prisma.salesNote.update({
@@ -51,4 +61,3 @@ export async function POST(_req: NextRequest, context: { params: Promise<{ noteI
     return NextResponse.json({ error: "ส่งเพื่ออนุมัติไม่สำเร็จ" }, { status: 500 });
   }
 }
-

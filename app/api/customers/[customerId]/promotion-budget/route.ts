@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -52,9 +53,8 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ customerId
 
     // Default when no relation found
     return NextResponse.json({ promotionBudget: 0, promotionSupported: false });
-  } catch (err) {
+  } catch {
     // Return 0 but keep 200 to avoid UI error states
     return NextResponse.json({ promotionBudget: 0, promotionSupported: false }, { status: 200 });
   }
 }
-

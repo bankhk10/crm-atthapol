@@ -17,10 +17,15 @@ async function main() {
   const roleKey = parseArg("role-key");
   const emailsArg = parseArg("emails");
   if (!roleKey || !emailsArg) {
-    console.error("Usage: tsx scripts/assign-users-to-role.ts --role-key=<key> --emails=user1@example.com,user2@example.com");
+    console.error(
+      "Usage: tsx scripts/assign-users-to-role.ts --role-key=<key> --emails=user1@example.com,user2@example.com",
+    );
     process.exit(1);
   }
-  const emails = emailsArg.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+  const emails = emailsArg
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
 
   const role = await prisma.roleDefinition.findUnique({ where: { key: roleKey } });
   if (!role) {
@@ -47,4 +52,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-

@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { Box, Button, Paper, Stack, Typography } from "@mui/material";
+import Link from "next/link";
 
 export const metadata = {
   title: "403 Forbidden",
@@ -7,7 +7,15 @@ export const metadata = {
 
 export default function ForbiddenPage() {
   return (
-    <Box sx={{ minHeight: "70vh", display: "flex", alignItems: "center", justifyContent: "center", p: 3 }}>
+    <Box
+      sx={{
+        minHeight: "70vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        p: 3,
+      }}
+    >
       <Paper elevation={0} sx={{ p: 4, maxWidth: 560, textAlign: "center" }}>
         <Typography variant="h3" fontWeight={800} gutterBottom>
           403
@@ -27,4 +35,3 @@ export default function ForbiddenPage() {
     </Box>
   );
 }
-

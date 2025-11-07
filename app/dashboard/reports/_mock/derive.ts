@@ -1,4 +1,5 @@
 import { overviewMock, salesMock, marketingMock, activityMock } from "./index";
+
 import type { ReportPeriod } from "@/lib/report-period";
 
 const QUARTER_MONTHS: Record<number, number[]> = {
@@ -114,7 +115,10 @@ export function getOverviewForPeriod(p: ReportPeriod) {
 export function getSalesForPeriod(p: ReportPeriod) {
   const { totalMult, rateMult } = multipliersFromTrend(p);
 
-  const channels = salesMock.channels.map((c) => ({ ...c, value: Math.max(1, Math.round(c.value * totalMult)) }));
+  const channels = salesMock.channels.map((c) => ({
+    ...c,
+    value: Math.max(1, Math.round(c.value * totalMult)),
+  }));
   const byCategory = salesMock.byCategory.map((c) => ({
     ...c,
     revenue: Math.max(1, Math.round(c.revenue * totalMult)),
@@ -198,4 +202,3 @@ export function getActivityForPeriod(p: ReportPeriod) {
     team: activityMock.team,
   };
 }
-

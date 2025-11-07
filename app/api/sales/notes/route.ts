@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
+import { z } from "zod";
+
 import { authOptions } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
+import { prisma } from "@/lib/prisma";
 import { getVisibilityScope, getCurrentEmployeeId } from "@/lib/sales-visibility";
-import { z } from "zod";
 
 export const runtime = "nodejs";
 
@@ -22,7 +23,9 @@ async function generateSnNumberTx(tx: any) {
   const y = now.getFullYear();
   const m = String(now.getMonth() + 1).padStart(2, "0");
   const prefix = `SN-${y}${m}-`;
-  const delegate = (tx as any)["docSequence"] as { upsert: (args: any) => Promise<{ current: number }> };
+  const delegate = (tx as any)["docSequence"] as {
+    upsert: (args: any) => Promise<{ current: number }>;
+  };
   const row = await delegate.upsert({
     where: { prefix },
     create: { prefix, current: 1 },
@@ -33,7 +36,11 @@ async function generateSnNumberTx(tx: any) {
   return `${prefix}${seq}`;
 }
 
-function buildVisibilityWhere(scope: "ALL" | "DEPARTMENT" | "OWN", department: string | null, employeeId: string | null) {
+function buildVisibilityWhere(
+  scope: "ALL" | "DEPARTMENT" | "OWN",
+  department: string | null,
+  employeeId: string | null,
+) {
   if (scope === "ALL") return {} as Record<string, unknown>;
   if (scope === "DEPARTMENT") {
     if (!department) return { id: { equals: "__NO_MATCH__" } } as any;
@@ -108,14 +115,20 @@ export async function POST(req: NextRequest) {
     const json = await req.json();
     const parsed = CreateNoteSchema.safeParse(json);
     if (!parsed.success) {
-      return NextResponse.json({ error: "ข้อมูลไม่ถูกต้อง", issues: parsed.error.format() }, { status: 400 });
+      return NextResponse.json(
+        { error: "ข้อมูลไม่ถูกต้อง", issues: parsed.error.format() },
+        { status: 400 },
+      );
     }
     const data = parsed.data;
 
     const requested = (data.status as string | undefined) ?? "DRAFT";
     const wantsApprove = requested === "APPROVED";
     const wantsReject = requested === "REJECTED";
-    if ((wantsApprove || wantsReject) && !hasPermission(perms, "sales", wantsApprove ? "approve" : "reject")) {
+    if (
+      (wantsApprove || wantsReject) &&
+      !hasPermission(perms, "sales", wantsApprove ? "approve" : "reject")
+    ) {
       return NextResponse.json({ error: "ไม่มีสิทธิ์กำหนดสถานะอนุมัติ/ปฏิเสธ" }, { status: 403 });
     }
 
@@ -125,7 +138,10 @@ export async function POST(req: NextRequest) {
       // Resolve current employee
       let creatorEmployeeId: string | null = null;
       if (session?.user?.id) {
-        const emp = await tx.employee.findUnique({ where: { userId: session.user.id }, select: { id: true } });
+        const emp = await tx.employee.findUnique({
+          where: { userId: session.user.id },
+          select: { id: true },
+        });
         creatorEmployeeId = emp?.id ?? null;
       }
 
@@ -140,7 +156,10 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      const submittedAt = requested === "SUBMITTED" || requested === "APPROVED" || requested === "REJECTED" ? new Date() : null;
+      const submittedAt =
+        requested === "SUBMITTED" || requested === "APPROVED" || requested === "REJECTED"
+          ? new Date()
+          : null;
 
       const note = await tx.salesNote.create({
         data: {
@@ -168,4 +187,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "สร้างบันทึกการขายไม่สำเร็จ" }, { status: 500 });
   }
 }
-

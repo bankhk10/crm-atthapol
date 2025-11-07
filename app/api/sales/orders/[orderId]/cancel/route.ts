@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
+
 import { authOptions } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
+import { prisma } from "@/lib/prisma";
 import { buildSaleOrderVisibilityWhere } from "@/lib/sales-visibility";
 
 export const runtime = "nodejs";
@@ -13,16 +14,36 @@ async function releaseReservations(tx: any, saleOrderId: string) {
   });
 
   for (const r of reservations as any[]) {
-    const stock = await tx.stock.findUnique({ where: { id: r.stockId }, select: { qtyReserved: true } });
+    const stock = await tx.stock.findUnique({
+      where: { id: r.stockId },
+      select: { qtyReserved: true },
+    });
     const current = Number(stock?.qtyReserved ?? 0);
     const qty = Math.max(0, Math.floor(Number(r.qty ?? 0)));
     const releaseQty = Math.min(current, qty);
     if (releaseQty > 0) {
-      await tx.stock.update({ where: { id: r.stockId }, data: { qtyReserved: { decrement: releaseQty } } });
-      const p = await tx.stock.findUnique({ where: { id: r.stockId }, select: { productId: true } });
-      await (tx as any).stockMovement.create({ data: { stockId: r.stockId, productId: p?.productId as string, saleOrderId: saleOrderId, type: 'RELEASE', qty: releaseQty } });
+      await tx.stock.update({
+        where: { id: r.stockId },
+        data: { qtyReserved: { decrement: releaseQty } },
+      });
+      const p = await tx.stock.findUnique({
+        where: { id: r.stockId },
+        select: { productId: true },
+      });
+      await (tx as any).stockMovement.create({
+        data: {
+          stockId: r.stockId,
+          productId: p?.productId as string,
+          saleOrderId: saleOrderId,
+          type: "RELEASE",
+          qty: releaseQty,
+        },
+      });
     }
-    await (tx as any).saleOrderStockReservation.update({ where: { id: r.id }, data: { releasedAt: new Date() } });
+    await (tx as any).saleOrderStockReservation.update({
+      where: { id: r.id },
+      data: { releasedAt: new Date() },
+    });
   }
 }
 
@@ -43,7 +64,9 @@ export async function POST(req: NextRequest, context: { params: Promise<{ orderI
 
     const result = await prisma.$transaction(async (tx) => {
       const scopeWhere = await buildSaleOrderVisibilityWhere();
-      const order = await tx.saleOrder.findFirst({ where: { id: orderId, ...(scopeWhere as any) } });
+      const order = await tx.saleOrder.findFirst({
+        where: { id: orderId, ...(scopeWhere as any) },
+      });
       if (!order || (order as any).deletedAt) {
         throw new Error("NOT_FOUND");
       }
@@ -65,8 +88,19 @@ export async function POST(req: NextRequest, context: { params: Promise<{ orderI
             if (remaining <= 0) break;
             const alloc = Math.min(remaining, Number.MAX_SAFE_INTEGER);
             if (alloc <= 0) continue;
-            await tx.stock.update({ where: { id: s.id }, data: { qtyOnHand: { increment: alloc } } });
-            await (tx as any).stockMovement.create({ data: { stockId: s.id, productId: s.productId, saleOrderId: orderId, type: 'RETURN', qty: alloc } });
+            await tx.stock.update({
+              where: { id: s.id },
+              data: { qtyOnHand: { increment: alloc } },
+            });
+            await (tx as any).stockMovement.create({
+              data: {
+                stockId: s.id,
+                productId: s.productId,
+                saleOrderId: orderId,
+                type: "RETURN",
+                qty: alloc,
+              },
+            });
             remaining -= alloc;
           }
         }
@@ -74,7 +108,12 @@ export async function POST(req: NextRequest, context: { params: Promise<{ orderI
 
       const updated = await tx.saleOrder.update({
         where: { id: orderId },
-        data: { status: "CANCELLED" as any, cancelReason, approvedAt: null, approvedByUserId: null },
+        data: {
+          status: "CANCELLED" as any,
+          cancelReason,
+          approvedAt: null,
+          approvedByUserId: null,
+        },
         include: { items: true, reservations: true },
       });
       return updated;

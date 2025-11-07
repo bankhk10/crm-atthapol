@@ -1,7 +1,5 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import Link from "next/link";
 import {
   Box,
   Button,
@@ -11,15 +9,17 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableContainer,
   TableHead,
   TableRow,
-  TextField,
   Typography,
 } from "@mui/material";
-import SearchIcon from "@mui/icons-material/Search";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
+import { useMemo, useState } from "react";
 
+import { SearchBar } from "@/components/common/SearchBar";
+import { EmptyTableMessage } from "@/components/ui/EmptyTableMessage";
+import { TableCard } from "@/components/ui/TableCard";
 import { hasPermission } from "@/lib/permissions";
 
 import type { EmployeeListItem, EmployeeStatus } from "../types";
@@ -41,29 +41,14 @@ export function EmployeesTable({ employees }: EmployeesTableProps) {
     if (!normalized) return employees;
 
     return employees.filter((employee) =>
-      [
-        employee.employeeCode,
-        employee.name,
-        employee.position,
-        employee.department,
-        employee.email,
-      ]
+      [employee.employeeCode, employee.name, employee.position, employee.department, employee.email]
         .join(" ")
         .toLowerCase()
         .includes(normalized),
     );
   }, [employees, searchTerm]);
 
-  const handleSearch = () => {
-    setSearchTerm(query);
-  };
-
-  const handleQueryKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      handleSearch();
-    }
-  };
+  const handleSearch = (value?: string) => setSearchTerm(value ?? query);
 
   return (
     <Stack spacing={3}>
@@ -82,43 +67,25 @@ export function EmployeesTable({ employees }: EmployeesTableProps) {
           </Typography>
         </Box>
         {canCreateEmployee && (
-          <Button
-            component={Link}
-            href="/dashboard/employees/new"
-            variant="contained"
-            size="large"
-          >
+          <Button component={Link} href="/dashboard/employees/new" variant="contained" size="large">
             เพิ่มพนักงาน
           </Button>
         )}
       </Stack>
 
       <Paper sx={{ p: { xs: 2, sm: 3 } }}>
-        <Stack
-          direction={{ xs: "column", sm: "row" }}
-          spacing={2}
-          alignItems={{ xs: "stretch", sm: "flex-end" }}
-        >
-          <TextField
-            label="ค้นหาพนักงาน"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            onKeyDown={handleQueryKeyDown}
-            placeholder="พิมพ์ชื่อ อีเมล หรือแผนก"
-            fullWidth
-          />
-          <Button
-            variant="outlined"
-            startIcon={<SearchIcon />}
-            onClick={handleSearch}
-            sx={{ minWidth: { sm: 160 } }}
-          >
-            ค้นหา
-          </Button>
-        </Stack>
+        <SearchBar
+          label="ค้นหาพนักงาน"
+          placeholder="พิมพ์ชื่อ อีเมล หรือแผนก"
+          defaultValue={query}
+          onSubmit={(v) => {
+            setQuery(v);
+            handleSearch(v);
+          }}
+        />
       </Paper>
 
-      <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
+      <TableCard>
         <Table>
           <TableHead>
             <TableRow>
@@ -163,17 +130,11 @@ export function EmployeesTable({ employees }: EmployeesTableProps) {
               </TableRow>
             ))}
             {filteredEmployees.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={7}>
-                  <Typography textAlign="center" color="text.secondary" py={4}>
-                    ไม่พบข้อมูลพนักงานที่ตรงกับคำค้นหา
-                  </Typography>
-                </TableCell>
-              </TableRow>
+              <EmptyTableMessage colSpan={7} message="ไม่พบข้อมูลพนักงานที่ตรงกับคำค้นหา" />
             )}
           </TableBody>
         </Table>
-      </TableContainer>
+      </TableCard>
     </Stack>
   );
 }

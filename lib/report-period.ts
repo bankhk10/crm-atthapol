@@ -29,7 +29,9 @@ export function getCurrentPeriod(): ReportPeriod {
   return { type: "month", year: y, month: m };
 }
 
-export function parseSearchParams(searchParams?: Record<string, string | string[] | undefined>): ReportPeriod {
+export function parseSearchParams(
+  searchParams?: Record<string, string | string[] | undefined>,
+): ReportPeriod {
   const current = getCurrentPeriod();
   const get = (k: string) => {
     const v = searchParams?.[k];
@@ -46,7 +48,7 @@ export function parseSearchParams(searchParams?: Record<string, string | string[
     return { type: "quarter", year: isFinite(year) ? year : current.year, quarter: q };
   }
 
-  const m = Math.min(12, Math.max(1, isFinite(month) ? month : current.month ?? 1));
+  const m = Math.min(12, Math.max(1, isFinite(month) ? month : (current.month ?? 1)));
   return { type: "month", year: isFinite(year) ? year : current.year, month: m };
 }
 
@@ -59,4 +61,3 @@ export function formatPeriodLabel(p: ReportPeriod): string {
   const name = TH_MONTHS[m] ?? "";
   return `${name} ${p.year}`;
 }
-

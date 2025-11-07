@@ -1,5 +1,18 @@
-import { Box, Paper, Stack, Typography, Divider, Table, TableHead, TableRow, TableCell, TableBody, Button } from "@mui/material";
+import {
+  Box,
+  Paper,
+  Stack,
+  Typography,
+  Divider,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  Button,
+} from "@mui/material";
 import Link from "next/link";
+
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/require-permission";
 
@@ -52,7 +65,9 @@ export default async function InventoryOverviewPage() {
       <Stack spacing={3} sx={{ width: "100%", maxWidth: 1100 }}>
         <Paper sx={{ p: { xs: 2, md: 3 } }}>
           <Stack spacing={2}>
-            <Typography variant="h5" fontWeight={800}>ภาพรวมสต็อก (Inventory)</Typography>
+            <Typography variant="h5" fontWeight={800}>
+              ภาพรวมสต็อก (Inventory)
+            </Typography>
             <Divider />
             <Table size="small">
               <TableHead>
@@ -76,7 +91,12 @@ export default async function InventoryOverviewPage() {
                     <TableCell align="right">{r.reserved}</TableCell>
                     <TableCell align="right">{r.available}</TableCell>
                     <TableCell align="center">
-                      <Button component={Link} href={`/dashboard/products/${r.id}/inventory`} variant="outlined" size="small">
+                      <Button
+                        component={Link}
+                        href={`/dashboard/products/${r.id}/inventory`}
+                        variant="outlined"
+                        size="small"
+                      >
                         จัดการล็อต
                       </Button>
                     </TableCell>
@@ -90,4 +110,3 @@ export default async function InventoryOverviewPage() {
     </Box>
   );
 }
-

@@ -29,7 +29,10 @@ function toPermKey(s: string): PermKey | null {
 }
 
 function slugifyEmail(email: string): string {
-  return email.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  return email
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
 }
 
 async function main() {
@@ -153,4 +156,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-

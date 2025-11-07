@@ -20,10 +20,7 @@ export const ACTION_LABELS: Record<PermissionAction, string> = {
   reject: "ปฏิเสธข้อมูล",
 };
 
-export function buildPermissionKey(
-  resource: string,
-  action: PermissionAction,
-): PermissionKey {
+export function buildPermissionKey(resource: string, action: PermissionAction): PermissionKey {
   return `${resource}:${action}` as PermissionKey;
 }
 

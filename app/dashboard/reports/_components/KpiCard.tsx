@@ -1,6 +1,6 @@
-import { Box, Chip, Paper, Stack, Typography } from "@mui/material";
-import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
+import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
+import { Box, Chip, Paper, Stack, Typography } from "@mui/material";
 
 type KpiCardProps = {
   label: string;
@@ -49,4 +49,3 @@ export function KpiCard({ label, value, helpText, delta }: KpiCardProps) {
     </Paper>
   );
 }
-

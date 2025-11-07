@@ -1,11 +1,13 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { productFormSchema, type ProductFormValues } from "./validation";
 import crypto from "crypto";
-import path from "path";
 import { promises as fs } from "fs";
+import { revalidatePath } from "next/cache";
+import path from "path";
+
+import { prisma } from "@/lib/prisma";
+
+import { productFormSchema, type ProductFormValues } from "./validation";
 
 async function safeDeleteFiles(urls: string[]) {
   const uploadRoot = path.join(process.cwd(), "public", "uploads", "products");
@@ -63,7 +65,12 @@ export async function createProduct(raw: ProductFormValues) {
   // Persist additional images if provided
   if (Array.isArray(v.imageUrls) && v.imageUrls.length > 0) {
     await prisma.productImage.createMany({
-      data: v.imageUrls.map((url, i) => ({ id: crypto.randomUUID(), productId: product.id, url, sort: i })),
+      data: v.imageUrls.map((url, i) => ({
+        id: crypto.randomUUID(),
+        productId: product.id,
+        url,
+        sort: i,
+      })),
     });
   }
 
@@ -87,8 +94,14 @@ export async function updateProduct(productId: string, raw: ProductFormValues) {
   const v = productFormSchema.parse(raw);
   const id = String(productId);
   // Capture previous references for cleanup
-  const prevProduct = await prisma.product.findUnique({ where: { id }, select: { imageUrl: true } });
-  const prevImages = await prisma.productImage.findMany({ where: { productId: id }, select: { url: true } });
+  const prevProduct = await prisma.product.findUnique({
+    where: { id },
+    select: { imageUrl: true },
+  });
+  const prevImages = await prisma.productImage.findMany({
+    where: { productId: id },
+    select: { url: true },
+  });
 
   try {
     await prisma.product.update({
@@ -123,7 +136,9 @@ export async function updateProduct(productId: string, raw: ProductFormValues) {
     const urls = v.imageUrls.filter((u) => !!u).slice(0, 10);
     await prisma.$transaction([
       prisma.productImage.deleteMany({ where: { productId: id } }),
-      prisma.productImage.createMany({ data: urls.map((url, i) => ({ id: crypto.randomUUID(), productId: id, url, sort: i })) }),
+      prisma.productImage.createMany({
+        data: urls.map((url, i) => ({ id: crypto.randomUUID(), productId: id, url, sort: i })),
+      }),
     ]);
     // after replacement, delete files that are no longer referenced
     const oldUrls = (prevImages || []).map((r) => r.url);
@@ -157,11 +172,18 @@ export async function updateProduct(productId: string, raw: ProductFormValues) {
 
 export async function replaceProductImages(productId: string, urlsRaw: string[]) {
   const id = String(productId);
-  const urls = (urlsRaw ?? []).filter((u) => typeof u === "string" && u.trim().length > 0).slice(0, 10);
-  const prevImages = await prisma.productImage.findMany({ where: { productId: id }, select: { url: true } });
+  const urls = (urlsRaw ?? [])
+    .filter((u) => typeof u === "string" && u.trim().length > 0)
+    .slice(0, 10);
+  const prevImages = await prisma.productImage.findMany({
+    where: { productId: id },
+    select: { url: true },
+  });
   await prisma.$transaction([
     prisma.productImage.deleteMany({ where: { productId: id } }),
-    prisma.productImage.createMany({ data: urls.map((url, i) => ({ id: crypto.randomUUID(), productId: id, url, sort: i })) }),
+    prisma.productImage.createMany({
+      data: urls.map((url, i) => ({ id: crypto.randomUUID(), productId: id, url, sort: i })),
+    }),
   ]);
   const oldUrls = (prevImages || []).map((r) => r.url);
   const toDelete = oldUrls.filter((u) => !urls.includes(u));

@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useSession, signOut } from "next-auth/react";
 import {
   Dialog,
   DialogTitle,
@@ -11,6 +9,8 @@ import {
   Typography,
   Stack,
 } from "@mui/material";
+import { useSession, signOut } from "next-auth/react";
+import { useEffect, useMemo, useState } from "react";
 
 const WARNING_THRESHOLD_MS = 5 * 60 * 1000; // เตือน 5 นาทีสุดท้าย (โหมดใช้งานจริง)
 
@@ -54,9 +54,12 @@ export default function SessionExpiryWatcher() {
   // Auto logout when countdown reaches zero (no action taken)
   useEffect(() => {
     if (!shouldWarn || typeof timeLeftMs !== "number") return;
-    const timer = setTimeout(() => {
-      signOut({ callbackUrl: "/login" });
-    }, Math.max(0, timeLeftMs));
+    const timer = setTimeout(
+      () => {
+        signOut({ callbackUrl: "/login" });
+      },
+      Math.max(0, timeLeftMs),
+    );
     return () => clearTimeout(timer);
   }, [shouldWarn, timeLeftMs]);
 
@@ -76,7 +79,11 @@ export default function SessionExpiryWatcher() {
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={() => signOut({ callbackUrl: "/login" })} color="inherit" variant="outlined">
+        <Button
+          onClick={() => signOut({ callbackUrl: "/login" })}
+          color="inherit"
+          variant="outlined"
+        >
           ออกจากระบบ
         </Button>
         <Button

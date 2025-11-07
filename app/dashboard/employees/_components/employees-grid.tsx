@@ -1,8 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import Link from "next/link";
-import Image from "next/image";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import SearchIcon from "@mui/icons-material/Search";
 import {
   Box,
   Button,
@@ -17,18 +20,17 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import SearchIcon from "@mui/icons-material/Search";
-import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { useMemo, useState } from "react";
 
 import { hasPermission } from "@/lib/permissions";
-import type { EmployeeListItem } from "../types";
+
 import { deleteEmployee } from "../delete";
-import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
+
+import type { EmployeeListItem } from "../types";
 
 type EmployeesGridProps = {
   employees: EmployeeListItem[];
@@ -46,9 +48,7 @@ export function EmployeesGrid({ employees }: EmployeesGridProps) {
   const [query, setQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
-  const [deleteTarget, setDeleteTarget] = useState<EmployeeListItem | null>(
-    null
-  );
+  const [deleteTarget, setDeleteTarget] = useState<EmployeeListItem | null>(null);
 
   // แสดง 8 รายการต่อหน้าเสมอ (4 บน, 4 ล่าง ในหน้าจอกว้าง)
 
@@ -60,7 +60,7 @@ export function EmployeesGrid({ employees }: EmployeesGridProps) {
         .filter(Boolean)
         .join(" ")
         .toLowerCase()
-        .includes(q)
+        .includes(q),
     );
   }, [employees, query]);
 
@@ -102,9 +102,7 @@ export function EmployeesGrid({ employees }: EmployeesGridProps) {
               }}
               placeholder="ค้นหา"
               InputProps={{
-                startAdornment: (
-                  <SearchIcon fontSize="small" style={{ marginRight: 8 }} />
-                ),
+                startAdornment: <SearchIcon fontSize="small" style={{ marginRight: 8 }} />,
               }}
             />
           </Box>
@@ -186,22 +184,12 @@ export function EmployeesGrid({ employees }: EmployeesGridProps) {
                 <Typography variant="h6" fontWeight={700} align="center" mt={1}>
                   {e.name}
                 </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  align="center"
-                  mb={1.5}
-                >
+                <Typography variant="body2" color="text.secondary" align="center" mb={1.5}>
                   {e.position}
                 </Typography>
 
                 {/* edit + view buttons */}
-                <Stack
-                  direction="row"
-                  spacing={4}
-                  justifyContent="center"
-                  mb={1.5}
-                >
+                <Stack direction="row" spacing={4} justifyContent="center" mb={1.5}>
                   {canEditEmployee && (
                     <Button
                       component={Link}
@@ -264,20 +252,18 @@ export function EmployeesGrid({ employees }: EmployeesGridProps) {
                   borderColor="divider"
                   pt={2}
                 >
-                  {[
-                    { label: "ที่เหลือ" },
-                    { label: "กำลังทำ" },
-                    { label: "สำเร็จ" },
-                  ].map((s, idx) => (
-                    <Box key={s.label} textAlign="center">
-                      <Typography fontWeight={700} variant="h6">
-                        {(e.id.charCodeAt(0) + idx * 7) % 50}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {s.label}
-                      </Typography>
-                    </Box>
-                  ))}
+                  {[{ label: "ที่เหลือ" }, { label: "กำลังทำ" }, { label: "สำเร็จ" }].map(
+                    (s, idx) => (
+                      <Box key={s.label} textAlign="center">
+                        <Typography fontWeight={700} variant="h6">
+                          {(e.id.charCodeAt(0) + idx * 7) % 50}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {s.label}
+                        </Typography>
+                      </Box>
+                    ),
+                  )}
                 </Stack>
               </Stack>
             </Paper>
@@ -285,11 +271,7 @@ export function EmployeesGrid({ employees }: EmployeesGridProps) {
         </Box>
 
         {/* pagination */}
-        <Stack
-          direction="row"
-          justifyContent="space-between"
-          alignItems="center"
-        >
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
           <Typography variant="body2" color="text.secondary">
             {startDisplay}-{endDisplay} จาก {filtered.length}
           </Typography>
@@ -310,15 +292,11 @@ export function EmployeesGrid({ employees }: EmployeesGridProps) {
         </Stack>
 
         {/* confirm delete dialog */}
-        <Dialog
-          open={Boolean(deleteTarget)}
-          onClose={() => setDeleteTarget(null)}
-        >
+        <Dialog open={Boolean(deleteTarget)} onClose={() => setDeleteTarget(null)}>
           <DialogTitle>ลบพนักงาน</DialogTitle>
           <DialogContent>
             <DialogContentText>
-              ยืนยันการลบ {deleteTarget?.name ?? "ผู้ใช้งาน"}?
-              การกระทำนี้ไม่สามารถย้อนกลับได้
+              ยืนยันการลบ {deleteTarget?.name ?? "ผู้ใช้งาน"}? การกระทำนี้ไม่สามารถย้อนกลับได้
             </DialogContentText>
           </DialogContent>
           <DialogActions>

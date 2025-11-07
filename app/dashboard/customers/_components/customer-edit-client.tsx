@@ -1,11 +1,12 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { Stack } from "@mui/material";
+import { useRouter } from "next/navigation";
 
 import CustomerFormByType from "./customer-form-by-type";
-import type { CustomerFormValues } from "../types";
 import { updateCustomer } from "../actions";
+
+import type { CustomerFormValues } from "../types";
 
 type CustomerEditClientProps = {
   customerId: string;

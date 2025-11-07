@@ -1,5 +1,3 @@
-import { notFound } from "next/navigation";
-import Image from "next/image";
 import {
   Box,
   Chip,
@@ -11,11 +9,12 @@ import {
   Button,
   TextField,
 } from "@mui/material";
+import Image from "next/image";
+import { notFound } from "next/navigation";
 
 import { getEmployeeById } from "../data";
-import { ActionButtons } from "../../_components/action-buttons";
-import { EmployeeActivity } from "./_components/employee-activity";
 import { getEmployeeActivities } from "../data";
+import { EmployeeActivity } from "./_components/employee-activity";
 
 export default async function EmployeeProfilePage({
   params,
@@ -28,9 +27,10 @@ export default async function EmployeeProfilePage({
     notFound();
   }
 
-  const fullName = employee.firstName || employee.lastName
-    ? [employee.firstName, employee.lastName].filter(Boolean).join(" ")
-    : employee.user.name ?? "-";
+  const fullName =
+    employee.firstName || employee.lastName
+      ? [employee.firstName, employee.lastName].filter(Boolean).join(" ")
+      : (employee.user.name ?? "-");
   const empExtra = employee as unknown as {
     address?: string | null;
     province?: string | null;
@@ -68,7 +68,12 @@ export default async function EmployeeProfilePage({
                     overflow: "hidden",
                   }}
                 >
-                  <Image src="/images/man-avatar.png" alt={fullName} fill style={{ objectFit: "cover" }} />
+                  <Image
+                    src="/images/man-avatar.png"
+                    alt={fullName}
+                    fill
+                    style={{ objectFit: "cover" }}
+                  />
                 </Box>
                 <Stack spacing={0.25} alignItems="center">
                   <Typography variant="h6" fontWeight={800}>
@@ -84,20 +89,45 @@ export default async function EmployeeProfilePage({
                   <Typography variant="subtitle2" fontWeight={700}>
                     รายละเอียด
                   </Typography>
-                  <TextField label="ตำแหน่ง" value={employee.position} InputProps={{ readOnly: true }} />
-                  <TextField label="บริษัท" value={employee.company ?? "-"} InputProps={{ readOnly: true }} />
-                  <TextField label="วันเกิด" value={birthDateText} InputProps={{ readOnly: true }} />
+                  <TextField
+                    label="ตำแหน่ง"
+                    value={employee.position}
+                    InputProps={{ readOnly: true }}
+                  />
+                  <TextField
+                    label="บริษัท"
+                    value={employee.company ?? "-"}
+                    InputProps={{ readOnly: true }}
+                  />
+                  <TextField
+                    label="วันเกิด"
+                    value={birthDateText}
+                    InputProps={{ readOnly: true }}
+                  />
                 </Stack>
 
                 <Stack spacing={1} sx={{ width: "100%", mt: 1 }}>
                   <Typography variant="subtitle2" fontWeight={700}>
                     ติดต่อ
                   </Typography>
-                  <TextField label="Email" value={employee.user.email ?? "-"} InputProps={{ readOnly: true }} />
-                  <TextField label="เบอร์โทรศัพท์" value={employee.phone} InputProps={{ readOnly: true }} />
+                  <TextField
+                    label="Email"
+                    value={employee.user.email ?? "-"}
+                    InputProps={{ readOnly: true }}
+                  />
+                  <TextField
+                    label="เบอร์โทรศัพท์"
+                    value={employee.phone}
+                    InputProps={{ readOnly: true }}
+                  />
                 </Stack>
 
-                <Stack direction="row" spacing={1} sx={{ width: "100%", mt: 1 }} justifyContent="center">
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  sx={{ width: "100%", mt: 1 }}
+                  justifyContent="center"
+                >
                   <Button href={`/dashboard/employees/${employee.id}/edit`} variant="outlined">
                     แก้ไขข้อมูล
                   </Button>

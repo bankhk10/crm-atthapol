@@ -1,21 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import Image from "next/image";
-import {
-  Box,
-  Button,
-  IconButton,
-  Menu,
-  MenuItem,
-  Paper,
-  Stack,
-  Typography,
-} from "@mui/material";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
-import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import { Box, Button, IconButton, Menu, MenuItem, Paper, Stack, Typography } from "@mui/material";
+import Image from "next/image";
+import { useMemo, useState } from "react";
 
 type ActivityItem = {
   id: string;
@@ -51,17 +42,8 @@ export function EmployeeActivity({ initialItems }: { initialItems: ActivityItem[
         >
           {filter}
         </Button>
-        <Menu
-          anchorEl={menuAnchor}
-          open={Boolean(menuAnchor)}
-          onClose={() => setMenuAnchor(null)}
-        >
-          {[
-            "เดือนปัจจุบัน",
-            "เดือนที่ผ่านมา",
-            "3 เดือนล่าสุด",
-            "ทั้งหมด",
-          ].map((opt) => (
+        <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={() => setMenuAnchor(null)}>
+          {["เดือนปัจจุบัน", "เดือนที่ผ่านมา", "3 เดือนล่าสุด", "ทั้งหมด"].map((opt) => (
             <MenuItem
               key={opt}
               selected={opt === filter}
@@ -145,7 +127,10 @@ export function EmployeeActivity({ initialItems }: { initialItems: ActivityItem[
           <IconButton disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
             <ChevronLeftIcon />
           </IconButton>
-          <IconButton disabled={page === totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
+          <IconButton
+            disabled={page === totalPages}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+          >
             <ChevronRightIcon />
           </IconButton>
         </Stack>

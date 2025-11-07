@@ -1,5 +1,6 @@
-import type { ProductFormValues } from "@/app/dashboard/products/validation";
 import { choice, pick, randFloat, randInt, randomCode } from "@/lib/random";
+
+import type { ProductFormValues } from "@/app/dashboard/products/validation";
 
 type Plant = { id: string; name: string };
 
@@ -15,15 +16,11 @@ const NAME_PREFIXES = [
   "สารป้องกันเชื้อรา",
 ] as const;
 
-const PACKAGING_SIZES = [
-  "12x1L",
-  "24x500ml",
-  "6x5L",
-  "1kg",
-  "25kg",
-  "10kg",
-] as const;
+const PACKAGING_SIZES = ["12x1L", "24x500ml", "6x5L", "1kg", "25kg", "10kg"] as const;
 
+/**
+ * Create a randomized, valid Product form value set for quick demo/seed.
+ */
 export function makeRandomProductValues(opts: { plants: Plant[] }): Partial<ProductFormValues> {
   const productCode = randomCode("PRD-");
   const lotNumber = randomCode("LOT-", 5);
@@ -41,7 +38,10 @@ export function makeRandomProductValues(opts: { plants: Plant[] }): Partial<Prod
   const status: ProductFormValues["status"] = Math.random() < 0.85 ? "ACTIVE" : "INACTIVE";
   const packagingSize = choice(PACKAGING_SIZES);
 
-  const chosenPlants = pick(opts.plants ?? [], randInt(1, Math.min(3, (opts.plants ?? []).length || 1)));
+  const chosenPlants = pick(
+    opts.plants ?? [],
+    randInt(1, Math.min(3, (opts.plants ?? []).length || 1)),
+  );
   const plantIds = chosenPlants.map((p) => p.id);
 
   const features = "เพิ่มผลผลิต เห็นผลไว ใช้งานสะดวก";
@@ -62,4 +62,3 @@ export function makeRandomProductValues(opts: { plants: Plant[] }): Partial<Prod
     description,
   };
 }
-

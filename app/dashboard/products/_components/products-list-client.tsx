@@ -1,14 +1,17 @@
 "use client";
 
-import { useState } from "react";
-import { Box, Button, Stack, TextField, Toolbar } from "@mui/material";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import SearchIcon from "@mui/icons-material/Search";
+import { Box, Button, Stack, TextField, Toolbar } from "@mui/material";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import { useState } from "react";
+
 import { hasPermission } from "@/lib/permissions";
-import type { ProductListItem } from "../data";
+
 import { ProductsTable } from "./products-table";
-import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+
+import type { ProductListItem } from "../data";
 
 export default function ProductsListClient({ products }: { products: ProductListItem[] }) {
   const { data: session } = useSession();

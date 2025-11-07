@@ -1,8 +1,18 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import {
+  Box,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  Stack,
+  ToggleButton,
+  ToggleButtonGroup,
+  Typography,
+} from "@mui/material";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Box, FormControl, InputLabel, MenuItem, Select, Stack, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
+import { useMemo, useState, useTransition } from "react";
 
 type PeriodType = "month" | "quarter";
 
@@ -54,7 +64,12 @@ export function ReportPeriodFilter() {
     return Array.from({ length: 7 }, (_, i) => y - 3 + i);
   }, []);
 
-  function updateQuery(next: { type?: PeriodType; year?: number; month?: number; quarter?: number }) {
+  function updateQuery(next: {
+    type?: PeriodType;
+    year?: number;
+    month?: number;
+    quarter?: number;
+  }) {
     const params = new URLSearchParams(sp.toString());
     const nextType = next.type ?? type;
     params.set("periodType", nextType);
@@ -75,7 +90,11 @@ export function ReportPeriodFilter() {
 
   return (
     <Box aria-busy={isPending ? true : undefined}>
-      <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} alignItems={{ xs: "stretch", sm: "center" }}>
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        spacing={1.5}
+        alignItems={{ xs: "stretch", sm: "center" }}
+      >
         <ToggleButtonGroup
           exclusive
           size="small"
@@ -163,4 +182,3 @@ export function ReportPeriodFilter() {
     </Box>
   );
 }
-

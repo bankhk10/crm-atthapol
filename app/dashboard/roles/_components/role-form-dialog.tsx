@@ -1,7 +1,5 @@
 "use client";
 
-import type { ChangeEvent, FormEvent } from "react";
-import { useEffect, useMemo, useState } from "react";
 import AddIcon from "@mui/icons-material/Add";
 import CloseIcon from "@mui/icons-material/Close";
 import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
@@ -21,9 +19,12 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import { useEffect, useMemo, useState } from "react";
+
 import { DEPARTMENTS } from "@/lib/departments";
 
 import type { PermissionLibraryGroup, RoleFormValues } from "../types";
+import type { ChangeEvent, FormEvent } from "react";
 
 type RoleFormDialogProps = {
   open: boolean;
@@ -79,7 +80,8 @@ export function RoleFormDialog({
     [permissionLibrary],
   );
 
-  const handleFieldChange = (field: keyof RoleFormValues) =>
+  const handleFieldChange =
+    (field: keyof RoleFormValues) =>
     (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       setValues((prev) => ({ ...prev, [field]: event.target.value }));
     };
@@ -158,9 +160,7 @@ export function RoleFormDialog({
       permissions: values.permissions
         .map((group) => ({
           category: group.category.trim(),
-          items: Array.from(new Set(group.items.map((item) => item.trim()))).filter(
-            Boolean,
-          ),
+          items: Array.from(new Set(group.items.map((item) => item.trim()))).filter(Boolean),
         }))
         .filter((group) => group.category && group.items.length > 0),
     };
@@ -188,50 +188,48 @@ export function RoleFormDialog({
         <Box component="form" id="role-form" onSubmit={handleSubmit}>
           <Stack spacing={3} py={1}>
             {(externalError || dialogError) && (
-              <Alert severity="error">
-                {dialogError || externalError}
-              </Alert>
+              <Alert severity="error">{dialogError || externalError}</Alert>
             )}
 
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-            <TextField
-              label="รหัสบทบาท (Key)"
-              value={values.key}
-              onChange={handleFieldChange("key")}
-              placeholder="เช่น SALES_MANAGER"
-              fullWidth
-              required
-              disabled={submitting}
-              inputProps={{ maxLength: 64, style: { textTransform: "uppercase" } }}
-              helperText="ใช้ตัวอักษรภาษาอังกฤษและขีดล่างเพื่ออ้างอิงในระบบ"
-            />
-            <TextField
-              label="ชื่อบทบาท"
-              value={values.name}
-              onChange={handleFieldChange("name")}
-              placeholder="เช่น ผู้จัดการฝ่ายขาย"
-              fullWidth
-              required
-              disabled={submitting}
-            />
-          </Stack>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              <TextField
+                label="รหัสบทบาท (Key)"
+                value={values.key}
+                onChange={handleFieldChange("key")}
+                placeholder="เช่น SALES_MANAGER"
+                fullWidth
+                required
+                disabled={submitting}
+                inputProps={{ maxLength: 64, style: { textTransform: "uppercase" } }}
+                helperText="ใช้ตัวอักษรภาษาอังกฤษและขีดล่างเพื่ออ้างอิงในระบบ"
+              />
+              <TextField
+                label="ชื่อบทบาท"
+                value={values.name}
+                onChange={handleFieldChange("name")}
+                placeholder="เช่น ผู้จัดการฝ่ายขาย"
+                fullWidth
+                required
+                disabled={submitting}
+              />
+            </Stack>
 
-          <TextField
-            select
-            label="แผนก (ถ้าต้องการจำกัด)"
-            value={values.department}
-            onChange={handleFieldChange("department") as any}
-            fullWidth
-            disabled={submitting}
-            helperText="เว้นว่างหากบทบาทนี้ใช้ได้ทุกแผนก"
-          >
-            <MenuItem value="">ไม่กำหนด</MenuItem>
-            {DEPARTMENTS.map((dep) => (
-              <MenuItem key={dep} value={dep}>
-                {dep}
-              </MenuItem>
-            ))}
-          </TextField>
+            <TextField
+              select
+              label="แผนก (ถ้าต้องการจำกัด)"
+              value={values.department}
+              onChange={handleFieldChange("department") as any}
+              fullWidth
+              disabled={submitting}
+              helperText="เว้นว่างหากบทบาทนี้ใช้ได้ทุกแผนก"
+            >
+              <MenuItem value="">ไม่กำหนด</MenuItem>
+              {DEPARTMENTS.map((dep) => (
+                <MenuItem key={dep} value={dep}>
+                  {dep}
+                </MenuItem>
+              ))}
+            </TextField>
 
             <TextField
               label="รายละเอียดบทบาท"
@@ -266,9 +264,10 @@ export function RoleFormDialog({
               )}
 
               {values.permissions.map((group, index) => {
-                const availableItems = permissionLibrary
-                  .find((libraryGroup) =>
-                    libraryGroup.category.toLowerCase() === group.category.trim().toLowerCase(),
+                const availableItems =
+                  permissionLibrary.find(
+                    (libraryGroup) =>
+                      libraryGroup.category.toLowerCase() === group.category.trim().toLowerCase(),
                   )?.items ?? [];
 
                 return (
@@ -377,9 +376,7 @@ function PermissionGroupSection({
           disabled={submitting || !group.category.trim()}
           SelectProps={{ multiple: true }}
           helperText={
-            availableItems.length > 0
-              ? `สิทธิ์ที่มีอยู่: ${availableItems.join(", ")}`
-              : undefined
+            availableItems.length > 0 ? `สิทธิ์ที่มีอยู่: ${availableItems.join(", ")}` : undefined
           }
         >
           {Array.from(new Set([...(availableItems || []), ...(group.items || [])])).map((item) => (

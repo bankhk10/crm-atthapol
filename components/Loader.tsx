@@ -1,8 +1,8 @@
 "use client";
 
 import { Box } from "@mui/material";
-import { keyframes, styled } from "@mui/material/styles";
 import { grey, red } from "@mui/material/colors";
+import { keyframes, styled } from "@mui/material/styles";
 import { useEffect, useState } from "react";
 
 const spin = keyframes`
@@ -16,8 +16,8 @@ const spin = keyframes`
   87% { box-shadow: .2em -.2em 0 0 currentcolor; }
 `;
 
-const LoaderRoot = styled("div")<{ size: number; primaryColor: string; secondaryColor: string }>
-  (({ size, primaryColor, secondaryColor }) => ({
+const LoaderRoot = styled("div")<{ size: number; primaryColor: string; secondaryColor: string }>(
+  ({ size, primaryColor, secondaryColor }) => ({
     position: "relative",
     transform: "rotateZ(45deg)",
     perspective: "1000px",
@@ -26,7 +26,7 @@ const LoaderRoot = styled("div")<{ size: number; primaryColor: string; secondary
     height: size,
     color: primaryColor,
     "&::before, &::after": {
-      content: "\"\"",
+      content: '""',
       display: "block",
       position: "absolute",
       top: 0,
@@ -42,7 +42,8 @@ const LoaderRoot = styled("div")<{ size: number; primaryColor: string; secondary
       transform: "rotateY(70deg)",
       animationDelay: ".4s",
     },
-  }));
+  }),
+);
 
 type LoaderProps = {
   size?: number;
@@ -53,7 +54,14 @@ type LoaderProps = {
   delay?: number; // หน่วงเวลาแสดง (มิลลิวินาที)
 };
 
-export default function Loader({ size = 64, color = grey[600], secondary = red[600], center = false, fullscreen = false, delay = 100 }: LoaderProps) {
+export default function Loader({
+  size = 64,
+  color = grey[600],
+  secondary = red[600],
+  center = false,
+  fullscreen = false,
+  delay = 100,
+}: LoaderProps) {
   const [ready, setReady] = useState(delay === 0);
 
   useEffect(() => {

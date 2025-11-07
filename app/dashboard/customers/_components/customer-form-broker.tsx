@@ -1,14 +1,14 @@
 ﻿"use client";
 
-import type { Dispatch, SetStateAction } from "react";
-import { Box, Stack, TextField, Typography, MenuItem, Button } from "@mui/material";
 import CasinoIcon from "@mui/icons-material/Casino";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { Box, Stack, TextField, Typography, MenuItem, Button } from "@mui/material";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { th } from "date-fns/locale";
 
 import type { CustomerFormValues } from "../types";
+import type { Dispatch, SetStateAction } from "react";
 
 type BrokerFormSectionProps = {
   values: CustomerFormValues;
@@ -28,16 +28,48 @@ export default function BrokerFormSection({
     const choice = <T,>(arr: T[]) => arr[randInt(0, arr.length - 1)];
     const pad = (n: number, len: number) => String(n).padStart(len, "0");
 
-    const firstNames = ["สมชาย", "วิชัย", "กิตติ", "อรทัย", "วาสนา", "ชลธิชา", "ปิยพงษ์", "สุรีย์พร", "นพดล", "ชุติมา"];
-    const lastNames = ["ใจดี", "มีสุข", "วงศ์ไทย", "เกษมสุข", "ทวีทรัพย์", "สวัสดิ์", "ศรีทอง", "สุขสันต์", "รุ่งโรจน์", "รุ่งเรือง"];
+    const firstNames = [
+      "สมชาย",
+      "วิชัย",
+      "กิตติ",
+      "อรทัย",
+      "วาสนา",
+      "ชลธิชา",
+      "ปิยพงษ์",
+      "สุรีย์พร",
+      "นพดล",
+      "ชุติมา",
+    ];
+    const lastNames = [
+      "ใจดี",
+      "มีสุข",
+      "วงศ์ไทย",
+      "เกษมสุข",
+      "ทวีทรัพย์",
+      "สวัสดิ์",
+      "ศรีทอง",
+      "สุขสันต์",
+      "รุ่งโรจน์",
+      "รุ่งเรือง",
+    ];
     const prefixes = ["นาย", "นาง", "นางสาว"];
-    const streets = ["สุขุมวิท", "เพชรเกษม", "พหลโยธิน", "งามวงศ์วาน", "ลาดพร้าว", "รามคำแหง", "ศรีนครินทร์", "เจริญกรุง"];
+    const streets = [
+      "สุขุมวิท",
+      "เพชรเกษม",
+      "พหลโยธิน",
+      "งามวงศ์วาน",
+      "ลาดพร้าว",
+      "รามคำแหง",
+      "ศรีนครินทร์",
+      "เจริญกรุง",
+    ];
 
     const prefix = choice(prefixes);
     const firstName = choice(firstNames);
     const lastName = choice(lastNames);
     const contactPhone = `0${String(randInt(600000000, 999999999))}`;
-    const asciiId = (len: number) => Array.from({ length: len }, () => String.fromCharCode(97 + randInt(0, 25))).join("");
+    const asciiId = (len: number) =>
+      Array.from({ length: len }, () => String.fromCharCode(97 + randInt(0, 25))).join("");
     const contactEmail = `${asciiId(6)}.${asciiId(4)}@mail.com`;
 
     const year = randInt(1965, 2000);
@@ -53,12 +85,18 @@ export default function BrokerFormSection({
     const plotCount = String(randInt(5, 100));
     const agriChemValuePerCycle = String(randInt(10000, 300000));
     const agriChemQtyPerCycle = String(randInt(100, 10000));
-    const regularStore = ["ร้านเกษตรรุ่งเรือง", "ไทยการเกษตร", "กรีนฟีลด์", "ฟาร์มพลัส"][randInt(0,3)];
-    const serviceTypes = ["ให้คำปรึกษา", "จัดหาสินค้า", "รับซื้อผลผลิต", "บริการฉีดพ่น"][randInt(0,3)];
-    const brandsUsed = ["ยารักษ์พืช", "ไทยกรีน", "เกษตรโปร", "อีโคฟาร์ม"][randInt(0,3)];
+    const regularStore = ["ร้านเกษตรรุ่งเรือง", "ไทยการเกษตร", "กรีนฟีลด์", "ฟาร์มพลัส"][
+      randInt(0, 3)
+    ];
+    const serviceTypes = ["ให้คำปรึกษา", "จัดหาสินค้า", "รับซื้อผลผลิต", "บริการฉีดพ่น"][
+      randInt(0, 3)
+    ];
+    const brandsUsed = ["ยารักษ์พืช", "ไทยกรีน", "เกษตรโปร", "อีโคฟาร์ม"][randInt(0, 3)];
 
-    const address = `เลขที่ ${randInt(1, 199)}/ ${randInt(1, 20)} ซอย${streets[randInt(0,streets.length-1)]} ถนน${streets[randInt(0,streets.length-1)]}`;
-    const province = ["นครราชสีมา", "บุรีรัมย์", "สุรินทร์", "เชียงใหม่", "เชียงราย"][randInt(0,4)];
+    const address = `เลขที่ ${randInt(1, 199)}/ ${randInt(1, 20)} ซอย${streets[randInt(0, streets.length - 1)]} ถนน${streets[randInt(0, streets.length - 1)]}`;
+    const province = ["นครราชสีมา", "บุรีรัมย์", "สุรินทร์", "เชียงใหม่", "เชียงราย"][
+      randInt(0, 4)
+    ];
     const district = "เมือง";
     const subdistrict = "ในเมือง";
     const postalCode = String(randInt(10000, 96150));
@@ -94,7 +132,13 @@ export default function BrokerFormSection({
   return (
     <Stack spacing={3}>
       <Stack direction="row" justifyContent="flex-end">
-        <Button type="button" variant="outlined" color="secondary" startIcon={<CasinoIcon />} onClick={fillRandom}>
+        <Button
+          type="button"
+          variant="outlined"
+          color="secondary"
+          startIcon={<CasinoIcon />}
+          onClick={fillRandom}
+        >
           กรอกแบบสุ่ม
         </Button>
       </Stack>

@@ -1,6 +1,8 @@
 ﻿"use client";
 
-import { useEffect, useMemo, useState } from "react";
+// Link removed; using router via shared buttons
+import AddIcon from "@mui/icons-material/Add";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import {
   Alert,
   Box,
@@ -20,20 +22,20 @@ import {
   DialogActions,
   Snackbar,
 } from "@mui/material";
-// Link removed; using router via shared buttons
 import Autocomplete from "@mui/material/Autocomplete";
-import AddIcon from "@mui/icons-material/Add";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { th } from "date-fns/locale";
-import ThaiAddressPicker from "@/components/ThaiAddressPicker";
-import type { Option, ProductOption, OrderItemInput, OrderFormInitial } from "../types";
-import { SaveBackButtons } from "@/components/SaveBackButtons";
+import { useEffect, useMemo, useState } from "react";
+
 import { FillRandomButton } from "@/components/FillRandomButton";
-import { fillOrderFormRandom } from "@/lib/random-fill/order";
 import Loader from "@/components/Loader";
+import { SaveBackButtons } from "@/components/SaveBackButtons";
+import ThaiAddressPicker from "@/components/ThaiAddressPicker";
+import { fillOrderFormRandom } from "@/lib/random-fill/order";
+
+import type { Option, ProductOption, OrderItemInput, OrderFormInitial } from "../types";
 
 // Option and ProductOption moved to ../types
 
@@ -180,7 +182,9 @@ export function OrderForm({
   const [shippingFeeInput, setShippingFeeInput] = useState<string | null>(null);
   const [otherChargesInput, setOtherChargesInput] = useState<string | null>(null);
   const [orderDiscountInput, setOrderDiscountInput] = useState<string | null>(null);
-  const [itemDiscountInput, setItemDiscountInput] = useState<Record<number, string | undefined>>({});
+  const [itemDiscountInput, setItemDiscountInput] = useState<Record<number, string | undefined>>(
+    {},
+  );
 
   const totals = useMemo(
     () =>
@@ -454,7 +458,12 @@ export function OrderForm({
           onClose={() => setError(null)}
           anchorOrigin={{ vertical: "top", horizontal: "right" }}
         >
-          <Alert onClose={() => setError(null)} severity="error" variant="filled" sx={{ width: "100%" }}>
+          <Alert
+            onClose={() => setError(null)}
+            severity="error"
+            variant="filled"
+            sx={{ width: "100%" }}
+          >
             {error}
           </Alert>
         </Snackbar>
@@ -535,20 +544,18 @@ export function OrderForm({
             {promotionSupported === false
               ? "-"
               : promotionLoading
-              ? "..."
-              : (promotionAvailable ?? 0).toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}{" "}
+                ? "..."
+                : (promotionAvailable ?? 0).toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}{" "}
             บาท
           </Box>
           <TextField
             label="ใช้วงเงิน (บาท)"
             type="text"
             inputMode="decimal"
-            value={
-              promotionAmountInput ?? (promotionAmount === "" ? "" : String(promotionAmount))
-            }
+            value={promotionAmountInput ?? (promotionAmount === "" ? "" : String(promotionAmount))}
             onFocus={(e) => {
               setPromotionAmountInput(
                 promotionAmount === "" ? e.target.value : String(promotionAmount),
@@ -635,9 +642,9 @@ export function OrderForm({
             onChange={(e) => {
               const rawValue = e.target.value;
               let val = rawValue.replace(/[^0-9]/g, "");
-                    if (val.startsWith('0') && val.length > 1 && val[1] !== '.') {
-                      val = String(parseInt(val, 10));
-                    }
+              if (val.startsWith("0") && val.length > 1 && val[1] !== ".") {
+                val = String(parseInt(val, 10));
+              }
               setCreditTermDays(val === "" ? "" : Number(val));
             }}
             fullWidth
@@ -928,7 +935,7 @@ export function OrderForm({
                     let val = rawValue.replace(/[^0-9]/g, "");
 
                     // ลบ 0 นำหน้า (อันเดิมของคุณ)
-                    if (val.startsWith('0') && val.length > 1 && val[1] !== '.') {
+                    if (val.startsWith("0") && val.length > 1 && val[1] !== ".") {
                       val = String(parseInt(val, 10));
                     }
 
@@ -965,12 +972,14 @@ export function OrderForm({
                   type="text"
                   inputMode="decimal"
                   value={
-                    itemDiscountInput[idx] ?? (it.discountAmount === "" ? "" : String(it.discountAmount ?? ""))
+                    itemDiscountInput[idx] ??
+                    (it.discountAmount === "" ? "" : String(it.discountAmount ?? ""))
                   }
                   onFocus={(e) => {
                     setItemDiscountInput((prev) => ({
                       ...prev,
-                      [idx]: it.discountAmount === "" ? e.target.value : String(it.discountAmount ?? ""),
+                      [idx]:
+                        it.discountAmount === "" ? e.target.value : String(it.discountAmount ?? ""),
                     }));
                   }}
                   onChange={(e) => {
@@ -1097,9 +1106,7 @@ export function OrderForm({
             inputMode="decimal"
             value={otherChargesInput ?? (otherCharges === "" ? "" : String(otherCharges))}
             onFocus={(e) => {
-              setOtherChargesInput(
-                otherCharges === "" ? e.target.value : String(otherCharges),
-              );
+              setOtherChargesInput(otherCharges === "" ? e.target.value : String(otherCharges));
             }}
             onChange={(e) => {
               const raw = e.target.value ?? "";
@@ -1137,9 +1144,7 @@ export function OrderForm({
             inputMode="decimal"
             value={orderDiscountInput ?? (orderDiscount === "" ? "" : String(orderDiscount))}
             onFocus={(e) => {
-              setOrderDiscountInput(
-                orderDiscount === "" ? e.target.value : String(orderDiscount),
-              );
+              setOrderDiscountInput(orderDiscount === "" ? e.target.value : String(orderDiscount));
             }}
             onChange={(e) => {
               const raw = e.target.value ?? "";
@@ -1235,10 +1240,24 @@ export function OrderForm({
       <Dialog open={customerChangeDialogOpen} onClose={() => setCustomerChangeDialogOpen(false)}>
         <DialogTitle>ยืนยันการเปลี่ยนลูกค้า</DialogTitle>
         <DialogContent>
-          คุณกำลังใช้งบส่งเสริมการขายอยู่เป็นจำนวน {Number(promotionAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท หากเปลี่ยนลูกค้า ระบบจะคืนงบให้ลูกค้าเดิมและตัดงบจากลูกค้าใหม่ตามจำนวนที่ใช้เมื่อบันทึก คุณต้องการเปลี่ยนลูกค้าหรือไม่?
+          คุณกำลังใช้งบส่งเสริมการขายอยู่เป็นจำนวน{" "}
+          {Number(promotionAmount || 0).toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}{" "}
+          บาท หากเปลี่ยนลูกค้า
+          ระบบจะคืนงบให้ลูกค้าเดิมและตัดงบจากลูกค้าใหม่ตามจำนวนที่ใช้เมื่อบันทึก
+          คุณต้องการเปลี่ยนลูกค้าหรือไม่?
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => { setCustomerChangeDialogOpen(false); setPendingCustomer(null); }}>ยกเลิก</Button>
+          <Button
+            onClick={() => {
+              setCustomerChangeDialogOpen(false);
+              setPendingCustomer(null);
+            }}
+          >
+            ยกเลิก
+          </Button>
           <Button
             variant="contained"
             color="primary"
@@ -1263,9 +1282,3 @@ export function OrderForm({
     </Stack>
   );
 }
-
-
-
-
-
-

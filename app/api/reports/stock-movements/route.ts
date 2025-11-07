@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -70,4 +71,3 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "ไม่สามารถดึงรายงานได้" }, { status: 500 });
   }
 }
-

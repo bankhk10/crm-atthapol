@@ -1,20 +1,22 @@
 "use client";
 
-import type { ChangeEvent, FormEvent } from "react";
+import { Alert, Paper, Stack, TextField, Typography, Divider } from "@mui/material";
+import { Box } from "@mui/material";
+import Autocomplete from "@mui/material/Autocomplete";
 import { useEffect, useState } from "react";
 // Link removed; shared buttons will handle navigation
-import { Alert, Button, Paper, Stack, TextField, Typography, Divider } from "@mui/material";
-import Autocomplete from "@mui/material/Autocomplete";
-import { Box } from "@mui/material";
+
+import Loader from "@/components/Loader";
+import { SaveBackButtons } from "@/components/SaveBackButtons";
 import ThaiAddressPicker from "@/components/ThaiAddressPicker";
 
-import type { CustomerFormValues } from "../types";
-import DealerFormSection from "./customer-form-dealer";
-import SubDealerFormSection from "./customer-form-subdealer";
-import FarmerFormSection from "./customer-form-farmer";
 import BrokerFormSection from "./customer-form-broker";
-import { SaveBackButtons } from "@/components/SaveBackButtons";
-import Loader from "@/components/Loader";
+import DealerFormSection from "./customer-form-dealer";
+import FarmerFormSection from "./customer-form-farmer";
+import SubDealerFormSection from "./customer-form-subdealer";
+
+import type { CustomerFormValues } from "../types";
+import type { ChangeEvent, FormEvent } from "react";
 
 type CustomerFormProps = {
   title: string;

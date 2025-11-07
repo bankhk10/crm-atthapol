@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
+
 import { ThemeProvider, CssBaseline } from "@mui/material";
+
 import { theme } from "@/lib/theme";
+
 import { Providers } from "./providers";
+
 import "./globals.css";
 import { Prompt } from "next/font/google";
 

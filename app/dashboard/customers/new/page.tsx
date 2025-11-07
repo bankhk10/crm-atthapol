@@ -1,8 +1,10 @@
 import { Box, Stack } from "@mui/material";
-import { CustomerCreateClient } from "../_components/customer-create-client";
+
 import { getEmployees } from "@/app/dashboard/employees/data";
-import { getDealerOptions } from "../data";
 import { requirePermission } from "@/lib/require-permission";
+
+import { CustomerCreateClient } from "../_components/customer-create-client";
+import { getDealerOptions } from "../data";
 
 export default async function CustomerCreatePage() {
   await requirePermission("customers", "create");
@@ -13,9 +15,10 @@ export default async function CustomerCreatePage() {
     .map((e) => ({
       id: e.id,
       label:
-        [e.prefix, e.firstName, e.lastName]
-          .filter(Boolean)
-          .join(" ") || e.user?.name || e.user?.email || e.id,
+        [e.prefix, e.firstName, e.lastName].filter(Boolean).join(" ") ||
+        e.user?.name ||
+        e.user?.email ||
+        e.id,
     }));
 
   return (
@@ -35,4 +38,3 @@ export default async function CustomerCreatePage() {
     </Box>
   );
 }
-

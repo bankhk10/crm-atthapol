@@ -1,10 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
+
 import { authOptions } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
+import { prisma } from "@/lib/prisma";
 import { withActor } from "@/lib/with-actor";
 
 export async function deleteCustomer(customerId: string) {
@@ -16,7 +17,10 @@ export async function deleteCustomer(customerId: string) {
     }
     await withActor(async () => {
       const now = new Date();
-      await (prisma as any).customer.update({ where: { id: customerId }, data: { deletedAt: now } });
+      await (prisma as any).customer.update({
+        where: { id: customerId },
+        data: { deletedAt: now },
+      });
     });
   } catch (error) {
     throw new Error("ไม่สามารถลบข้อมูลได้ กรุณาลองใหม่อีกครั้ง");
@@ -24,4 +28,3 @@ export async function deleteCustomer(customerId: string) {
 
   revalidatePath("/dashboard/customers");
 }
-

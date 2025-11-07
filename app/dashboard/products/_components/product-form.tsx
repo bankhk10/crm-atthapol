@@ -1,13 +1,10 @@
 "use client";
 
-import {
-  useEffect,
-  useMemo,
-  useState,
-  type ChangeEvent,
-  type FormEvent,
-  type DragEvent,
-} from "react";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import DeleteIcon from "@mui/icons-material/Close";
+// Date pickers removed from product form; manage dates in inventory page
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import {
   Autocomplete,
   Paper,
@@ -21,17 +18,22 @@ import {
   IconButton,
   Chip,
 } from "@mui/material";
-import DeleteIcon from "@mui/icons-material/Close";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-// Date pickers removed from product form; manage dates in inventory page
-import type { ProductFormValues } from "../validation";
-import CloudUploadIcon from "@mui/icons-material/CloudUpload";
-import { SaveBackButtons } from "@/components/SaveBackButtons";
-import { FillRandomButton } from "@/components/FillRandomButton";
-import { makeRandomProductValues } from "@/lib/random-fill/product";
 import { useSession } from "next-auth/react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+  type DragEvent,
+} from "react";
+
+import { FillRandomButton } from "@/components/FillRandomButton";
+import { SaveBackButtons } from "@/components/SaveBackButtons";
+import { makeRandomProductValues } from "@/lib/random-fill/product";
 import { canShowRandomFill } from "@/lib/ui-permissions";
+
+import type { ProductFormValues } from "../validation";
 
 type Plant = {
   id: string;
@@ -310,11 +312,12 @@ export function ProductForm({
       <Divider sx={{ mt: 1, mb: 4 }} />
 
       {/* ปุ่มกรอกแบบสุ่ม: แสดงเฉพาะตอนเพิ่มใหม่ และมีสิทธิ์ */}
-      {mode === "create" && canShowRandomFill(session?.user?.permissions ?? [], "products", "create") && (
-        <Stack direction="row" justifyContent="flex-end" sx={{ mb: 2 }}>
-          <FillRandomButton onClick={handleFillRandom} disabled={submitting} />
-        </Stack>
-      )}
+      {mode === "create" &&
+        canShowRandomFill(session?.user?.permissions ?? [], "products", "create") && (
+          <Stack direction="row" justifyContent="flex-end" sx={{ mb: 2 }}>
+            <FillRandomButton onClick={handleFillRandom} disabled={submitting} />
+          </Stack>
+        )}
 
       <Stack spacing={2}>
         {error && <Typography color="error.main">{error}</Typography>}

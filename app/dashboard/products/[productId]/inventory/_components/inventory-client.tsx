@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import DeleteIcon from "@mui/icons-material/Delete";
 import {
   Button,
   IconButton,
@@ -19,17 +20,18 @@ import {
   CardContent,
   MenuItem,
 } from "@mui/material";
-import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
-import DeleteIcon from "@mui/icons-material/Delete";
-import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import useMediaQuery from "@mui/material/useMediaQuery";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { th } from "date-fns/locale";
-import { createLot, deleteLot, updateLot, updateProductPrice } from "../actions";
 import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState, useTransition } from "react";
+
 import { SaveBackButtons } from "@/components/SaveBackButtons";
+
+import { createLot, deleteLot, updateLot, updateProductPrice } from "../actions";
 
 // --- Types (ไม่เปลี่ยนแปลง) ---
 type ProductInfo = {
@@ -425,206 +427,210 @@ export default function InventoryClient({
               </Stack>
             ) : (
               <TableContainer sx={{ width: "100%", overflowX: "auto" }}>
-              <Table size="small" sx={{ minWidth: 900 }}>
-                <TableHead>
-                  <TableRow sx={{ backgroundColor: "grey.50" }}>
-                    <TableCell align="center" sx={{ fontWeight: 700 }}>
-                      เลขล็อต
-                    </TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 700 }}>
-                      จำนวน
-                    </TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 700 }}>
-                      วันที่นำเข้า
-                    </TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 700 }}>
-                      วันหมดอายุ
-                    </TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 700 }}>
-                      สถานที่จัดเก็บ
-                    </TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 700 }}>
-                      หมายเหตุ
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {displayRows.map((r) => (
-                    <TableRow
-                      key={r.id}
-                      hover
-                      sx={{
-                        backgroundColor: r.isNew ? "rgba(25,118,210,0.06)" : undefined,
-                      }}
-                    >
-                      <TableCell sx={{ minWidth: 80 }}>
-                        <TextField
-                          value={r.lotNumber}
-                          size="small"
-                          InputProps={{ readOnly: true }}
-                          fullWidth
-                        />
+                <Table size="small" sx={{ minWidth: 900 }}>
+                  <TableHead>
+                    <TableRow sx={{ backgroundColor: "grey.50" }}>
+                      <TableCell align="center" sx={{ fontWeight: 700 }}>
+                        เลขล็อต
                       </TableCell>
-                      <TableCell sx={{ minWidth: 80 }}>
-                        <TextField
-                          value={r.qtyOnHand}
-                          onChange={(e) => {
-                            const raw = e.target.value ?? "";
-                            const digits = String(raw).replace(/[^0-9]/g, "");
-                            const normalized = digits.replace(/^0+(?=\d)/, "");
-                            setRows((prev) =>
-                              prev.map((x) =>
-                                x.id === r.id ? { ...x, qtyOnHand: normalized } : x,
-                              ),
-                            );
-                          }}
-                          size="small"
-                          type="number"
-                          inputProps={{ min: 0, step: 1 }}
-                          fullWidth
-                        />
+                      <TableCell align="center" sx={{ fontWeight: 700 }}>
+                        จำนวน
                       </TableCell>
-
-                      {/* 1 */}
-
-                      <TableCell sx={{ minWidth: 160, width: 180 }}>
-                        <DatePicker
-                          label={undefined}
-                          value={r.importedAt ? new Date(r.importedAt) : null}
-                          onChange={(newValue) => {
-                            setRows((prev) =>
-                              prev.map((x) =>
-                                x.id === r.id
-                                  ? {
-                                      ...x,
-                                      importedAt: newValue
-                                        ? newValue.toISOString().slice(0, 10)
-                                        : "",
-                                    }
-                                  : x,
-                              ),
-                            );
-                          }}
-                          slotProps={{
-                            textField: {
-                              size: "small",
-                              fullWidth: true,
-                              sx: {
-                                width: { xs: "100%", sm: 140, md: 150 },
-                                minWidth: 140,
-                              },
-                              inputProps: { style: { fontSize: 14 } },
-                            },
-                          }}
-                        />
+                      <TableCell align="center" sx={{ fontWeight: 700 }}>
+                        วันที่นำเข้า
                       </TableCell>
-
-                      <TableCell sx={{ minWidth: 160, width: 180 }}>
-                        <DatePicker
-                          label={undefined}
-                          value={r.expDate ? new Date(r.expDate) : null}
-                          onChange={(newValue) => {
-                            setRows((prev) =>
-                              prev.map((x) =>
-                                x.id === r.id
-                                  ? {
-                                      ...x,
-                                      expDate: newValue ? newValue.toISOString().slice(0, 10) : "",
-                                    }
-                                  : x,
-                              ),
-                            );
-                          }}
-                          slotProps={{
-                            textField: {
-                              size: "small",
-                              fullWidth: true,
-                              sx: {
-                                width: { xs: "100%", sm: 140, md: 150 },
-                                minWidth: 140,
-                              },
-                              inputProps: { style: { fontSize: 14 } },
-                            },
-                          }}
-                        />
+                      <TableCell align="center" sx={{ fontWeight: 700 }}>
+                        วันหมดอายุ
                       </TableCell>
-
-                      {/* 1 */}
-                      <TableCell sx={{ minWidth: 140 }}>
-                        <TextField
-                          select
-                          value={r.locationId ?? ""}
-                          onChange={(e) => {
-                            const locId = (e.target.value as string) || null;
-                            const whId = locId
-                              ? (locations.find((l) => l.id === locId)?.warehouseId ?? null)
-                              : null;
-                            setRows((prev) =>
-                              prev.map((x) =>
-                                x.id === r.id ? { ...x, locationId: locId, warehouseId: whId } : x,
-                              ),
-                            );
-                          }}
-                          size="small"
-                          fullWidth
-                        >
-                          <MenuItem value="">- เลือกตำแหน่ง -</MenuItem>
-                          {locations.map((loc) => (
-                            <MenuItem key={loc.id} value={loc.id}>
-                              {loc.name}
-                            </MenuItem>
-                          ))}
-                        </TextField>
+                      <TableCell align="center" sx={{ fontWeight: 700 }}>
+                        สถานที่จัดเก็บ
                       </TableCell>
-                      <TableCell sx={{ minWidth: 300 }}>
-                        <Stack direction="row" spacing={1} alignItems="center">
+                      <TableCell align="center" sx={{ fontWeight: 700 }}>
+                        หมายเหตุ
+                      </TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {displayRows.map((r) => (
+                      <TableRow
+                        key={r.id}
+                        hover
+                        sx={{
+                          backgroundColor: r.isNew ? "rgba(25,118,210,0.06)" : undefined,
+                        }}
+                      >
+                        <TableCell sx={{ minWidth: 80 }}>
                           <TextField
-                            value={r.note || ""}
-                            onChange={(e) =>
-                              setRows((prev) =>
-                                prev.map((x) =>
-                                  x.id === r.id ? { ...x, note: e.target.value } : x,
-                                ),
-                              )
-                            }
+                            value={r.lotNumber}
                             size="small"
+                            InputProps={{ readOnly: true }}
                             fullWidth
                           />
-                          {r.isNew && latestDraftId === r.id && (
-                            <IconButton
-                              size="small"
-                              color="error"
-                              onClick={() => handleDeleteRow(r)}
-                              disabled={isPending}
-                              title="ลบล็อตใหม่ล่าสุด"
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          )}
-                        </Stack>
-                      </TableCell>
-                      {/* คอลัมน์จัดการถูกลบออกตามคำขอ */}
-                    </TableRow>
-                  ))}
+                        </TableCell>
+                        <TableCell sx={{ minWidth: 80 }}>
+                          <TextField
+                            value={r.qtyOnHand}
+                            onChange={(e) => {
+                              const raw = e.target.value ?? "";
+                              const digits = String(raw).replace(/[^0-9]/g, "");
+                              const normalized = digits.replace(/^0+(?=\d)/, "");
+                              setRows((prev) =>
+                                prev.map((x) =>
+                                  x.id === r.id ? { ...x, qtyOnHand: normalized } : x,
+                                ),
+                              );
+                            }}
+                            size="small"
+                            type="number"
+                            inputProps={{ min: 0, step: 1 }}
+                            fullWidth
+                          />
+                        </TableCell>
 
-                  {/* Totals */}
-                  <TableRow sx={{ backgroundColor: "grey.100" }}>
-                    <TableCell align="center">
-                      {/* ใช้ Typography และกำหนด variant ที่ต้องการ */}
-                      <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
-                        รวม
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 700 }}>
-                      <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
-                        {totals.onHand}
-                      </Typography>
-                    </TableCell>
-                    <TableCell colSpan={4}></TableCell>
-                  </TableRow>
-              </TableBody>
-            </Table>
-            </TableContainer>
+                        {/* 1 */}
+
+                        <TableCell sx={{ minWidth: 160, width: 180 }}>
+                          <DatePicker
+                            label={undefined}
+                            value={r.importedAt ? new Date(r.importedAt) : null}
+                            onChange={(newValue) => {
+                              setRows((prev) =>
+                                prev.map((x) =>
+                                  x.id === r.id
+                                    ? {
+                                        ...x,
+                                        importedAt: newValue
+                                          ? newValue.toISOString().slice(0, 10)
+                                          : "",
+                                      }
+                                    : x,
+                                ),
+                              );
+                            }}
+                            slotProps={{
+                              textField: {
+                                size: "small",
+                                fullWidth: true,
+                                sx: {
+                                  width: { xs: "100%", sm: 140, md: 150 },
+                                  minWidth: 140,
+                                },
+                                inputProps: { style: { fontSize: 14 } },
+                              },
+                            }}
+                          />
+                        </TableCell>
+
+                        <TableCell sx={{ minWidth: 160, width: 180 }}>
+                          <DatePicker
+                            label={undefined}
+                            value={r.expDate ? new Date(r.expDate) : null}
+                            onChange={(newValue) => {
+                              setRows((prev) =>
+                                prev.map((x) =>
+                                  x.id === r.id
+                                    ? {
+                                        ...x,
+                                        expDate: newValue
+                                          ? newValue.toISOString().slice(0, 10)
+                                          : "",
+                                      }
+                                    : x,
+                                ),
+                              );
+                            }}
+                            slotProps={{
+                              textField: {
+                                size: "small",
+                                fullWidth: true,
+                                sx: {
+                                  width: { xs: "100%", sm: 140, md: 150 },
+                                  minWidth: 140,
+                                },
+                                inputProps: { style: { fontSize: 14 } },
+                              },
+                            }}
+                          />
+                        </TableCell>
+
+                        {/* 1 */}
+                        <TableCell sx={{ minWidth: 140 }}>
+                          <TextField
+                            select
+                            value={r.locationId ?? ""}
+                            onChange={(e) => {
+                              const locId = (e.target.value as string) || null;
+                              const whId = locId
+                                ? (locations.find((l) => l.id === locId)?.warehouseId ?? null)
+                                : null;
+                              setRows((prev) =>
+                                prev.map((x) =>
+                                  x.id === r.id
+                                    ? { ...x, locationId: locId, warehouseId: whId }
+                                    : x,
+                                ),
+                              );
+                            }}
+                            size="small"
+                            fullWidth
+                          >
+                            <MenuItem value="">- เลือกตำแหน่ง -</MenuItem>
+                            {locations.map((loc) => (
+                              <MenuItem key={loc.id} value={loc.id}>
+                                {loc.name}
+                              </MenuItem>
+                            ))}
+                          </TextField>
+                        </TableCell>
+                        <TableCell sx={{ minWidth: 300 }}>
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <TextField
+                              value={r.note || ""}
+                              onChange={(e) =>
+                                setRows((prev) =>
+                                  prev.map((x) =>
+                                    x.id === r.id ? { ...x, note: e.target.value } : x,
+                                  ),
+                                )
+                              }
+                              size="small"
+                              fullWidth
+                            />
+                            {r.isNew && latestDraftId === r.id && (
+                              <IconButton
+                                size="small"
+                                color="error"
+                                onClick={() => handleDeleteRow(r)}
+                                disabled={isPending}
+                                title="ลบล็อตใหม่ล่าสุด"
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            )}
+                          </Stack>
+                        </TableCell>
+                        {/* คอลัมน์จัดการถูกลบออกตามคำขอ */}
+                      </TableRow>
+                    ))}
+
+                    {/* Totals */}
+                    <TableRow sx={{ backgroundColor: "grey.100" }}>
+                      <TableCell align="center">
+                        {/* ใช้ Typography และกำหนด variant ที่ต้องการ */}
+                        <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
+                          รวม
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 700 }}>
+                        <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
+                          {totals.onHand}
+                        </Typography>
+                      </TableCell>
+                      <TableCell colSpan={4}></TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </TableContainer>
             )}
           </CardContent>
         </Card>

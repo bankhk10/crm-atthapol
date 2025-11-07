@@ -1,11 +1,18 @@
 import { Box, Stack } from "@mui/material";
 import { notFound } from "next/navigation";
+
 import { prisma } from "@/lib/prisma";
-import { ProductEditClient } from "../../_components/product-edit-client";
-import type { ProductFormValues } from "../../validation";
 import { requirePermission } from "@/lib/require-permission";
 
-export default async function ProductEditPage({ params }: { params: Promise<{ productId: string }> }) {
+import { ProductEditClient } from "../../_components/product-edit-client";
+
+import type { ProductFormValues } from "../../validation";
+
+export default async function ProductEditPage({
+  params,
+}: {
+  params: Promise<{ productId: string }>;
+}) {
   await requirePermission("products", "edit");
   const { productId } = await params;
 
@@ -33,8 +40,8 @@ export default async function ProductEditPage({ params }: { params: Promise<{ pr
     brand: p.brand ?? "",
     unit: (p.unit as any) || "ชิ้น",
     price: p.price ?? undefined,
-    mfgDate: p.mfgDate ? new Date(p.mfgDate).toISOString().slice(0,10) : undefined,
-    expDate: p.expDate ? new Date(p.expDate).toISOString().slice(0,10) : undefined,
+    mfgDate: p.mfgDate ? new Date(p.mfgDate).toISOString().slice(0, 10) : undefined,
+    expDate: p.expDate ? new Date(p.expDate).toISOString().slice(0, 10) : undefined,
     status: p.status as any,
     imageUrl: p.imageUrl ?? "",
     description: p.description ?? "",
@@ -53,7 +60,16 @@ export default async function ProductEditPage({ params }: { params: Promise<{ pr
   `;
 
   return (
-    <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", py: 4 }}>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        py: 4,
+      }}
+    >
       <Stack spacing={3} sx={{ width: "100%", maxWidth: 960 }}>
         <ProductEditClient
           productId={productId}

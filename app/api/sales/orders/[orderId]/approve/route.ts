@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
+
 import { authOptions } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
+import { prisma } from "@/lib/prisma";
 import { buildSaleOrderVisibilityWhere } from "@/lib/sales-visibility";
 
 export const runtime = "nodejs";
@@ -18,7 +19,9 @@ export async function POST(_req: NextRequest, context: { params: Promise<{ order
 
     const updated = await prisma.$transaction(async (tx) => {
       const scopeWhere = await buildSaleOrderVisibilityWhere();
-      const exists = await tx.saleOrder.findFirst({ where: { id: orderId, ...(scopeWhere as any) } });
+      const exists = await tx.saleOrder.findFirst({
+        where: { id: orderId, ...(scopeWhere as any) },
+      });
       if (!exists || (exists as any).deletedAt) throw new Error("NOT_FOUND");
 
       const status = String((exists as any).status || "");
@@ -28,7 +31,9 @@ export async function POST(_req: NextRequest, context: { params: Promise<{ order
 
       // ตรวจสอบว่า user id ใน session มีอยู่จริงในตาราง User เพื่อเลี่ยง FK violation
       const actorId = session?.user?.id as string | undefined;
-      const actor = actorId ? await tx.user.findUnique({ where: { id: actorId }, select: { id: true } }) : null;
+      const actor = actorId
+        ? await tx.user.findUnique({ where: { id: actorId }, select: { id: true } })
+        : null;
 
       const order = await tx.saleOrder.update({
         where: { id: orderId },
@@ -51,10 +56,12 @@ export async function POST(_req: NextRequest, context: { params: Promise<{ order
       return NextResponse.json({ error: "สถานะเอกสารไม่สามารถอนุมัติได้" }, { status: 400 });
     }
     if (err instanceof Error && err.message === "INVALID_STATE") {
-      return NextResponse.json({ error: "ต้องอยู่ในสถานะรออนุมัติ/ร่างก่อนจึงจะอนุมัติได้" }, { status: 400 });
+      return NextResponse.json(
+        { error: "ต้องอยู่ในสถานะรออนุมัติ/ร่างก่อนจึงจะอนุมัติได้" },
+        { status: 400 },
+      );
     }
     console.error("[POST /api/sales/orders/:id/approve] error", err);
     return NextResponse.json({ error: "อนุมัติเอกสารไม่สำเร็จ" }, { status: 500 });
   }
 }
-

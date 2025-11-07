@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
 import { Stack, TextField, MenuItem } from "@mui/material";
+import React, { useEffect, useMemo, useState } from "react";
 
 type AddressValue = {
   province?: string;
@@ -19,12 +19,8 @@ export default function ThaiAddressPicker({ value, onChange }: Props) {
   const [provinces, setProvinces] = useState<any[]>([]);
   const [province, setProvince] = useState<string | undefined>(value?.province);
   const [district, setDistrict] = useState<string | undefined>(value?.district);
-  const [subdistrict, setSubdistrict] = useState<string | undefined>(
-    value?.subdistrict
-  );
-  const [postalCode, setPostalCode] = useState<string | undefined>(
-    value?.postalCode
-  );
+  const [subdistrict, setSubdistrict] = useState<string | undefined>(value?.subdistrict);
+  const [postalCode, setPostalCode] = useState<string | undefined>(value?.postalCode);
 
   // โหลดข้อมูลจังหวัด
   useEffect(() => {
@@ -136,9 +132,7 @@ export default function ThaiAddressPicker({ value, onChange }: Props) {
           },
         }}
       >
-        <MenuItem value="">
-          -- {province ? "เลือกอำเภอ" : "เลือกจังหวัดก่อน"} --
-        </MenuItem>
+        <MenuItem value="">-- {province ? "เลือกอำเภอ" : "เลือกจังหวัดก่อน"} --</MenuItem>
         {districts.map((d: any) => (
           <MenuItem key={d.id} value={d.name}>
             {d.name}
@@ -164,9 +158,7 @@ export default function ThaiAddressPicker({ value, onChange }: Props) {
           },
         }}
       >
-        <MenuItem value="">
-          -- {district ? "เลือกตำบล" : "เลือกอำเภอก่อน"} --
-        </MenuItem>
+        <MenuItem value="">-- {district ? "เลือกตำบล" : "เลือกอำเภอก่อน"} --</MenuItem>
         {subdistricts.map((s: any) => (
           <MenuItem key={s.id} value={s.name}>
             {s.name}

@@ -14,7 +14,7 @@ function createLogger(): pino.Logger {
   }
   // In development, use pino-pretty directly as the destination stream
   // to avoid worker_threads transports that can add process exit listeners.
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
+
   const pretty = require("pino-pretty");
   const stream = pretty({
     colorize: true,

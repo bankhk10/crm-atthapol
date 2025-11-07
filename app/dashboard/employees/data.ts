@@ -61,7 +61,16 @@ export async function getEmployeeActivities(employeeId: string): Promise<Employe
   const interactions = await prisma.interaction.findMany({
     where: { deletedAt: null, createdById: employee.userId },
     include: {
-      customer: { select: { id: true, customerType: true, companyName: true, prefix: true, firstName: true, lastName: true } },
+      customer: {
+        select: {
+          id: true,
+          customerType: true,
+          companyName: true,
+          prefix: true,
+          firstName: true,
+          lastName: true,
+        },
+      },
     },
     orderBy: { date: "desc" },
     take: 300,

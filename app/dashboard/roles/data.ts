@@ -13,8 +13,8 @@ export async function getRoleList(): Promise<RoleListItem[]> {
   return roles.map((role) => {
     // Get all valid permissions (not deleted)
     const validPermissions = role.permissions
-      .filter(p => !p.deletedAt && !p.permission.deletedAt)
-      .map(assignment => ({
+      .filter((p) => !p.deletedAt && !p.permission.deletedAt)
+      .map((assignment) => ({
         category: assignment.permission.category,
         name: assignment.permission.name,
       }));
@@ -72,7 +72,9 @@ async function fetchRolesFromDb() {
   });
 }
 
-function groupPermissions(permissions: GroupablePermission[]): { category: string; items: string[] }[] {
+function groupPermissions(
+  permissions: GroupablePermission[],
+): { category: string; items: string[] }[] {
   const map = new Map<string, Set<string>>();
 
   permissions.forEach((permission) => {

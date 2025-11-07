@@ -1,7 +1,9 @@
 import { Stack, Typography } from "@mui/material";
-import { getProducts } from "./data";
-import ProductsListClient from "./_components/products-list-client";
+
 import { requirePermission } from "@/lib/require-permission";
+
+import ProductsListClient from "./_components/products-list-client";
+import { getProducts } from "./data";
 
 export default async function ProductsPage() {
   await requirePermission("products", "view");

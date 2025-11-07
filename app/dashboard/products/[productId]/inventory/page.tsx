@@ -1,7 +1,9 @@
-import { notFound } from "next/navigation";
 import { Box, Paper, Stack, Typography, Divider } from "@mui/material";
-import { getProduct } from "../../data";
+import { notFound } from "next/navigation";
+
 import { prisma } from "@/lib/prisma";
+
+import { getProduct } from "../../data";
 import InventoryClient from "./_components/inventory-client";
 
 export default async function ProductInventoryPage({
@@ -24,8 +26,8 @@ export default async function ProductInventoryPage({
       <Stack spacing={3} sx={{ width: "100%", maxWidth: 1200 }}>
         <Paper sx={{ p: { xs: 2, md: 3 } }}>
           <Stack spacing={2}>
-           <Typography variant="h4" fontWeight={800} textAlign="center">
-             จัดการคลังสินค้าและราคา
+            <Typography variant="h4" fontWeight={800} textAlign="center">
+              จัดการคลังสินค้าและราคา
             </Typography>
             <Divider />
             <InventoryClient
@@ -49,7 +51,11 @@ export default async function ProductInventoryPage({
                 storageLocation: s.storageLocation ?? "",
                 note: s.note ?? "",
               }))}
-              locations={locations.map((l) => ({ id: l.id, name: l.name, warehouseId: l.warehouseId }))}
+              locations={locations.map((l) => ({
+                id: l.id,
+                name: l.name,
+                warehouseId: l.warehouseId,
+              }))}
             />
           </Stack>
         </Paper>

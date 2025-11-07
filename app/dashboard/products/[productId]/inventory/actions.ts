@@ -1,8 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+
+import { prisma } from "@/lib/prisma";
 
 const priceSchema = z.object({
   price: z
@@ -39,7 +40,10 @@ const lotSchema = z.object({
 // For updates, allow empty string to be treated as 'no change' for lotNumber/note
 const updateLotSchema = z.object({
   lotNumber: z
-    .preprocess((v) => (typeof v === "string" && v.trim().length === 0 ? undefined : v), z.string().trim().min(1))
+    .preprocess(
+      (v) => (typeof v === "string" && v.trim().length === 0 ? undefined : v),
+      z.string().trim().min(1),
+    )
     .optional(),
   qtyOnHand: z.coerce.number().int().min(0).optional(),
   importedAt: z
@@ -63,7 +67,10 @@ const updateLotSchema = z.object({
     .nullable()
     .optional(),
   note: z
-    .preprocess((v) => (typeof v === "string" && v.trim().length === 0 ? undefined : v), z.string().trim().max(500))
+    .preprocess(
+      (v) => (typeof v === "string" && v.trim().length === 0 ? undefined : v),
+      z.string().trim().max(500),
+    )
     .nullable()
     .optional(),
 });
@@ -115,7 +122,14 @@ export async function updateLot(productId: string, stockId: string, raw: unknown
   let normalized: Record<string, unknown> = {};
   if (raw && typeof raw === "object") {
     normalized = { ...(raw as Record<string, unknown>) };
-    const keys = ["lotNumber", "note", "importedAt", "expDate", "warehouseId", "locationId"] as const;
+    const keys = [
+      "lotNumber",
+      "note",
+      "importedAt",
+      "expDate",
+      "warehouseId",
+      "locationId",
+    ] as const;
     for (const k of keys) {
       const v = (normalized as Record<string, unknown>)[k];
       if (typeof v === "string" && v.trim().length === 0) {

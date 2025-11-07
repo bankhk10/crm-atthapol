@@ -1,17 +1,16 @@
 "use client";
 
-import { useMemo, type ReactNode } from "react";
-import Link from "next/link";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
-import type { ButtonProps } from "@mui/material/Button";
-import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
-import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
-import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
-import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
+import { useMemo, type ReactNode } from "react";
 
 import {
   ACTION_LABELS,
@@ -20,19 +19,24 @@ import {
   type PermissionAction,
 } from "@/lib/permissions";
 
+import type { ButtonProps } from "@mui/material/Button";
+
 type ActionButtonsProps = {
   resource: string;
 };
 
-const ACTION_CONFIG: Record<PermissionAction, {
-  color: ButtonProps["color"];
-  variant: ButtonProps["variant"];
-  icon: ReactNode;
-}> = {
+const ACTION_CONFIG: Record<
+  PermissionAction,
+  {
+    color: ButtonProps["color"];
+    variant: ButtonProps["variant"];
+    icon: ReactNode;
+  }
+> = {
   view: {
     color: "primary",
     variant: "outlined",
-    icon: <VisibilityOutlinedIcon fontSize="small" />, 
+    icon: <VisibilityOutlinedIcon fontSize="small" />,
   },
   create: {
     color: "primary",

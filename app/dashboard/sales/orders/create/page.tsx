@@ -1,8 +1,9 @@
 import { getCustomers } from "@/app/dashboard/customers/data";
 import { getEmployees } from "@/app/dashboard/employees/data";
 import { getProducts } from "@/app/dashboard/products/data";
-import { CreateOrderPageClient } from "./_components/create-order-page-client";
 import { requirePermission } from "@/lib/require-permission";
+
+import { CreateOrderPageClient } from "./_components/create-order-page-client";
 
 export default async function CreateSalesOrderPage() {
   await requirePermission("sales", "create");
@@ -22,10 +23,13 @@ export default async function CreateSalesOrderPage() {
       district: (c as any).district ?? null,
       subdistrict: (c as any).subdistrict ?? null,
       postalCode: (c as any).postalCode ?? null,
-  }));
+    }));
   const employeeOptions = employees.map((e) => ({
     id: e.id,
-    label: ([e.prefix, e.firstName, e.lastName].filter(Boolean).join(" ") || e.user?.name || e.user?.email || e.id) as string,
+    label: ([e.prefix, e.firstName, e.lastName].filter(Boolean).join(" ") ||
+      e.user?.name ||
+      e.user?.email ||
+      e.id) as string,
   }));
   const productOptions = products.map((p) => ({
     id: p.id,
@@ -44,4 +48,3 @@ export default async function CreateSalesOrderPage() {
     />
   );
 }
-

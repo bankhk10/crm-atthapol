@@ -1,7 +1,7 @@
 "use client";
 
-import { Button, Tooltip } from "@mui/material";
 import CasinoIcon from "@mui/icons-material/Casino";
+import { Button, Tooltip } from "@mui/material";
 
 type Props = {
   onClick: () => void;
@@ -35,4 +35,3 @@ export function FillRandomButton({
 }
 
 export default FillRandomButton;
-

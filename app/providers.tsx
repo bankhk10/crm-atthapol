@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
 import { SessionProvider } from "next-auth/react";
+import { useEffect, type ReactNode } from "react";
+
 import SessionExpiryWatcher from "@/components/SessionExpiryWatcher";
 
 export function Providers({ children }: { children: ReactNode }) {

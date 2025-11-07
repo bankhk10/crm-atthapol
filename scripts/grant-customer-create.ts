@@ -34,10 +34,15 @@ async function main() {
   const roleKey = parseArg("role-key");
   const typesArg = parseArg("types");
   if (!roleKey || !typesArg) {
-    console.error("Usage: tsx scripts/grant-customer-create.ts --role-key=<key> --types=dealer,subdealer,farmer,broker");
+    console.error(
+      "Usage: tsx scripts/grant-customer-create.ts --role-key=<key> --types=dealer,subdealer,farmer,broker",
+    );
     process.exit(1);
   }
-  const types = typesArg.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean) as TypeKey[];
+  const types = typesArg
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean) as TypeKey[];
   for (const t of types) {
     if (!ALL_TYPES.includes(t)) {
       console.error(`Invalid type: ${t}. Allowed: ${ALL_TYPES.join(",")}`);

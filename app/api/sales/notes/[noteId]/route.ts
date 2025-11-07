@@ -1,14 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
+import { z } from "zod";
+
 import { authOptions } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
+import { prisma } from "@/lib/prisma";
 import { getVisibilityScope, getCurrentEmployeeId } from "@/lib/sales-visibility";
-import { z } from "zod";
 
 export const runtime = "nodejs";
 
-function buildVisibilityWhere(scope: "ALL" | "DEPARTMENT" | "OWN", department: string | null, employeeId: string | null) {
+function buildVisibilityWhere(
+  scope: "ALL" | "DEPARTMENT" | "OWN",
+  department: string | null,
+  employeeId: string | null,
+) {
   if (scope === "ALL") return {} as Record<string, unknown>;
   if (scope === "DEPARTMENT") {
     if (!department) return { id: { equals: "__NO_MATCH__" } } as any;
@@ -64,7 +69,10 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ noteId:
     const json = await req.json().catch(() => ({}));
     const parsed = UpdateSchema.safeParse(json);
     if (!parsed.success) {
-      return NextResponse.json({ error: "ข้อมูลไม่ถูกต้อง", issues: parsed.error.format() }, { status: 400 });
+      return NextResponse.json(
+        { error: "ข้อมูลไม่ถูกต้อง", issues: parsed.error.format() },
+        { status: 400 },
+      );
     }
 
     const scope = getVisibilityScope(perms ?? []);
@@ -72,12 +80,17 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ noteId:
     const dept = session?.user?.department ?? null;
     const scopeWhere = buildVisibilityWhere(scope, dept, empId);
 
-    const exists = await prisma.salesNote.findFirst({ where: { id: noteId, ...(scopeWhere as any) } });
+    const exists = await prisma.salesNote.findFirst({
+      where: { id: noteId, ...(scopeWhere as any) },
+    });
     if (!exists) return NextResponse.json({ error: "ไม่พบบันทึกการขาย" }, { status: 404 });
 
     const locked = (exists as any).status === "APPROVED" || (exists as any).status === "REJECTED";
     if (locked) {
-      return NextResponse.json({ error: "เอกสารถูกอนุมัติ/ปฏิเสธแล้ว ไม่สามารถแก้ไขได้" }, { status: 400 });
+      return NextResponse.json(
+        { error: "เอกสารถูกอนุมัติ/ปฏิเสธแล้ว ไม่สามารถแก้ไขได้" },
+        { status: 400 },
+      );
     }
 
     const updated = await prisma.salesNote.update({
@@ -114,4 +127,3 @@ export async function DELETE(_req: NextRequest, context: { params: Promise<{ not
     return NextResponse.json({ error: "ลบไม่สำเร็จ" }, { status: 500 });
   }
 }
-

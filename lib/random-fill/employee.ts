@@ -1,7 +1,8 @@
+import { DEPARTMENTS } from "@/lib/departments";
+import { choice, randInt, randomCode, randomDateBetween } from "@/lib/random";
+
 import type { EmployeeFormValues } from "@/app/dashboard/employees/types";
 import type { EmployeeRoleOption, RoleDefinitionOption } from "@/app/dashboard/employees/types";
-import { choice, randInt, randomCode, randomDateBetween } from "@/lib/random";
-import { DEPARTMENTS } from "@/lib/departments";
 
 const COMPANY_OPTIONS = [
   "บริษัท อินเตอร์ คร็อพ จำกัด",
@@ -16,12 +17,7 @@ const COMPANY_OPTIONS = [
 const AREAS = ["ภาคเหนือ", "ภาคตะวันออกเฉียงเหนือ", "ภาคตะวันตก", "ภาคกลาง", "ภาคใต้"];
 const PREFIXES = ["นาย", "นาง", "นางสาว"] as const;
 // Keep positions in sync with the form's MenuItem options
-const POSITIONS = [
-  "ผู้บริหารระดับสูง",
-  "ผู้จัดการ",
-  "หัวหน้างาน",
-  "พนักงานปฏิบัติการ",
-] as const;
+const POSITIONS = ["ผู้บริหารระดับสูง", "ผู้จัดการ", "หัวหน้างาน", "พนักงานปฏิบัติการ"] as const;
 const FIRST_NAMES = [
   "สมชาย",
   "วิชัย",
@@ -83,7 +79,9 @@ export function makeRandomEmployeeValues(opts: {
   const candidates = (opts.roleDefinitions ?? []).filter(
     (def) => !def.department || def.department === department,
   );
-  const roleDefinitionId = (candidates.length ? choice(candidates).id : null) as EmployeeFormValues["roleDefinitionId"];
+  const roleDefinitionId = (
+    candidates.length ? choice(candidates).id : null
+  ) as EmployeeFormValues["roleDefinitionId"];
 
   return {
     prefix,

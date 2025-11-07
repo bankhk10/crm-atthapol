@@ -20,7 +20,7 @@ const displayName = (c: {
   firstName: string | null;
   lastName: string | null;
 }) =>
-  (c.companyName && c.companyName.trim().length > 0)
+  c.companyName && c.companyName.trim().length > 0
     ? c.companyName
     : [c.prefix, c.firstName, c.lastName].filter(Boolean).join(" ");
 
@@ -46,35 +46,34 @@ export async function getCustomers(): Promise<CustomerListItem[]> {
     },
   });
 
-  const mapped: CustomerListItem[] = (customers as any[])
-    .map((c: any) => ({
-      id: c.id,
-      type:
-        c.customerType === "DEALER"
-          ? ("DEALER" as const)
-          : c.customerType === "SUB_DEALER"
+  const mapped: CustomerListItem[] = (customers as any[]).map((c: any) => ({
+    id: c.id,
+    type:
+      c.customerType === "DEALER"
+        ? ("DEALER" as const)
+        : c.customerType === "SUB_DEALER"
           ? ("SUBDEALER" as const)
           : c.customerType === "BROKER"
-          ? ("BROKER" as const)
-          : ("FARMER" as const),
-      name: displayName({
-        companyName: c.companyName ?? null,
-        prefix: c.prefix ?? null,
-        firstName: c.firstName ?? null,
-        lastName: c.lastName ?? null,
-      }),
-      phone: c.phone ?? "",
-      email: c.email ?? null,
-      address: c.address ?? null,
-      province: c.province ?? null,
-      district: c.district ?? null,
-      subdistrict: c.subdistrict ?? null,
-      postalCode: c.postalCode ?? null,
-      createdAt:
-        (c as any)?.createdAt && typeof (c as any).createdAt?.toISOString === "function"
-          ? (c as any).createdAt.toISOString()
-          : String((c as any)?.createdAt ?? ""),
-    }));
+            ? ("BROKER" as const)
+            : ("FARMER" as const),
+    name: displayName({
+      companyName: c.companyName ?? null,
+      prefix: c.prefix ?? null,
+      firstName: c.firstName ?? null,
+      lastName: c.lastName ?? null,
+    }),
+    phone: c.phone ?? "",
+    email: c.email ?? null,
+    address: c.address ?? null,
+    province: c.province ?? null,
+    district: c.district ?? null,
+    subdistrict: c.subdistrict ?? null,
+    postalCode: c.postalCode ?? null,
+    createdAt:
+      (c as any)?.createdAt && typeof (c as any).createdAt?.toISOString === "function"
+        ? (c as any).createdAt.toISOString()
+        : String((c as any)?.createdAt ?? ""),
+  }));
 
   return mapped;
 }
@@ -100,10 +99,10 @@ export async function getCustomer(customerId: string) {
     c.customerType === "DEALER"
       ? ("DEALER" as const)
       : c.customerType === "SUB_DEALER"
-      ? ("SUBDEALER" as const)
-      : c.customerType === "BROKER"
-      ? ("BROKER" as const)
-      : ("FARMER" as const);
+        ? ("SUBDEALER" as const)
+        : c.customerType === "BROKER"
+          ? ("BROKER" as const)
+          : ("FARMER" as const);
 
   const base = {
     id: c.id,
@@ -130,20 +129,20 @@ export async function getCustomer(customerId: string) {
     postalCode: c.postalCode ?? null,
     latitude:
       c.customerType === "FARMER"
-        ? c.farmerDetail?.latitude ?? null
+        ? (c.farmerDetail?.latitude ?? null)
         : c.customerType === "DEALER"
-        ? (c as any).dealerDetail?.latitude ?? null
-        : c.customerType === "SUB_DEALER"
-        ? (c as any).subDealerDetail?.latitude ?? null
-        : null,
+          ? ((c as any).dealerDetail?.latitude ?? null)
+          : c.customerType === "SUB_DEALER"
+            ? ((c as any).subDealerDetail?.latitude ?? null)
+            : null,
     longitude:
       c.customerType === "FARMER"
-        ? c.farmerDetail?.longitude ?? null
+        ? (c.farmerDetail?.longitude ?? null)
         : c.customerType === "DEALER"
-        ? (c as any).dealerDetail?.longitude ?? null
-        : c.customerType === "SUB_DEALER"
-        ? (c as any).subDealerDetail?.longitude ?? null
-        : null,
+          ? ((c as any).dealerDetail?.longitude ?? null)
+          : c.customerType === "SUB_DEALER"
+            ? ((c as any).subDealerDetail?.longitude ?? null)
+            : null,
     code: null as any,
     responsibleEmployeeId: c.responsibleEmployeeId ?? null,
     createdAt: c.createdAt,

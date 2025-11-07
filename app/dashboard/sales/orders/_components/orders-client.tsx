@@ -1,6 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+// removed approve/reject icons with popup removal
+import AddIcon from "@mui/icons-material/Add";
+import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import {
   Box,
   Button,
@@ -27,31 +32,21 @@ import {
   Alert,
   Snackbar,
 } from "@mui/material";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
-import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
-import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
-import FirstPageIcon from "@mui/icons-material/FirstPage";
-import LastPageIcon from "@mui/icons-material/LastPage";
-import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
-import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
-// removed approve/reject icons with popup removal
-import Link from "next/link";
-import AddIcon from "@mui/icons-material/Add";
+
 // import SearchIcon from "@mui/icons-material/Search";
-import dayjs from "dayjs";
-import relativeTime from "dayjs/plugin/relativeTime";
-import thLocale from "dayjs/locale/th";
-import { useSession } from "next-auth/react";
-import { hasPermission } from "@/lib/permissions";
-import { th } from "date-fns/locale";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
+import dayjs from "dayjs";
+import thLocale from "dayjs/locale/th";
+import relativeTime from "dayjs/plugin/relativeTime";
+import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { useEffect, useMemo, useState } from "react";
+
 import Loader from "@/components/Loader";
+import { hasPermission } from "@/lib/permissions";
+
 import type { Option, ProductOption } from "../types";
 
 dayjs.extend(relativeTime);
@@ -509,11 +504,16 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
         onClose={() => setShowSaved(false)}
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
-        <Alert onClose={() => setShowSaved(false)} severity="success" variant="filled" sx={{ width: "100%" }}>
+        <Alert
+          onClose={() => setShowSaved(false)}
+          severity="success"
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
           บันทึกสำเร็จ
         </Alert>
       </Snackbar>
-     <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 2 }} variant="outlined">
+      <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 2 }} variant="outlined">
         {/* [ปรับปรุง] เพิ่ม Stack ครอบด้านนอก
         เพื่อจัดระยะห่างแนวตั้ง (vertical spacing) ระหว่างแต่ละส่วน
       */}
@@ -843,9 +843,7 @@ export function OrdersClient({ customerOptions, employeeOptions, productOptions 
                   </TableCell>
                   <TableCell sx={{ width: 140 }}>
                     <Tooltip
-                      title={
-                        o.paymentCondition === "POSTPAID" ? "ส่งของก่อน" : "โอนเงินก่อน"
-                      }
+                      title={o.paymentCondition === "POSTPAID" ? "ส่งของก่อน" : "โอนเงินก่อน"}
                       arrow
                     >
                       <span>

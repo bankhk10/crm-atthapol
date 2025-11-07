@@ -27,8 +27,18 @@ export function BarList({ items, total }: BarListProps) {
                 {pct.toFixed(1)}%
               </Typography>
             </Stack>
-            <Box sx={{ width: "100%", height: 8, borderRadius: 999, bgcolor: "action.hover", overflow: "hidden" }}>
-              <Box sx={{ width: `${pct}%`, height: "100%", bgcolor: item.color ?? "primary.main" }} />
+            <Box
+              sx={{
+                width: "100%",
+                height: 8,
+                borderRadius: 999,
+                bgcolor: "action.hover",
+                overflow: "hidden",
+              }}
+            >
+              <Box
+                sx={{ width: `${pct}%`, height: "100%", bgcolor: item.color ?? "primary.main" }}
+              />
             </Box>
           </Stack>
         );
@@ -36,4 +46,3 @@ export function BarList({ items, total }: BarListProps) {
     </Stack>
   );
 }
-

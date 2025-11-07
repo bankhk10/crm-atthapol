@@ -1,8 +1,11 @@
-import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
+
 import { authOptions } from "@/lib/auth";
+
 import { DashboardShell } from "./_components/dashboard-shell";
+
+import type { ReactNode } from "react";
 
 type DashboardLayoutProps = {
   children: ReactNode;

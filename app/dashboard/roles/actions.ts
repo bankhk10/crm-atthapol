@@ -1,24 +1,21 @@
 "use server";
 
-import type { Prisma } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
 import { getServerSession } from "next-auth";
+import { z } from "zod";
+
 import { authOptions } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
-
 import { prisma } from "@/lib/prisma";
 import { withActor } from "@/lib/with-actor";
 
 import type { RoleFormValues } from "./types";
+import type { Prisma } from "@prisma/client";
 
 const permissionGroupSchema = z.object({
   category: z.string().trim().min(1, "กรุณากรอกชื่อหมวดสิทธิ์"),
-  items: z
-    .array(z.string().trim().min(1, "กรุณากรอกชื่อสิทธิ์"))
-    .optional()
-    .default([]),
+  items: z.array(z.string().trim().min(1, "กรุณากรอกชื่อสิทธิ์")).optional().default([]),
 });
 
 const roleFormSchema = z.object({
@@ -30,24 +27,24 @@ const roleFormSchema = z.object({
 });
 
 export async function createRole(rawValues: RoleFormValues) {
-  console.log('Starting createRole with values:', rawValues);
+  console.log("Starting createRole with values:", rawValues);
   const session = await getServerSession(authOptions);
   const perms = session?.user?.permissions ?? [];
   if (!hasPermission(perms, "roles", "create")) {
     throw new Error("คุณไม่มีสิทธิ์สร้างบทบาทใหม่");
   }
-  
+
   const values = roleFormSchema.parse(rawValues);
-  console.log('After schema parsing:', values);
+  console.log("After schema parsing:", values);
 
   try {
     await withActor(async () => {
       await prisma.$transaction(async (tx) => {
-        console.log('Creating role with data:', {
+        console.log("Creating role with data:", {
           key: values.key,
           name: values.name,
           description: values.description,
-          department: values.department
+          department: values.department,
         });
 
         const role = await tx.roleDefinition.create({
@@ -58,18 +55,18 @@ export async function createRole(rawValues: RoleFormValues) {
             department: values.department ? values.department : null,
           },
         });
-        console.log('Created role:', role);
+        console.log("Created role:", role);
 
-        console.log('Creating permissions for role, input permissions:', values.permissions);
+        console.log("Creating permissions for role, input permissions:", values.permissions);
         const permissionIds = await upsertPermissions(tx, values.permissions);
-        console.log('Generated permission IDs:', permissionIds);
+        console.log("Generated permission IDs:", permissionIds);
 
         if (permissionIds.length > 0) {
           const rolePermissions = permissionIds.map((permissionId) => ({
             roleId: role.id,
             permissionId,
           }));
-          console.log('Creating role permissions:', rolePermissions);
+          console.log("Creating role permissions:", rolePermissions);
 
           await tx.rolePermission.createMany({
             data: rolePermissions,
@@ -78,14 +75,14 @@ export async function createRole(rawValues: RoleFormValues) {
         }
       });
     }).catch((error) => {
-      console.error('Error in createRole:', error);
+      console.error("Error in createRole:", error);
       throw error;
     });
 
-    console.log('Role creation completed successfully');
+    console.log("Role creation completed successfully");
     revalidateRoleViews();
   } catch (error) {
-    console.error('Error in outer try-catch:', error);
+    console.error("Error in outer try-catch:", error);
     throw error;
   }
 }
@@ -130,11 +127,11 @@ export async function updateRole(roleId: string, rawValues: RoleFormValues) {
 
       // Soft delete removed permissions
       await tx.rolePermission.updateMany({
-        where: { 
+        where: {
           roleId: roleId,
-          NOT: { permissionId: { in: permissionIds } }
+          NOT: { permissionId: { in: permissionIds } },
         },
-        data: { deletedAt: new Date() }
+        data: { deletedAt: new Date() },
       });
 
       // Add new permissions: first reactivate any soft-deleted rolePermission rows
@@ -179,82 +176,83 @@ async function upsertPermissions(
   tx: Prisma.TransactionClient,
   permissions: RoleFormValues["permissions"],
 ) {
-  console.log('Starting upsertPermissions with permissions:', permissions);
+  console.log("Starting upsertPermissions with permissions:", permissions);
 
   if (!permissions || permissions.length === 0) {
-    console.log('No permissions provided, returning empty array');
+    console.log("No permissions provided, returning empty array");
     return [] as string[];
   }
 
   const ids = new Set<string>();
 
   for (const group of permissions) {
-    console.log('Processing permission group:', group);
+    console.log("Processing permission group:", group);
 
     const categoryTrimmed = group.category.trim();
     if (!categoryTrimmed) {
-      console.log('Empty category, skipping');
+      console.log("Empty category, skipping");
       continue;
     }
 
     const categoryOriginal = categoryTrimmed;
-    const items = (group.items ?? []).map(item => item.trim()).filter(Boolean);
-    console.log('Processing items:', items);
+    const items = (group.items ?? []).map((item) => item.trim()).filter(Boolean);
+    console.log("Processing items:", items);
 
-      // Find existing permissions for this category (include soft-deleted so we can reactivate)
-      console.log('Looking for existing permissions in category (including deleted):', categoryOriginal);
-      const existingPermissions = await tx.permission.findMany({
-        where: {
-          category: categoryOriginal,
-        },
-      });
-      console.log('Found existing permissions (including deleted):', existingPermissions);
+    // Find existing permissions for this category (include soft-deleted so we can reactivate)
+    console.log(
+      "Looking for existing permissions in category (including deleted):",
+      categoryOriginal,
+    );
+    const existingPermissions = await tx.permission.findMany({
+      where: {
+        category: categoryOriginal,
+      },
+    });
+    console.log("Found existing permissions (including deleted):", existingPermissions);
 
-      // Create a map of lowercased name -> permission object for case-insensitive matching
-      const existingMap = new Map(
-        existingPermissions.map((p) => [p.name.toLowerCase(), p]),
-      );
-      console.log('Existing permissions map (lowercased):', Array.from(existingMap.keys()));
+    // Create a map of lowercased name -> permission object for case-insensitive matching
+    const existingMap = new Map(existingPermissions.map((p) => [p.name.toLowerCase(), p]));
+    console.log("Existing permissions map (lowercased):", Array.from(existingMap.keys()));
 
-      // Upsert (create or reactivate) each permission
-      for (const item of items) {
-        console.log('Processing item:', item);
-        const itemKey = item.toLowerCase();
+    // Upsert (create or reactivate) each permission
+    for (const item of items) {
+      console.log("Processing item:", item);
+      const itemKey = item.toLowerCase();
 
-        // If we already have this permission (including soft-deleted), use/reactivate it
-        if (existingMap.has(itemKey)) {
-          const existing = existingMap.get(itemKey)!;
-          if (existing.deletedAt) {
-            console.log('Reactivating soft-deleted permission:', existing.id);
-            // Reactivate the permission (clear deletedAt)
-            await tx.permission.update({
-              where: { id: existing.id },
-              data: { deletedAt: null },
-            });
-          } else {
-            console.log('Found existing active permission, using ID:', existing.id);
-          }
-
-          ids.add(existing.id);
-          continue;
+      // If we already have this permission (including soft-deleted), use/reactivate it
+      if (existingMap.has(itemKey)) {
+        const existing = existingMap.get(itemKey)!;
+        if (existing.deletedAt) {
+          console.log("Reactivating soft-deleted permission:", existing.id);
+          // Reactivate the permission (clear deletedAt)
+          await tx.permission.update({
+            where: { id: existing.id },
+            data: { deletedAt: null },
+          });
+        } else {
+          console.log("Found existing active permission, using ID:", existing.id);
         }
 
-        // Otherwise create a new permission
-        console.log('Creating new permission:', { category: categoryOriginal, name: item });
-        const permission = await tx.permission.create({
-          data: {
-            category: categoryOriginal,
-            name: item,
-          },
-        });
-        console.log('Created new permission:', permission);
-
-        ids.add(permission.id);
+        ids.add(existing.id);
+        continue;
       }
+
+      // Otherwise create a new permission
+      console.log("Creating new permission:", { category: categoryOriginal, name: item });
+      const permission = await tx.permission.create({
+        data: {
+          category: categoryOriginal,
+          name: item,
+        },
+      });
+      console.log("Created new permission:", permission);
+
+      ids.add(permission.id);
+    }
   }
 
   const result = Array.from(ids.values());
-  console.log('Final permission IDs:', result);
+  console.log("Final permission IDs:", result);
   return result;
 }
 

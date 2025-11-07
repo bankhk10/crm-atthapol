@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
+import { useState } from "react";
+
 import { Header } from "./header";
 import { Sidebar } from "./sidebar";
 
@@ -43,10 +44,7 @@ export function DashboardShell({ children, displayName }: DashboardShellProps) {
             flexShrink: 0,
           }}
         >
-          <Header
-            onMenuClick={() => setIsSidebarOpen(true)}
-            displayName={displayName}
-          />
+          <Header onMenuClick={() => setIsSidebarOpen(true)} displayName={displayName} />
         </Box>
 
         {/* Main มีขอบโค้ง */}

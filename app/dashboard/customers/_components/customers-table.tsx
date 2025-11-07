@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import {
-  Box,
   Chip,
   IconButton,
   Dialog,
@@ -28,13 +29,13 @@ import {
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 // import SearchIcon from "@mui/icons-material/Search";
-import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { useMemo, useState } from "react";
+
 import { hasPermission } from "@/lib/permissions";
+
 import { deleteCustomer } from "../delete";
 
 import type { CustomerListItem } from "../data";
@@ -104,7 +105,7 @@ export function CustomersTable({ customers, query }: CustomersTableProps) {
     numeric?: boolean;
     disablePadding?: boolean;
   }
-  
+
   const headCells: readonly HeadCell[] = [
     { id: "name", label: "ชื่อลูกค้า", width: 240, align: "left" },
     { id: "phone", label: "เบอร์โทร", width: 140, align: "left" },
@@ -139,7 +140,7 @@ export function CustomersTable({ customers, query }: CustomersTableProps) {
   );
 
   return (
-        <Paper
+    <Paper
       variant="outlined"
       sx={{
         borderRadius: 2,
@@ -168,7 +169,7 @@ export function CustomersTable({ customers, query }: CustomersTableProps) {
                         px: 1.2,
                         borderRadius: "9999px",
                         color: "#fff",
-                        bgcolor: 
+                        bgcolor:
                           c.type === "FARMER"
                             ? "#11853bff"
                             : c.type === "SUBDEALER"
@@ -182,11 +183,15 @@ export function CustomersTable({ customers, query }: CustomersTableProps) {
                   <Typography variant="body2" color="text.secondary">
                     โทร: {c.phone} {c.email ? `• อีเมล: ${c.email}` : ""}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ 
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis"
-                  }}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
                     {address || "-"}
                   </Typography>
                   {showActions && (
@@ -244,10 +249,7 @@ export function CustomersTable({ customers, query }: CustomersTableProps) {
             },
           }}
         >
-          <Table
-            aria-labelledby="tableTitle"
-            sx={{ minWidth: 900, tableLayout: "fixed" }}
-          >
+          <Table aria-labelledby="tableTitle" sx={{ minWidth: 900, tableLayout: "fixed" }}>
             <TableHead
               sx={{
                 bgcolor: "#ccccceff",
@@ -296,7 +298,7 @@ export function CustomersTable({ customers, query }: CustomersTableProps) {
                   .filter(Boolean)
                   .join(" ");
                 return (
-                  <TableRow 
+                  <TableRow
                     hover
                     key={c.id}
                     sx={{
@@ -359,7 +361,7 @@ export function CustomersTable({ customers, query }: CustomersTableProps) {
                             py: 2,
                             borderRadius: "9999px",
                             color: "#fff",
-                            bgcolor: 
+                            bgcolor:
                               c.type === "FARMER"
                                 ? "#11853bff"
                                 : c.type === "SUBDEALER"

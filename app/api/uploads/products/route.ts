@@ -1,6 +1,6 @@
+import { promises as fs } from "fs";
 import { NextResponse } from "next/server";
 import path from "path";
-import { promises as fs } from "fs";
 // Note: No image resizing; store original bytes as uploaded
 
 export const runtime = "nodejs";
@@ -40,7 +40,10 @@ export async function POST(request: Request) {
     files = files.filter((f) => f && f.type?.startsWith("image/") && SUPPORTED_TYPES.has(f.type));
 
     if (files.length === 0) {
-      return NextResponse.json({ error: "ไฟล์รูปภาพไม่รองรับ กรุณาใช้ JPEG/PNG/WebP/AVIF/SVG" }, { status: 415 });
+      return NextResponse.json(
+        { error: "ไฟล์รูปภาพไม่รองรับ กรุณาใช้ JPEG/PNG/WebP/AVIF/SVG" },
+        { status: 415 },
+      );
     }
 
     if (files.length > 10) {
@@ -76,7 +79,7 @@ export async function POST(request: Request) {
         const origName = file.name || "image";
         const extFromName = path.extname(origName).toLowerCase();
         const baseFromName = path.basename(origName, extFromName);
-        const fallbackExt = mimeToExt[file.type as string] || (extFromName || ".img");
+        const fallbackExt = mimeToExt[file.type as string] || extFromName || ".img";
         const ext = extFromName || fallbackExt;
         const safeBase = baseFromName
           .toLowerCase()
@@ -94,7 +97,8 @@ export async function POST(request: Request) {
     }
 
     if (urls.length === 0) {
-      const message = failed > 0 ? "ไม่สามารถประมวลผลรูปที่อัปโหลดได้ (รูปแบบไม่รองรับ)" : "ไม่พบไฟล์รูปภาพ";
+      const message =
+        failed > 0 ? "ไม่สามารถประมวลผลรูปที่อัปโหลดได้ (รูปแบบไม่รองรับ)" : "ไม่พบไฟล์รูปภาพ";
       return NextResponse.json({ error: message }, { status: 415 });
     }
     return NextResponse.json({ urls, failed });
@@ -103,4 +107,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "อัปโหลดไม่สำเร็จ" }, { status: 500 });
   }
 }
-

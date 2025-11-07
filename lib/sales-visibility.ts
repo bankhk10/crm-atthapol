@@ -1,4 +1,5 @@
 import { getServerSession } from "next-auth";
+
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -42,4 +43,3 @@ export async function buildSaleOrderVisibilityWhere(): Promise<Record<string, un
   if (!employeeId) return { id: { equals: "__NO_MATCH__" } };
   return { salespersonId: employeeId } as any;
 }
-

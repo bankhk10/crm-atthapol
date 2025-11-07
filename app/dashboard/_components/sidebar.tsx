@@ -1,22 +1,5 @@
 "use client";
 
-import {
-  Fragment,
-  ReactNode,
-  forwardRef,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-import Box from "@mui/material/Box";
-import Collapse from "@mui/material/Collapse";
-import Divider from "@mui/material/Divider";
-import Drawer from "@mui/material/Drawer";
-import IconButton from "@mui/material/IconButton";
-import List from "@mui/material/List";
-import ListItemButton from "@mui/material/ListItemButton";
-import ListItemIcon from "@mui/material/ListItemIcon";
-import ListItemText from "@mui/material/ListItemText";
 import Stack from "@mui/material/Stack";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import AssignmentIndIcon from "@mui/icons-material/AssignmentInd";
@@ -31,10 +14,20 @@ import LocationOnIcon from "@mui/icons-material/LocationOn";
 import MonetizationOnIcon from "@mui/icons-material/MonetizationOn";
 import PersonIcon from "@mui/icons-material/Person";
 import SecurityOutlinedIcon from "@mui/icons-material/SecurityOutlined";
+import Box from "@mui/material/Box";
+import Collapse from "@mui/material/Collapse";
+import Divider from "@mui/material/Divider";
+import Drawer from "@mui/material/Drawer";
+import IconButton from "@mui/material/IconButton";
+import List from "@mui/material/List";
+import ListItemButton from "@mui/material/ListItemButton";
+import ListItemIcon from "@mui/material/ListItemIcon";
+import ListItemText from "@mui/material/ListItemText";
 import Image from "next/image";
 import Link, { LinkProps } from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { Fragment, ReactNode, forwardRef, useEffect, useMemo, useState } from "react";
 
 import { hasPermission } from "@/lib/permissions";
 
@@ -157,7 +150,7 @@ type LinkBehaviorProps = LinkProps & { children?: React.ReactNode };
 
 const LinkBehavior = forwardRef<HTMLAnchorElement, LinkBehaviorProps>(function LinkBehavior(
   { href, ...other },
-  ref
+  ref,
 ) {
   return <Link ref={ref} href={href} {...other} />;
 });
@@ -180,9 +173,7 @@ function NavLink({ item, depth = 0, isOpen, onToggle, onLinkClick, pathname }: N
             "&:hover": { bgcolor: HOVER_BACKGROUND },
           }}
         >
-          <ListItemIcon sx={{ color: "inherit", minWidth: 36 }}>
-            {item.icon}
-          </ListItemIcon>
+          <ListItemIcon sx={{ color: "inherit", minWidth: 36 }}>{item.icon}</ListItemIcon>
           <ListItemText primary={item.label} />
           {isOpen ? <ExpandLessIcon /> : <ExpandMoreIcon />}
         </ListItemButton>
@@ -210,9 +201,7 @@ function NavLink({ item, depth = 0, isOpen, onToggle, onLinkClick, pathname }: N
                       fontSize: 14,
                       borderRadius: 2,
                       color: childIsActive ? "white" : CHILD_TEXT_COLOR,
-                      bgcolor: childIsActive
-                        ? `${ACTIVE_BACKGROUND} !important`
-                        : "transparent",
+                      bgcolor: childIsActive ? `${ACTIVE_BACKGROUND} !important` : "transparent",
                       "&:hover": { bgcolor: `${HOVER_BACKGROUND} !important` },
                       textDecoration: "none",
                     }}
@@ -260,9 +249,7 @@ function NavLink({ item, depth = 0, isOpen, onToggle, onLinkClick, pathname }: N
         color: "inherit",
       }}
     >
-      <ListItemIcon sx={{ color: "inherit", minWidth: 36 }}>
-        {item.icon}
-      </ListItemIcon>
+      <ListItemIcon sx={{ color: "inherit", minWidth: 36 }}>{item.icon}</ListItemIcon>
       <ListItemText primary={item.label} />
     </ListItemButton>
   );
@@ -306,7 +293,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   useEffect(() => {
     const parent = accessibleNavItems.find(
-      (item) => item.children?.some((child) => pathname.startsWith(child.href)) || pathname === item.href
+      (item) =>
+        item.children?.some((child) => pathname.startsWith(child.href)) || pathname === item.href,
     );
     setOpenMenu(parent ? parent.href : null);
   }, [pathname, accessibleNavItems]);
@@ -344,9 +332,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             key={item.href}
             item={item}
             isOpen={openMenu === item.href}
-            onToggle={() =>
-              setOpenMenu((current) => (current === item.href ? null : item.href))
-            }
+            onToggle={() => setOpenMenu((current) => (current === item.href ? null : item.href))}
             onLinkClick={onClose}
             pathname={pathname}
           />

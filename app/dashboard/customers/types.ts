@@ -55,7 +55,7 @@ export type CustomerFormValues = {
     soil_type?: string;
     water_source?: string;
     machinery_used?: string[]; // ตัวเลือก: รถไถ, โดรน
-  }>; 
+  }>;
   // สำหรับ Broker
   currentCropVolume?: string;
   farmerNetworkCount?: number | string;

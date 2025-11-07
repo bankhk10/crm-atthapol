@@ -1,5 +1,5 @@
-import { notFound } from "next/navigation";
 import { Box, Chip, Divider, Paper, Stack, Typography } from "@mui/material";
+import { notFound } from "next/navigation";
 
 import { getAuditLogById } from "../data";
 
@@ -89,4 +89,3 @@ function safeJSONStringify(input: unknown): string {
     return String(input);
   }
 }
-

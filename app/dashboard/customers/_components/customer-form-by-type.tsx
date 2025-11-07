@@ -1,7 +1,8 @@
 "use client";
 
-import type { CustomerFormValues, CustomerType } from "../types";
 import { CustomerForm } from "./customer-form";
+
+import type { CustomerFormValues, CustomerType } from "../types";
 
 type Option = { id: string; label: string };
 

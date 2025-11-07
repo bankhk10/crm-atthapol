@@ -1,6 +1,8 @@
 import { Box, Stack } from "@mui/material";
-import { CustomerCreateClient } from "../../_components/customer-create-client";
+
 import { getEmployees } from "@/app/dashboard/employees/data";
+
+import { CustomerCreateClient } from "../../_components/customer-create-client";
 import { getDealerOptions } from "../../data";
 
 type PageProps = { params: Promise<{ type: string }> };
@@ -22,7 +24,11 @@ export default async function CustomerCreateByTypePage({ params }: PageProps) {
     .filter((e) => !e.deletedAt)
     .map((e) => ({
       id: e.id,
-      label: [e.prefix, e.firstName, e.lastName].filter(Boolean).join(" ") || e.user?.name || e.user?.email || e.id,
+      label:
+        [e.prefix, e.firstName, e.lastName].filter(Boolean).join(" ") ||
+        e.user?.name ||
+        e.user?.email ||
+        e.id,
     }));
 
   return (
@@ -37,7 +43,11 @@ export default async function CustomerCreateByTypePage({ params }: PageProps) {
       }}
     >
       <Stack spacing={3} sx={{ width: "100%", maxWidth: 960 }}>
-        <CustomerCreateClient employeeOptions={employeeOptions} dealerOptions={dealers} defaultType={customerType} />
+        <CustomerCreateClient
+          employeeOptions={employeeOptions}
+          dealerOptions={dealers}
+          defaultType={customerType}
+        />
       </Stack>
     </Box>
   );

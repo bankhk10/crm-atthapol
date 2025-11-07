@@ -1,9 +1,10 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import path from "path";
 import { promises as fs } from "fs";
+import { revalidatePath } from "next/cache";
+import path from "path";
+
+import { prisma } from "@/lib/prisma";
 
 async function safeDeleteFiles(urls: string[]) {
   const uploadRoot = path.join(process.cwd(), "public", "uploads", "products");
@@ -30,8 +31,13 @@ export async function deleteProduct(productId: string) {
 
   // Collect URLs before removing references
   const product = await prisma.product.findUnique({ where: { id }, select: { imageUrl: true } });
-  const imageRows = await prisma.productImage.findMany({ where: { productId: id }, select: { url: true } });
-  const urls = [product?.imageUrl, ...imageRows.map((r) => r.url)].filter((u): u is string => typeof u === "string" && u.length > 0);
+  const imageRows = await prisma.productImage.findMany({
+    where: { productId: id },
+    select: { url: true },
+  });
+  const urls = [product?.imageUrl, ...imageRows.map((r) => r.url)].filter(
+    (u): u is string => typeof u === "string" && u.length > 0,
+  );
 
   // Soft delete product and remove image references
   await prisma.$transaction([

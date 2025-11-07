@@ -1,7 +1,6 @@
 "use client";
 
-import Image from "next/image";
-import { Prompt } from "next/font/google";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 import {
   Alert,
   Box,
@@ -16,10 +15,11 @@ import {
   InputAdornment,
   TextField,
 } from "@mui/material";
-import { signIn } from "next-auth/react";
+import { Prompt } from "next/font/google";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { FormEvent, useCallback, useState } from "react";
-import { Visibility, VisibilityOff } from "@mui/icons-material";
 
 // ฟอนต์ Prompt
 const prompt = Prompt({
@@ -68,7 +68,7 @@ export default function LoginPage() {
 
       router.push(result?.url ?? "/dashboard");
     },
-    [router]
+    [router],
   );
 
   return (
@@ -197,11 +197,7 @@ export default function LoginPage() {
                       CS ONE
                     </Box>
                   </Typography>
-                  <Typography
-                    variant="h5"
-                    fontWeight={600}
-                    sx={{ position: "relative", top: 2 }}
-                  >
+                  <Typography variant="h5" fontWeight={600} sx={{ position: "relative", top: 2 }}>
                     Smart Crop Smart Solutions
                   </Typography>
                 </Box>
@@ -299,16 +295,10 @@ export default function LoginPage() {
                 spacing={1.5}
                 alignItems={{ xs: "flex-start", sm: "center" }}
                 justifyContent="space-between"
-                 sx={{ mt: 6 }} 
+                sx={{ mt: 6 }}
               >
                 <FormControlLabel
-                  control={
-                    <Checkbox
-                      name="remember"
-                      color="primary"
-                      sx={{ borderRadius: 1 }}
-                    />
-                  }
+                  control={<Checkbox name="remember" color="primary" sx={{ borderRadius: 1 }} />}
                   label="บันทึกรหัส"
                 />
               </Stack>

@@ -1,8 +1,10 @@
-import type { Prisma } from "@prisma/client";
 import { PrismaClient } from "@prisma/client";
 import { withAccelerate } from "@prisma/extension-accelerate";
-import { getRequestContext } from "@/lib/request-context";
+
 import { logger } from "@/lib/logger";
+import { getRequestContext } from "@/lib/request-context";
+
+import type { Prisma } from "@prisma/client";
 
 // Use string literals for audit actions at runtime to avoid issues
 // when the generated enum is not available during bundling.
@@ -13,7 +15,7 @@ const AUDIT = {
   APPROVE: "APPROVE",
   REJECT: "REJECT",
 } as const;
-type AuditAction = typeof AUDIT[keyof typeof AUDIT];
+type AuditAction = (typeof AUDIT)[keyof typeof AUDIT];
 
 type GlobalPrismaStore = {
   prisma: PrismaClient | undefined;
@@ -60,8 +62,9 @@ const STATUS_KEYS = ["status", "approvalStatus", "state"];
 
 const ensureHelperClient = () => {
   if (!globalForPrisma.prismaHelper) {
-    globalForPrisma.prismaHelper = new PrismaClient()
-      .$extends(withAccelerate()) as unknown as PrismaClient;
+    globalForPrisma.prismaHelper = new PrismaClient().$extends(
+      withAccelerate(),
+    ) as unknown as PrismaClient;
   }
   return globalForPrisma.prismaHelper;
 };
@@ -147,8 +150,7 @@ const buildRecordIdentifier = (
 
 const createPrismaClient = (): PrismaClient => {
   const helperClient = ensureHelperClient();
-  const baseClient = new PrismaClient()
-    .$extends(withAccelerate()) as unknown as PrismaClient;
+  const baseClient = new PrismaClient().$extends(withAccelerate()) as unknown as PrismaClient;
 
   const extendedClient = baseClient.$extends({
     query: {
@@ -315,7 +317,11 @@ const createPrismaClient = (): PrismaClient => {
             return result;
           }
 
-          if (operation === "update" || operation === "updateMany" || auditAction === AUDIT.DELETE) {
+          if (
+            operation === "update" ||
+            operation === "updateMany" ||
+            auditAction === AUDIT.DELETE
+          ) {
             const where = whereForLogging ?? cloneWhere();
             if (delegate) {
               if (operation === "update" && delegate.findFirst) {

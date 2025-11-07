@@ -1,11 +1,13 @@
 // lib/auth.ts
-import type { DefaultSession, NextAuthOptions } from "next-auth";
-import Credentials from "next-auth/providers/credentials";
-import type { JWT } from "next-auth/jwt";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
-import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
+import Credentials from "next-auth/providers/credentials";
 import { z } from "zod";
+
+import { prisma } from "@/lib/prisma";
+
+import type { DefaultSession, NextAuthOptions } from "next-auth";
+import type { JWT } from "next-auth/jwt";
 
 type ExtendedUser = {
   id: string;
@@ -178,8 +180,7 @@ export const authOptions: NextAuthOptions = {
         sessionUser.email = typeof token.email === "string" ? token.email : undefined;
         sessionUser.roleKey = typeof token.roleKey === "string" ? token.roleKey : null;
         sessionUser.roleName = typeof token.roleName === "string" ? token.roleName : null;
-        sessionUser.department =
-          typeof token.department === "string" ? token.department : null;
+        sessionUser.department = typeof token.department === "string" ? token.department : null;
         sessionUser.permissions = Array.isArray(token.permissions)
           ? (token.permissions as string[])
           : [];

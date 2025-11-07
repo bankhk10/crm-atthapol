@@ -1,15 +1,12 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { Stack } from "@mui/material";
+import { useRouter } from "next/navigation";
 
 import { EmployeeForm } from "./employee-form";
 import { createEmployee } from "../actions";
-import type {
-  EmployeeFormValues,
-  EmployeeRoleOption,
-  RoleDefinitionOption,
-} from "../types";
+
+import type { EmployeeFormValues, EmployeeRoleOption, RoleDefinitionOption } from "../types";
 
 type EmployeeCreateClientProps = {
   roleOptions: EmployeeRoleOption[];
@@ -39,10 +36,7 @@ const defaultInitialValues: EmployeeFormValues = {
   roleDefinitionId: null,
 };
 
-export function EmployeeCreateClient({
-  roleOptions,
-  roleDefinitions,
-}: EmployeeCreateClientProps) {
+export function EmployeeCreateClient({ roleOptions, roleDefinitions }: EmployeeCreateClientProps) {
   const router = useRouter();
 
   const initialValues: EmployeeFormValues = {

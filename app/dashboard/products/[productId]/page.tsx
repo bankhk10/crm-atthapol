@@ -1,8 +1,9 @@
-import { notFound } from "next/navigation";
 import { Box, Chip, Divider, Paper, Stack, Typography, Grid, Button } from "@mui/material";
-import { getProduct } from "../data";
 import Link from "next/link";
+import { notFound } from "next/navigation";
+
 import ProductGallery from "../_components/product-gallery";
+import { getProduct } from "../data";
 
 // Define a more accurate type for Plant based on the log
 type PlantData = {
@@ -106,7 +107,9 @@ export default async function ProductDetailPage({
                   <Stack spacing={3}>
                     {/* กลุ่ม: ข้อมูลทั่วไป */}
                     <Stack spacing={1.5}>
-                      <Typography variant="subtitle1" fontWeight={700}>ข้อมูลทั่วไป</Typography>
+                      <Typography variant="subtitle1" fontWeight={700}>
+                        ข้อมูลทั่วไป
+                      </Typography>
                       <Divider />
                       <Grid container>
                         <Grid size={{ xs: 5, sm: 3 }}>
@@ -132,24 +135,32 @@ export default async function ProductDetailPage({
                       <Info label="ขนาดบรรจุ : " value={product.packagingSize ?? "-"} />
                       <Info label="หน่วยนับ : " value={product.unit ?? "-"} />
                       <Info label="สถานะ : " value={<StatusChip status={product.status} />} />
-                      {typeof product.price === 'number' && (
+                      {typeof product.price === "number" && (
                         <Info
                           label="ราคา : "
-                          value={`฿${Number(product.price).toLocaleString('th-TH', { maximumFractionDigits: 2 })}`}
+                          value={`฿${Number(product.price).toLocaleString("th-TH", { maximumFractionDigits: 2 })}`}
                         />
                       )}
                       {product.mfgDate && (
-                        <Info label="วันที่ผลิต : " value={new Date(product.mfgDate).toISOString().slice(0, 10)} />
+                        <Info
+                          label="วันที่ผลิต : "
+                          value={new Date(product.mfgDate).toISOString().slice(0, 10)}
+                        />
                       )}
                       {product.expDate && (
-                        <Info label="วันหมดอายุ (สินค้า) : " value={new Date(product.expDate).toISOString().slice(0, 10)} />
+                        <Info
+                          label="วันหมดอายุ (สินค้า) : "
+                          value={new Date(product.expDate).toISOString().slice(0, 10)}
+                        />
                       )}
                     </Stack>
 
                     {/* กลุ่ม: การใช้งานกับพืช */}
                     {plants.length > 0 && (
                       <Stack spacing={1.5}>
-                        <Typography variant="subtitle1" fontWeight={700}>การใช้งานกับพืช</Typography>
+                        <Typography variant="subtitle1" fontWeight={700}>
+                          การใช้งานกับพืช
+                        </Typography>
                         <Divider />
                         <Info
                           label="ใช้กับพืช : "
@@ -168,16 +179,27 @@ export default async function ProductDetailPage({
                       </Stack>
                     )}
 
-
                     {/* กลุ่ม: ภาพรวมสต็อก */}
                     <Stack spacing={1.5}>
-                      <Typography variant="subtitle1" fontWeight={700}>ภาพรวมสต็อก</Typography>
+                      <Typography variant="subtitle1" fontWeight={700}>
+                        ภาพรวมสต็อก
+                      </Typography>
                       <Divider />
-                      <Info label="จำนวนสินค้าทั้งหมด : " value={Number(totals.onHand).toLocaleString('th-TH')} />
-                      <Info label="พร้อมขาย : " value={Number(Math.max(0, totals.onHand - totals.reserved)).toLocaleString('th-TH')} />
-                      <Info label="สต็อกจอง : " value={Number(totals.reserved).toLocaleString('th-TH')} />
+                      <Info
+                        label="จำนวนสินค้าทั้งหมด : "
+                        value={Number(totals.onHand).toLocaleString("th-TH")}
+                      />
+                      <Info
+                        label="พร้อมขาย : "
+                        value={Number(Math.max(0, totals.onHand - totals.reserved)).toLocaleString(
+                          "th-TH",
+                        )}
+                      />
+                      <Info
+                        label="สต็อกจอง : "
+                        value={Number(totals.reserved).toLocaleString("th-TH")}
+                      />
                     </Stack>
-
                   </Stack>
                 </Stack>
               </Paper>
@@ -247,12 +269,10 @@ export default async function ProductDetailPage({
                       <Typography fontWeight={700}>{s.lotNumber}</Typography>
                     </Grid>
                     <Grid size={{ xs: 6, sm: 2 }} sx={{ textAlign: { sm: "center" } }}>
-                      <Typography>{Number(s.qtyOnHand ?? 0).toLocaleString('th-TH')}</Typography>
+                      <Typography>{Number(s.qtyOnHand ?? 0).toLocaleString("th-TH")}</Typography>
                     </Grid>
                     <Grid size={{ xs: 6, sm: 2 }} sx={{ display: { xs: "none", sm: "block" } }}>
-                      <Typography noWrap>
-                        {s.warehouseRef?.name ?? s.warehouse ?? "-"}
-                      </Typography>
+                      <Typography noWrap>{s.warehouseRef?.name ?? s.warehouse ?? "-"}</Typography>
                     </Grid>
                     <Grid size={{ xs: 6, sm: 2 }} sx={{ display: { xs: "none", sm: "block" } }}>
                       <Typography noWrap>
@@ -279,24 +299,43 @@ export default async function ProductDetailPage({
         {Array.isArray(product.stocks) && product.stocks.length > 0 && (
           <Paper sx={{ p: { xs: 2, md: 3 }, borderRadius: 3 }}>
             <Stack spacing={2}>
-              <Typography variant="h6" fontWeight={800}>รายละเอียดการจัดเก็บ</Typography>
+              <Typography variant="h6" fontWeight={800}>
+                รายละเอียดการจัดเก็บ
+              </Typography>
               <Divider />
               {(() => {
-                const whMap = new Map<string, { name: string; totalQty: number; lotCount: number; locMap: Map<string, { name: string; totalQty: number; lotCount: number }> }>();
+                const whMap = new Map<
+                  string,
+                  {
+                    name: string;
+                    totalQty: number;
+                    lotCount: number;
+                    locMap: Map<string, { name: string; totalQty: number; lotCount: number }>;
+                  }
+                >();
                 for (const s of product.stocks as any[]) {
                   const whName = s.warehouseRef?.name ?? s.warehouse ?? "ไม่ระบุ";
                   const locName = s.locationRef?.name ?? s.storageLocation ?? "ไม่ระบุ";
                   const qty = Number(s.qtyOnHand ?? 0);
-                  if (!whMap.has(whName)) whMap.set(whName, { name: whName, totalQty: 0, lotCount: 0, locMap: new Map() });
+                  if (!whMap.has(whName))
+                    whMap.set(whName, {
+                      name: whName,
+                      totalQty: 0,
+                      lotCount: 0,
+                      locMap: new Map(),
+                    });
                   const wh = whMap.get(whName)!;
                   wh.totalQty += qty;
                   wh.lotCount += 1;
-                  if (!wh.locMap.has(locName)) wh.locMap.set(locName, { name: locName, totalQty: 0, lotCount: 0 });
+                  if (!wh.locMap.has(locName))
+                    wh.locMap.set(locName, { name: locName, totalQty: 0, lotCount: 0 });
                   const loc = wh.locMap.get(locName)!;
                   loc.totalQty += qty;
                   loc.lotCount += 1;
                 }
-                const warehouses = Array.from(whMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+                const warehouses = Array.from(whMap.values()).sort((a, b) =>
+                  a.name.localeCompare(b.name),
+                );
                 return (
                   <Stack spacing={2}>
                     {warehouses.map((w) => (
@@ -306,21 +345,31 @@ export default async function ProductDetailPage({
                           <Chip label={`${w.lotCount} ล็อต`} size="small" />
                           <Chip label={`${w.totalQty.toLocaleString('th-TH')} ชิ้น`} size="small" color="primary" variant="outlined" />
                         </Stack> */}
-                        <Grid container sx={{ fontSize: 14, color: 'text.secondary', mb: 0.5, px: 1 }}>
+                        <Grid
+                          container
+                          sx={{ fontSize: 14, color: "text.secondary", mb: 0.5, px: 1 }}
+                        >
                           <Grid size={{ xs: 6, sm: 6 }}>สถานที่จัดเก็บ</Grid>
                           <Grid size={{ xs: 6, sm: 6 }}>คงเหลือ/ล็อต</Grid>
                         </Grid>
                         <Stack>
-                          {Array.from(w.locMap.values()).sort((a, b) => a.name.localeCompare(b.name)).map((l) => (
-                            <Grid key={l.name} container alignItems="center" sx={{ px: 1, py: 0.5 }}>
-                              <Grid size={{ xs: 6, sm: 6 }}>
-                                <Typography>{l.name}</Typography>
+                          {Array.from(w.locMap.values())
+                            .sort((a, b) => a.name.localeCompare(b.name))
+                            .map((l) => (
+                              <Grid
+                                key={l.name}
+                                container
+                                alignItems="center"
+                                sx={{ px: 1, py: 0.5 }}
+                              >
+                                <Grid size={{ xs: 6, sm: 6 }}>
+                                  <Typography>{l.name}</Typography>
+                                </Grid>
+                                <Grid size={{ xs: 6, sm: 6 }}>
+                                  <Typography>{`${l.totalQty.toLocaleString("th-TH")} ชิ้น / ${l.lotCount} ล็อต`}</Typography>
+                                </Grid>
                               </Grid>
-                              <Grid size={{ xs: 6, sm: 6 }}>
-                                <Typography>{`${l.totalQty.toLocaleString('th-TH')} ชิ้น / ${l.lotCount} ล็อต`}</Typography>
-                              </Grid>
-                            </Grid>
-                          ))}
+                            ))}
                         </Stack>
                         <Divider />
                       </Stack>

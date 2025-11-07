@@ -1,11 +1,25 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Box, Chip, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography, Button } from "@mui/material";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import {
+  Box,
+  Chip,
+  Paper,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  Typography,
+  Button,
+} from "@mui/material";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { th } from "date-fns/locale";
+import { useEffect, useMemo, useState } from "react";
 
 export type Option = { id: string; label: string };
 
@@ -15,7 +29,12 @@ type Movement = {
   qty: number;
   createdAt: string;
   note?: string | null;
-  product?: { id: string; productCode?: string | null; nameTH?: string | null; unit?: string | null } | null;
+  product?: {
+    id: string;
+    productCode?: string | null;
+    nameTH?: string | null;
+    unit?: string | null;
+  } | null;
   stock?: { lotNumber?: string | null; mfgDate?: string | null; expDate?: string | null } | null;
   saleOrder?: { id: string; soNumber?: string | null } | null;
 };
@@ -74,19 +93,33 @@ export function MovementsClient({ productOptions, initialSaleOrderId }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [typeFilter, productId, from, to]);
 
-  const selectedProduct = useMemo(() => productOptions.find((p) => p.id === productId) || null, [productOptions, productId]);
+  const selectedProduct = useMemo(
+    () => productOptions.find((p) => p.id === productId) || null,
+    [productOptions, productId],
+  );
 
   return (
     <Stack spacing={2}>
-      <Typography variant="h5" fontWeight={700}>ความเคลื่อนไหวสต็อก (Stock Movements)</Typography>
+      <Typography variant="h5" fontWeight={700}>
+        ความเคลื่อนไหวสต็อก (Stock Movements)
+      </Typography>
 
       <Stack spacing={1}>
         <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
           {TYPE_OPTIONS.map((t) => (
-            <Chip key={t.value} label={t.label} color={typeFilter === t.value ? "primary" : "default"} onClick={() => setTypeFilter(t.value)} />
+            <Chip
+              key={t.value}
+              label={t.label}
+              color={typeFilter === t.value ? "primary" : "default"}
+              onClick={() => setTypeFilter(t.value)}
+            />
           ))}
         </Stack>
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ xs: "stretch", sm: "center" }}>
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          spacing={1}
+          alignItems={{ xs: "stretch", sm: "center" }}
+        >
           <TextField
             select
             label="สินค้า"
@@ -97,14 +130,38 @@ export function MovementsClient({ productOptions, initialSaleOrderId }: Props) {
             <option value=""></option>
             {productOptions.map((p) => (
               // Using native option for simplicity
-              <option key={p.id} value={p.id}>{p.label}</option>
+              <option key={p.id} value={p.id}>
+                {p.label}
+              </option>
             ))}
           </TextField>
           <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={th}>
-            <DatePicker label="ตั้งแต่" value={from ? new Date(from) : null} views={['year', 'month', 'day']} onChange={(v) => setFrom(v ? v.toISOString().slice(0, 10) : null)} slotProps={{ textField: { size: "small" } }} />
-            <DatePicker label="ถึง" value={to ? new Date(to) : null} views={['year', 'month', 'day']} onChange={(v) => setTo(v ? v.toISOString().slice(0, 10) : null)} slotProps={{ textField: { size: "small" } }} />
+            <DatePicker
+              label="ตั้งแต่"
+              value={from ? new Date(from) : null}
+              views={["year", "month", "day"]}
+              onChange={(v) => setFrom(v ? v.toISOString().slice(0, 10) : null)}
+              slotProps={{ textField: { size: "small" } }}
+            />
+            <DatePicker
+              label="ถึง"
+              value={to ? new Date(to) : null}
+              views={["year", "month", "day"]}
+              onChange={(v) => setTo(v ? v.toISOString().slice(0, 10) : null)}
+              slotProps={{ textField: { size: "small" } }}
+            />
           </LocalizationProvider>
-          <Button color="inherit" onClick={() => { setTypeFilter("ALL"); setProductId(""); setFrom(null); setTo(null); }}>ล้างตัวกรอง</Button>
+          <Button
+            color="inherit"
+            onClick={() => {
+              setTypeFilter("ALL");
+              setProductId("");
+              setFrom(null);
+              setTo(null);
+            }}
+          >
+            ล้างตัวกรอง
+          </Button>
         </Stack>
       </Stack>
 
@@ -125,7 +182,9 @@ export function MovementsClient({ productOptions, initialSaleOrderId }: Props) {
             {items.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7}>
-                  <Box sx={{ p: 2, color: 'text.secondary' }}>{loading ? 'กำลังโหลด...' : 'ไม่พบข้อมูล'}</Box>
+                  <Box sx={{ p: 2, color: "text.secondary" }}>
+                    {loading ? "กำลังโหลด..." : "ไม่พบข้อมูล"}
+                  </Box>
                 </TableCell>
               </TableRow>
             ) : (
@@ -133,11 +192,11 @@ export function MovementsClient({ productOptions, initialSaleOrderId }: Props) {
                 <TableRow key={m.id}>
                   <TableCell>{new Date(m.createdAt).toLocaleString()}</TableCell>
                   <TableCell>{TYPE_LABEL[m.type] || m.type}</TableCell>
-                  <TableCell>{m.product?.productCode || '-'}</TableCell>
-                  <TableCell>{m.product?.nameTH || '-'}</TableCell>
+                  <TableCell>{m.product?.productCode || "-"}</TableCell>
+                  <TableCell>{m.product?.nameTH || "-"}</TableCell>
                   <TableCell align="right">{Number(m.qty || 0).toLocaleString()}</TableCell>
-                  <TableCell>{m.stock?.lotNumber || '-'}</TableCell>
-                  <TableCell>{m.saleOrder?.soNumber || '-'}</TableCell>
+                  <TableCell>{m.stock?.lotNumber || "-"}</TableCell>
+                  <TableCell>{m.saleOrder?.soNumber || "-"}</TableCell>
                 </TableRow>
               ))
             )}

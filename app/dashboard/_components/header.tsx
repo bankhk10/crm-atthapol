@@ -1,6 +1,10 @@
 "use client";
 
-import { useMemo } from "react";
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import LanguageOutlinedIcon from "@mui/icons-material/LanguageOutlined";
+import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
+import MenuIcon from "@mui/icons-material/Menu";
+import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
 import AppBar from "@mui/material/AppBar";
 import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
@@ -9,12 +13,8 @@ import IconButton from "@mui/material/IconButton";
 import Stack from "@mui/material/Stack";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
-import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
-import MenuIcon from "@mui/icons-material/Menu";
-import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
-import LanguageOutlinedIcon from "@mui/icons-material/LanguageOutlined";
-import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import { signOut } from "next-auth/react";
+import { useMemo } from "react";
 
 const ACTION_ICON_STYLE = {
   bgcolor: "rgba(255,255,255,0.12)",
@@ -38,7 +38,7 @@ type HeaderProps = {
 export function Header({ onMenuClick, displayName }: HeaderProps) {
   const userInitial = useMemo(
     () => (displayName ? displayName.charAt(0).toUpperCase() : null),
-    [displayName]
+    [displayName],
   );
 
   const handleLogout = () => {

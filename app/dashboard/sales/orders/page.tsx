@@ -1,11 +1,12 @@
 import { Stack, Typography } from "@mui/material";
-import { ActionButtons } from "../../_components/action-buttons";
+import { Box } from "@mui/material";
+
 import { getCustomers } from "@/app/dashboard/customers/data";
 import { getEmployees } from "@/app/dashboard/employees/data";
-import { OrdersClient } from "./_components/orders-client";
 import { getProducts } from "@/app/dashboard/products/data";
-import { Box } from "@mui/material";
 import { requirePermission } from "@/lib/require-permission";
+
+import { OrdersClient } from "./_components/orders-client";
 
 export default async function SalesOrdersPage() {
   await requirePermission("sales", "view");

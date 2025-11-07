@@ -1,5 +1,4 @@
 import { Stack, Typography } from "@mui/material";
-import { ActionButtons } from "../_components/action-buttons";
 
 export default function SalesPage() {
   return (

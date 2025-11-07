@@ -1,15 +1,12 @@
+import { Box, Stack } from "@mui/material";
 import { notFound } from "next/navigation";
 
-import { EmployeeEditClient } from "../../_components/employee-edit-client";
-import { ActionButtons } from "../../../_components/action-buttons";
-import { Box, Stack } from "@mui/material";
-import {
-  employeeRoleOptions,
-  getEmployeeById,
-  getRoleDefinitionOptions,
-} from "../../data";
-import type { EmployeeFormValues } from "../../types";
 import { requirePermission } from "@/lib/require-permission";
+
+import { EmployeeEditClient } from "../../_components/employee-edit-client";
+import { employeeRoleOptions, getEmployeeById, getRoleDefinitionOptions } from "../../data";
+
+import type { EmployeeFormValues } from "../../types";
 
 export default async function EmployeeEditPage({
   params,
@@ -47,7 +44,9 @@ export default async function EmployeeEditPage({
     postalCode: employee.postalCode ?? undefined,
     birthDate: employee.birthDate ? employee.birthDate.toISOString().slice(0, 10) : undefined,
     age: employee.birthDate
-      ? Math.floor((Date.now() - new Date(employee.birthDate).getTime()) / (1000 * 60 * 60 * 24 * 365.25))
+      ? Math.floor(
+          (Date.now() - new Date(employee.birthDate).getTime()) / (1000 * 60 * 60 * 24 * 365.25),
+        )
       : null,
     gender: employee.gender ?? null,
     phone: employee.phone,

@@ -1,8 +1,5 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 import {
   Box,
   Button,
@@ -11,14 +8,19 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableContainer,
   TableHead,
   TableRow,
   TextField,
   Typography,
   TablePagination,
 } from "@mui/material";
-import SearchIcon from "@mui/icons-material/Search";
+import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useMemo, useState, useEffect } from "react";
+
+import { SearchBar } from "@/components/common/SearchBar";
+import { EmptyTableMessage } from "@/components/ui/EmptyTableMessage";
+import { TableCard } from "@/components/ui/TableCard";
 
 import type { AuditLogListItem } from "../types";
 
@@ -63,7 +65,10 @@ export function LogsTable({ logs, total, page, pageSize }: LogsTableProps) {
     [logs],
   );
   const actionOptions = useMemo(
-    () => Array.from(new Set(logs.map((l) => l.action))).sort((a, b) => String(a).localeCompare(String(b))),
+    () =>
+      Array.from(new Set(logs.map((l) => l.action))).sort((a, b) =>
+        String(a).localeCompare(String(b)),
+      ),
     [logs],
   );
   const userOptions = useMemo(() => {
@@ -81,16 +86,10 @@ export function LogsTable({ logs, total, page, pageSize }: LogsTableProps) {
   // Server-side filtering: the list received is already filtered by URL params
   const filteredLogs = logs;
 
-  const handleSearch = () => {
+  const handleSearch = (value?: string) => {
     const next = new URLSearchParams(searchParams.toString());
-    setParam(next, "q", query);
+    setParam(next, "q", value ?? query);
     router.push(`${pathname}?${next.toString()}`);
-  };
-  const handleQueryKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      handleSearch();
-    }
   };
 
   return (
@@ -112,19 +111,15 @@ export function LogsTable({ logs, total, page, pageSize }: LogsTableProps) {
       </Stack>
 
       <Paper sx={{ p: { xs: 2, sm: 3 } }}>
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ xs: "stretch", sm: "flex-end" }}>
-          <TextField
-            label="ค้นหา log"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            onKeyDown={handleQueryKeyDown}
-            placeholder="พิมพ์โมเดล การกระทำ รหัสอ้างอิง หรือชื่อผู้ใช้"
-            fullWidth
-          />
-          <Button variant="outlined" startIcon={<SearchIcon />} onClick={handleSearch} sx={{ minWidth: { sm: 160 } }}>
-            ค้นหา
-          </Button>
-        </Stack>
+        <SearchBar
+          label="ค้นหา log"
+          placeholder="พิมพ์โมเดล การกระทำ รหัสอ้างอิง หรือชื่อผู้ใช้"
+          defaultValue={query}
+          onSubmit={(v) => {
+            setQuery(v);
+            handleSearch(v);
+          }}
+        />
       </Paper>
 
       <Paper sx={{ p: { xs: 2, sm: 3 } }}>
@@ -218,7 +213,6 @@ export function LogsTable({ logs, total, page, pageSize }: LogsTableProps) {
               setStartDate(null);
               setEndDate(null);
               setQuery("");
-              const next = new URLSearchParams();
               router.push(pathname);
             }}
           >
@@ -227,7 +221,7 @@ export function LogsTable({ logs, total, page, pageSize }: LogsTableProps) {
         </Stack>
       </Paper>
 
-      <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
+      <TableCard>
         <Table>
           <TableHead>
             <TableRow>
@@ -262,13 +256,7 @@ export function LogsTable({ logs, total, page, pageSize }: LogsTableProps) {
               </TableRow>
             ))}
             {filteredLogs.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={6}>
-                  <Typography textAlign="center" color="text.secondary" py={4}>
-                    ไม่พบบันทึกการเปลี่ยนแปลงที่ตรงกับคำค้นหา
-                  </Typography>
-                </TableCell>
-              </TableRow>
+              <EmptyTableMessage colSpan={6} message="ไม่พบบันทึกการเปลี่ยนแปลงที่ตรงกับคำค้นหา" />
             )}
           </TableBody>
         </Table>
@@ -292,7 +280,7 @@ export function LogsTable({ logs, total, page, pageSize }: LogsTableProps) {
             router.push(`${pathname}?${next.toString()}`);
           }}
         />
-      </TableContainer>
+      </TableCard>
     </Stack>
   );
 }

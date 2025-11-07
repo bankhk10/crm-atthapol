@@ -1,8 +1,9 @@
-import { EmployeesGrid } from "./_components/employees-grid";
-import { ActionButtons } from "../_components/action-buttons";
-import { getEmployees } from "./data";
-import type { EmployeeListItem } from "./types";
 import { requirePermission } from "@/lib/require-permission";
+
+import { EmployeesGrid } from "./_components/employees-grid";
+import { getEmployees } from "./data";
+
+import type { EmployeeListItem } from "./types";
 
 export default async function EmployeesPage() {
   await requirePermission("employees", "view");
@@ -14,7 +15,7 @@ export default async function EmployeesPage() {
     name:
       employee.firstName || employee.lastName
         ? [employee.firstName, employee.lastName].filter(Boolean).join(" ")
-        : employee.user?.name ?? "-",
+        : (employee.user?.name ?? "-"),
     email: employee.user?.email ?? "-",
     position: employee.position,
     department: employee.department,

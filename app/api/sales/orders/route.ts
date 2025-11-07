@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { z } from "zod";
 import { getServerSession } from "next-auth";
+import { z } from "zod";
+
 import { authOptions } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
+import { prisma } from "@/lib/prisma";
 import { buildSaleOrderVisibilityWhere, getVisibilityScope } from "@/lib/sales-visibility";
 
 export const runtime = "nodejs";
@@ -24,41 +25,52 @@ const OrderItemSchema = z.object({
   note: z.string().optional(),
 });
 
-const CreateOrderSchema = z.object({
-  customerId: z.string(),
-  salespersonId: z.string().optional(),
-  orderDate: z.string().datetime().optional(),
-  dueDate: z.string().datetime().optional(),
-  shippingDate: z.string().datetime().optional(),
-  creditTermDays: z.number().int().optional(),
-  paymentCondition: z.enum(["PREPAID","POSTPAID"]).optional(),
-  currency: z.string().default("THB"),
-  vatIncluded: z.boolean().default(true),
-  vatRate: z.number().min(0).default(7),
-  billTo: z.string().optional(),
-  shipTo: z.string().optional(),
-  status: z.enum(["DRAFT","CONFIRMED","APPROVED","SHIPPED","INVOICED","CANCELLED"]).optional(),
-  paymentStatus: z.enum(["UNPAID","PARTIAL","PAID","OVERDUE"]).optional(),
-  shippingFee: z.number().min(0).optional().default(0),
-  otherCharges: z.number().min(0).optional().default(0),
-  orderDiscount: z.number().min(0).optional().default(0),
-  usePromotion: z.boolean().optional().default(false),
-  promotionAmount: z.number().min(0).optional(),
-  poNumber: z.string().optional(),
-  note: z.string().optional(),
-  rejectReason: z.string().optional(),
-  items: z.array(OrderItemSchema).min(1),
-}).superRefine((val, ctx) => {
-  if (val.usePromotion) {
-    const amt = val.promotionAmount ?? 0;
-    if (!(typeof amt === 'number') || !(amt > 0)) {
-      ctx.addIssue({ code: 'custom', path: ['promotionAmount'], message: 'กรอกจำนวนเงินส่งเสริมการขายให้ถูกต้อง' });
+const CreateOrderSchema = z
+  .object({
+    customerId: z.string(),
+    salespersonId: z.string().optional(),
+    orderDate: z.string().datetime().optional(),
+    dueDate: z.string().datetime().optional(),
+    shippingDate: z.string().datetime().optional(),
+    creditTermDays: z.number().int().optional(),
+    paymentCondition: z.enum(["PREPAID", "POSTPAID"]).optional(),
+    currency: z.string().default("THB"),
+    vatIncluded: z.boolean().default(true),
+    vatRate: z.number().min(0).default(7),
+    billTo: z.string().optional(),
+    shipTo: z.string().optional(),
+    status: z
+      .enum(["DRAFT", "CONFIRMED", "APPROVED", "SHIPPED", "INVOICED", "CANCELLED"])
+      .optional(),
+    paymentStatus: z.enum(["UNPAID", "PARTIAL", "PAID", "OVERDUE"]).optional(),
+    shippingFee: z.number().min(0).optional().default(0),
+    otherCharges: z.number().min(0).optional().default(0),
+    orderDiscount: z.number().min(0).optional().default(0),
+    usePromotion: z.boolean().optional().default(false),
+    promotionAmount: z.number().min(0).optional(),
+    poNumber: z.string().optional(),
+    note: z.string().optional(),
+    rejectReason: z.string().optional(),
+    items: z.array(OrderItemSchema).min(1),
+  })
+  .superRefine((val, ctx) => {
+    if (val.usePromotion) {
+      const amt = val.promotionAmount ?? 0;
+      if (!(typeof amt === "number") || !(amt > 0)) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["promotionAmount"],
+          message: "กรอกจำนวนเงินส่งเสริมการขายให้ถูกต้อง",
+        });
+      }
     }
-  }
-});
+  });
 
 type CreateOrderInput = z.infer<typeof CreateOrderSchema>;
 
+/**
+ * Compute per-line base, discount and taxable amounts including optional line-level VAT rate.
+ */
 function computeLine(item: z.infer<typeof OrderItemSchema>, defaultVatRate: number) {
   const base = item.qty * item.unitPrice;
   const disc = item.discountAmount ?? 0;
@@ -70,6 +82,9 @@ function computeLine(item: z.infer<typeof OrderItemSchema>, defaultVatRate: numb
   return { base, discountTotal, taxable, vatRate };
 }
 
+/**
+ * Aggregate order totals (subTotal, discountTotal, taxAmount, grandTotal) from request payload.
+ */
 function computeTotals(payload: CreateOrderInput) {
   const vatRate = payload.vatRate ?? 0;
   let subTotal = 0;
@@ -91,6 +106,10 @@ function computeTotals(payload: CreateOrderInput) {
   return { subTotal, discountTotal, taxAmount, grandTotal };
 }
 
+/**
+ * Generate running Sale Order number using DocSequence within a transaction delegate.
+ * Format: SO-YYYYMM-000001
+ */
 async function generateSoNumberTx(tx: any) {
   const now = new Date();
   const y = now.getFullYear();
@@ -98,7 +117,9 @@ async function generateSoNumberTx(tx: any) {
   const prefix = `SO-${y}${m}-`;
 
   // Atomic upsert-based sequence increment per prefix
-  const delegate = (tx as any)["docSequence"] as { upsert: (args: any) => Promise<{ current: number }> };
+  const delegate = (tx as any)["docSequence"] as {
+    upsert: (args: any) => Promise<{ current: number }>;
+  };
   const row = await delegate.upsert({
     where: { prefix },
     create: { prefix, current: 1 },
@@ -126,7 +147,8 @@ export async function GET(req: NextRequest) {
     const customerId = searchParams.get("customerId") || undefined;
     const status = searchParams.get("status") || undefined;
     // New filters: paymentStatus (single or comma-separated/repeated) and workflow (UI status)
-    const paymentStatusParam = (searchParams.getAll as any)?.call(searchParams, "paymentStatus") ?? [];
+    const paymentStatusParam =
+      (searchParams.getAll as any)?.call(searchParams, "paymentStatus") ?? [];
     const workflow = (searchParams.get("workflow") || "").toUpperCase() || undefined;
     const shippingDateFrom = searchParams.get("shippingDateFrom") || undefined;
     const shippingDateTo = searchParams.get("shippingDateTo") || undefined;
@@ -171,7 +193,10 @@ export async function GET(req: NextRequest) {
       } as any;
     }
     if (paymentStatusValues && paymentStatusValues.length > 0) {
-      where.paymentStatus = paymentStatusValues.length === 1 ? (paymentStatusValues[0] as any) : ({ in: paymentStatusValues as any } as any);
+      where.paymentStatus =
+        paymentStatusValues.length === 1
+          ? (paymentStatusValues[0] as any)
+          : ({ in: paymentStatusValues as any } as any);
     }
 
     // Apply workflow mapping to where when provided
@@ -260,12 +285,15 @@ export async function POST(req: NextRequest) {
     const json = await req.json();
     const parsed = CreateOrderSchema.safeParse(json);
     if (!parsed.success) {
-      return NextResponse.json({ error: "ข้อมูลไม่ถูกต้อง", issues: parsed.error.format() }, { status: 400 });
+      return NextResponse.json(
+        { error: "ข้อมูลไม่ถูกต้อง", issues: parsed.error.format() },
+        { status: 400 },
+      );
     }
 
-  const data = parsed.data;
+    const data = parsed.data;
 
-  const totals = computeTotals(data);
+    const totals = computeTotals(data);
 
     // Status gating: only approvers can set APPROVED / CANCELLED on create
     const requestedStatus = (data.status as string | undefined) ?? "DRAFT";
@@ -288,13 +316,16 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "ไม่พบลูกค้า" }, { status: 400 });
       }
       const creditLimit = (customer as any)?.dealerDetail?.creditLimit as number | null | undefined;
-      if (typeof creditLimit === 'number') {
+      if (typeof creditLimit === "number") {
         const relationshipScore = (customer as any)?.relationshipScore as number | null | undefined;
         const enoughCredit = totals.grandTotal <= creditLimit;
         if (!enoughCredit) {
-          const canOverride = typeof relationshipScore === 'number' && relationshipScore > 3;
+          const canOverride = typeof relationshipScore === "number" && relationshipScore > 3;
           if (!canOverride) {
-            return NextResponse.json({ error: "วงเงินเครดิตไม่พอ และคะแนนความสัมพันธ์ไม่ถึงเกณฑ์" }, { status: 400 });
+            return NextResponse.json(
+              { error: "วงเงินเครดิตไม่พอ และคะแนนความสัมพันธ์ไม่ถึงเกณฑ์" },
+              { status: 400 },
+            );
           }
         }
       }
@@ -307,7 +338,10 @@ export async function POST(req: NextRequest) {
           // Resolve current employee (if any)
           let currentEmpId: string | null = null;
           if (session?.user?.id) {
-            const emp = await tx.employee.findUnique({ where: { userId: session.user.id }, select: { id: true } });
+            const emp = await tx.employee.findUnique({
+              where: { userId: session.user.id },
+              select: { id: true },
+            });
             currentEmpId = emp?.id ?? null;
           }
 
@@ -328,10 +362,13 @@ export async function POST(req: NextRequest) {
           let promoUsed = 0;
           if (data.usePromotion && (data.promotionAmount ?? 0) > 0) {
             const amt = Number(data.promotionAmount || 0);
-            const cust = await (tx as any).customer.findUnique({ where: { id: data.customerId }, include: { dealerDetail: true } });
+            const cust = await (tx as any).customer.findUnique({
+              where: { id: data.customerId },
+              include: { dealerDetail: true },
+            });
             const dd = (cust as any)?.dealerDetail;
             if (!dd?.id) {
-              throw new Error('PROMO_NOT_SUPPORTED');
+              throw new Error("PROMO_NOT_SUPPORTED");
             }
             // atomic conditional decrement
             const result = await (tx as any).dealerDetail.updateMany({
@@ -339,13 +376,15 @@ export async function POST(req: NextRequest) {
               data: { promotionBudget: { decrement: amt } },
             });
             if (!result || (result.count ?? 0) !== 1) {
-              throw new Error('PROMO_BUDGET_NOT_ENOUGH');
+              throw new Error("PROMO_BUDGET_NOT_ENOUGH");
             }
             promoUsed = amt;
           }
           // If creating in APPROVED state, validate approver user exists to avoid FK violation
           const actorId = wantsApprove && session?.user?.id ? session.user.id : undefined;
-          const approver = actorId ? await tx.user.findUnique({ where: { id: actorId }, select: { id: true } }) : null;
+          const approver = actorId
+            ? await tx.user.findUnique({ where: { id: actorId }, select: { id: true } })
+            : null;
 
           const order = await (tx as any).saleOrder.create({
             data: {
@@ -356,23 +395,23 @@ export async function POST(req: NextRequest) {
               dueDate: data.dueDate ? new Date(data.dueDate) : null,
               shippingDate: data.shippingDate ? new Date(data.shippingDate) : null,
               creditTermDays: data.creditTermDays,
-          currency: data.currency ?? "THB",
-          vatIncluded: data.vatIncluded ?? true,
-          vatRate: data.vatRate ?? 7,
-          billTo: data.billTo,
-          shipTo: data.shipTo,
-          status: (data.status as any) ?? "DRAFT",
-          paymentStatus: (data.paymentStatus as any) ?? "UNPAID",
-          paymentCondition: (data.paymentCondition as any) ?? "PREPAID",
-          shippingFee: data.shippingFee ?? 0,
-          otherCharges: data.otherCharges ?? 0,
-          orderDiscount: data.orderDiscount ?? 0,
-          promotionSpent: promoUsed || 0,
-          poNumber: data.poNumber,
-          note: data.note,
-          rejectReason: (data as any).rejectReason,
-          approvedAt: wantsApprove ? new Date() : null,
-          approvedByUserId: wantsApprove ? (approver?.id ?? null) : null,
+              currency: data.currency ?? "THB",
+              vatIncluded: data.vatIncluded ?? true,
+              vatRate: data.vatRate ?? 7,
+              billTo: data.billTo,
+              shipTo: data.shipTo,
+              status: (data.status as any) ?? "DRAFT",
+              paymentStatus: (data.paymentStatus as any) ?? "UNPAID",
+              paymentCondition: (data.paymentCondition as any) ?? "PREPAID",
+              shippingFee: data.shippingFee ?? 0,
+              otherCharges: data.otherCharges ?? 0,
+              orderDiscount: data.orderDiscount ?? 0,
+              promotionSpent: promoUsed || 0,
+              poNumber: data.poNumber,
+              note: data.note,
+              rejectReason: (data as any).rejectReason,
+              approvedAt: wantsApprove ? new Date() : null,
+              approvedByUserId: wantsApprove ? (approver?.id ?? null) : null,
               subTotal: totals.subTotal,
               discountTotal: totals.discountTotal,
               taxAmount: totals.taxAmount,
@@ -414,7 +453,7 @@ export async function POST(req: NextRequest) {
             });
 
             // Issue immediately if there is a shipping date OR order status is SHIPPED (COMPLETED in UI)
-            const isImmediateIssue = Boolean(order.shippingDate) || (order.status === "SHIPPED");
+            const isImmediateIssue = Boolean(order.shippingDate) || order.status === "SHIPPED";
             for (const s of stocks as any[]) {
               if (remaining <= 0) break;
               const onHand = Number(s.qtyOnHand || 0);
@@ -425,13 +464,37 @@ export async function POST(req: NextRequest) {
               if (alloc <= 0) continue;
               if (isImmediateIssue) {
                 // Deduct on-hand immediately, do not reserve
-                await tx.stock.update({ where: { id: s.id }, data: { qtyOnHand: { decrement: alloc } } });
-                await (tx as any).stockMovement.create({ data: { stockId: s.id, productId: s.productId, saleOrderId: order.id, type: 'ISSUE', qty: alloc } });
+                await tx.stock.update({
+                  where: { id: s.id },
+                  data: { qtyOnHand: { decrement: alloc } },
+                });
+                await (tx as any).stockMovement.create({
+                  data: {
+                    stockId: s.id,
+                    productId: s.productId,
+                    saleOrderId: order.id,
+                    type: "ISSUE",
+                    qty: alloc,
+                  },
+                });
               } else {
                 // Reserve only
-                await tx.stock.update({ where: { id: s.id }, data: { qtyReserved: { increment: alloc } } });
-                await (tx as any).saleOrderStockReservation.create({ data: { saleOrderId: order.id, stockId: s.id, qty: alloc } });
-                await (tx as any).stockMovement.create({ data: { stockId: s.id, productId: s.productId, saleOrderId: order.id, type: 'RESERVE', qty: alloc } });
+                await tx.stock.update({
+                  where: { id: s.id },
+                  data: { qtyReserved: { increment: alloc } },
+                });
+                await (tx as any).saleOrderStockReservation.create({
+                  data: { saleOrderId: order.id, stockId: s.id, qty: alloc },
+                });
+                await (tx as any).stockMovement.create({
+                  data: {
+                    stockId: s.id,
+                    productId: s.productId,
+                    saleOrderId: order.id,
+                    type: "RESERVE",
+                    qty: alloc,
+                  },
+                });
               }
               remaining -= alloc;
             }
@@ -448,13 +511,19 @@ export async function POST(req: NextRequest) {
       }
     }
     if (!created) {
-      return NextResponse.json({ error: "เลขที่เอกสารถูกใช้แล้ว โปรดลองอีกครั้ง" }, { status: 409 });
+      return NextResponse.json(
+        { error: "เลขที่เอกสารถูกใช้แล้ว โปรดลองอีกครั้ง" },
+        { status: 409 },
+      );
     }
 
     return NextResponse.json(created, { status: 201 });
   } catch (err) {
     if (err instanceof Error && err.message === "SO_NUMBER_CONFLICT") {
-      return NextResponse.json({ error: "เลขที่เอกสารถูกใช้แล้ว โปรดลองอีกครั้ง" }, { status: 409 });
+      return NextResponse.json(
+        { error: "เลขที่เอกสารถูกใช้แล้ว โปรดลองอีกครั้ง" },
+        { status: 409 },
+      );
     }
     console.error("[POST /api/sales/orders] error", err);
     return NextResponse.json({ error: "บันทึกใบสั่งขายไม่สำเร็จ" }, { status: 500 });

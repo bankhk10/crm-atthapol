@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { z } from "zod";
 import { getServerSession } from "next-auth";
+import { z } from "zod";
+
 import { authOptions } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
+import { prisma } from "@/lib/prisma";
 import { buildSaleOrderVisibilityWhere } from "@/lib/sales-visibility";
 
 export const runtime = "nodejs";
@@ -14,15 +15,34 @@ async function releaseReservations(tx: any, saleOrderId: string) {
   });
 
   for (const r of reservations as any[]) {
-    const stock = await tx.stock.findUnique({ where: { id: r.stockId }, select: { qtyReserved: true } });
+    const stock = await tx.stock.findUnique({
+      where: { id: r.stockId },
+      select: { qtyReserved: true },
+    });
     const current = Number(stock?.qtyReserved ?? 0);
     const qty = Math.max(0, Math.floor(Number(r.qty ?? 0)));
     const releaseQty = Math.min(current, qty);
     if (releaseQty > 0) {
-      await tx.stock.update({ where: { id: r.stockId }, data: { qtyReserved: { decrement: releaseQty } } });
-      await (tx as any).stockMovement.create({ data: { stockId: r.stockId, productId: (await tx.stock.findUnique({ where: { id: r.stockId }, select: { productId: true } })).productId, saleOrderId: saleOrderId, type: 'RELEASE', qty: releaseQty } });
+      await tx.stock.update({
+        where: { id: r.stockId },
+        data: { qtyReserved: { decrement: releaseQty } },
+      });
+      await (tx as any).stockMovement.create({
+        data: {
+          stockId: r.stockId,
+          productId: (
+            await tx.stock.findUnique({ where: { id: r.stockId }, select: { productId: true } })
+          ).productId,
+          saleOrderId: saleOrderId,
+          type: "RELEASE",
+          qty: releaseQty,
+        },
+      });
     }
-    await (tx as any).saleOrderStockReservation.update({ where: { id: r.id }, data: { releasedAt: new Date() } });
+    await (tx as any).saleOrderStockReservation.update({
+      where: { id: r.id },
+      data: { releasedAt: new Date() },
+    });
   }
 }
 
@@ -37,7 +57,9 @@ export async function DELETE(_req: NextRequest, context: { params: Promise<{ ord
 
     await prisma.$transaction(async (tx) => {
       const scopeWhere = await buildSaleOrderVisibilityWhere();
-      const order = await tx.saleOrder.findFirst({ where: { id: orderId, ...(scopeWhere as any) } });
+      const order = await tx.saleOrder.findFirst({
+        where: { id: orderId, ...(scopeWhere as any) },
+      });
       if (!order || (order as any).deletedAt) {
         throw new Error("NOT_FOUND");
       }
@@ -69,7 +91,12 @@ export async function GET(_req: NextRequest, context: { params: Promise<{ orderI
     const scopeWhere = await buildSaleOrderVisibilityWhere();
     const order = await prisma.saleOrder.findFirst({
       where: { id: orderId, ...(scopeWhere as any) },
-      include: { items: true, customer: true, salesperson: true, reservations: { include: { stock: true } } },
+      include: {
+        items: true,
+        customer: true,
+        salesperson: true,
+        reservations: { include: { stock: true } },
+      },
     });
     if (!order || (order as any).deletedAt) {
       return NextResponse.json({ error: "ไม่พบใบสั่งขาย" }, { status: 404 });
@@ -98,39 +125,47 @@ const OrderItemSchema = z.object({
   note: z.string().optional(),
 });
 
-const UpdateOrderSchema = z.object({
-  customerId: z.string(),
-  salespersonId: z.string().optional(),
-  orderDate: z.string().datetime().optional(),
-  dueDate: z.string().datetime().optional(),
-  shippingDate: z.string().datetime().optional(),
-  creditTermDays: z.number().int().optional(),
-  paymentCondition: z.enum(["PREPAID","POSTPAID"]).optional(),
-  currency: z.string().default("THB"),
-  vatIncluded: z.boolean().default(true),
-  vatRate: z.number().min(0).default(7),
-  billTo: z.string().optional(),
-  shipTo: z.string().optional(),
-  status: z.enum(["DRAFT","CONFIRMED","APPROVED","SHIPPED","INVOICED","CANCELLED"]).optional(),
-  paymentStatus: z.enum(["UNPAID","PARTIAL","PAID","OVERDUE"]).optional(),
-  shippingFee: z.number().min(0).optional().default(0),
-  otherCharges: z.number().min(0).optional().default(0),
-  orderDiscount: z.number().min(0).optional().default(0),
-  usePromotion: z.boolean().optional().default(false),
-  promotionAmount: z.number().min(0).optional(),
-  poNumber: z.string().optional(),
-  note: z.string().optional(),
-  rejectReason: z.string().optional(),
-  cancelReason: z.string().optional(),
-  items: z.array(OrderItemSchema).min(1),
-}).superRefine((val, ctx) => {
-  if (val.usePromotion) {
-    const amt = val.promotionAmount ?? 0;
-    if (!(typeof amt === 'number') || !(amt > 0)) {
-      ctx.addIssue({ code: 'custom', path: ['promotionAmount'], message: 'กรอกจำนวนเงินส่งเสริมการขายให้ถูกต้อง' });
+const UpdateOrderSchema = z
+  .object({
+    customerId: z.string(),
+    salespersonId: z.string().optional(),
+    orderDate: z.string().datetime().optional(),
+    dueDate: z.string().datetime().optional(),
+    shippingDate: z.string().datetime().optional(),
+    creditTermDays: z.number().int().optional(),
+    paymentCondition: z.enum(["PREPAID", "POSTPAID"]).optional(),
+    currency: z.string().default("THB"),
+    vatIncluded: z.boolean().default(true),
+    vatRate: z.number().min(0).default(7),
+    billTo: z.string().optional(),
+    shipTo: z.string().optional(),
+    status: z
+      .enum(["DRAFT", "CONFIRMED", "APPROVED", "SHIPPED", "INVOICED", "CANCELLED"])
+      .optional(),
+    paymentStatus: z.enum(["UNPAID", "PARTIAL", "PAID", "OVERDUE"]).optional(),
+    shippingFee: z.number().min(0).optional().default(0),
+    otherCharges: z.number().min(0).optional().default(0),
+    orderDiscount: z.number().min(0).optional().default(0),
+    usePromotion: z.boolean().optional().default(false),
+    promotionAmount: z.number().min(0).optional(),
+    poNumber: z.string().optional(),
+    note: z.string().optional(),
+    rejectReason: z.string().optional(),
+    cancelReason: z.string().optional(),
+    items: z.array(OrderItemSchema).min(1),
+  })
+  .superRefine((val, ctx) => {
+    if (val.usePromotion) {
+      const amt = val.promotionAmount ?? 0;
+      if (!(typeof amt === "number") || !(amt > 0)) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["promotionAmount"],
+          message: "กรอกจำนวนเงินส่งเสริมการขายให้ถูกต้อง",
+        });
+      }
     }
-  }
-});
+  });
 
 function computeLine(item: z.infer<typeof OrderItemSchema>, defaultVatRate: number) {
   const base = item.qty * item.unitPrice;
@@ -150,9 +185,12 @@ function computeTotals(payload: z.infer<typeof UpdateOrderSchema>) {
   let taxAmount = 0;
   for (const it of payload.items) {
     const { discountTotal: d, taxable, vatRate: lineVat } = computeLine(it, vatRate);
-    subTotal += taxable; discountTotal += d; taxAmount += taxable * (lineVat / 100);
+    subTotal += taxable;
+    discountTotal += d;
+    taxAmount += taxable * (lineVat / 100);
   }
-  const shipping = payload.shippingFee ?? 0; const others = payload.otherCharges ?? 0;
+  const shipping = payload.shippingFee ?? 0;
+  const others = payload.otherCharges ?? 0;
   const od = Math.max(0, Number((payload as any).orderDiscount ?? 0));
   const grandTotal = Math.max(0, subTotal + taxAmount + shipping + others - od);
   return { subTotal, discountTotal, taxAmount, grandTotal };
@@ -169,28 +207,47 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ orderId
     const json = await req.json();
     const parsed = UpdateOrderSchema.safeParse(json);
     if (!parsed.success) {
-      return NextResponse.json({ error: "ข้อมูลไม่ถูกต้อง", issues: parsed.error.format() }, { status: 400 });
+      return NextResponse.json(
+        { error: "ข้อมูลไม่ถูกต้อง", issues: parsed.error.format() },
+        { status: 400 },
+      );
     }
     const data = parsed.data;
     const totals = computeTotals(data);
 
     // Credit check when editing if payment condition is POSTPAID
     try {
-      const existsHeader = await (prisma as any).saleOrder.findUnique({ where: { id: orderId }, select: { paymentCondition: true } });
-      const effectivePaymentCondition = (data as any).paymentCondition ?? (existsHeader?.paymentCondition ?? 'PREPAID');
-      if (effectivePaymentCondition === 'POSTPAID') {
-        const customer = await (prisma as any).customer.findUnique({ where: { id: data.customerId }, include: { dealerDetail: true } });
+      const existsHeader = await (prisma as any).saleOrder.findUnique({
+        where: { id: orderId },
+        select: { paymentCondition: true },
+      });
+      const effectivePaymentCondition =
+        (data as any).paymentCondition ?? existsHeader?.paymentCondition ?? "PREPAID";
+      if (effectivePaymentCondition === "POSTPAID") {
+        const customer = await (prisma as any).customer.findUnique({
+          where: { id: data.customerId },
+          include: { dealerDetail: true },
+        });
         if (!customer) {
-          return NextResponse.json({ error: 'ไม่พบลูกค้า' }, { status: 400 });
+          return NextResponse.json({ error: "ไม่พบลูกค้า" }, { status: 400 });
         }
-        const creditLimit = (customer as any)?.dealerDetail?.creditLimit as number | null | undefined;
-        if (typeof creditLimit === 'number') {
-          const relationshipScore = (customer as any)?.relationshipScore as number | null | undefined;
+        const creditLimit = (customer as any)?.dealerDetail?.creditLimit as
+          | number
+          | null
+          | undefined;
+        if (typeof creditLimit === "number") {
+          const relationshipScore = (customer as any)?.relationshipScore as
+            | number
+            | null
+            | undefined;
           const enoughCredit = (totals.grandTotal ?? 0) <= creditLimit;
           if (!enoughCredit) {
-            const canOverride = typeof relationshipScore === 'number' && relationshipScore > 3;
+            const canOverride = typeof relationshipScore === "number" && relationshipScore > 3;
             if (!canOverride) {
-              return NextResponse.json({ error: 'วงเงินเครดิตไม่พอ และคะแนนความสัมพันธ์ไม่ถึงเกณฑ์' }, { status: 400 });
+              return NextResponse.json(
+                { error: "วงเงินเครดิตไม่พอ และคะแนนความสัมพันธ์ไม่ถึงเกณฑ์" },
+                { status: 400 },
+              );
             }
           }
         }
@@ -203,7 +260,9 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ orderId
 
     const updated = await prisma.$transaction(async (tx) => {
       const scopeWhere = await buildSaleOrderVisibilityWhere();
-      const exists = await tx.saleOrder.findFirst({ where: { id: orderId, ...(scopeWhere as any) } });
+      const exists = await tx.saleOrder.findFirst({
+        where: { id: orderId, ...(scopeWhere as any) },
+      });
       if (!exists || (exists as any).deletedAt) throw new Error("NOT_FOUND");
       if ((exists as any).status === "SHIPPED") throw new Error("LOCKED");
 
@@ -219,7 +278,9 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ orderId
           throw new Error("NO_REJECT");
         }
         // Allow non-approvers to move between DRAFT and CONFIRMED (submit/recall)
-        const isFreeChange = (prevStatus === "DRAFT" && nextStatus === "CONFIRMED") || (prevStatus === "CONFIRMED" && nextStatus === "DRAFT");
+        const isFreeChange =
+          (prevStatus === "DRAFT" && nextStatus === "CONFIRMED") ||
+          (prevStatus === "CONFIRMED" && nextStatus === "DRAFT");
         if (!isFreeChange) {
           const needsApprove = ["SHIPPED", "INVOICED", "APPROVED"].includes(nextStatus);
           if (needsApprove && !hasPermission(perms, "sales", "approve")) {
@@ -234,60 +295,80 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ orderId
 
       // --- Promotion budget adjustment (difference-based and customer-change aware) ---
       const currentSpent = Number((exists as any).promotionSpent ?? 0);
-      const requestedSpent = (data as any).usePromotion ? Number((data as any).promotionAmount ?? 0) : 0;
+      const requestedSpent = (data as any).usePromotion
+        ? Number((data as any).promotionAmount ?? 0)
+        : 0;
       const oldCustomerId = (exists as any).customerId as string;
       const newCustomerId = data.customerId as string;
       if (oldCustomerId !== newCustomerId) {
         // Refund full current to old customer (if any)
         if (currentSpent > 0) {
-          const oldCust = await (tx as any).customer.findUnique({ where: { id: oldCustomerId }, include: { dealerDetail: true } });
+          const oldCust = await (tx as any).customer.findUnique({
+            where: { id: oldCustomerId },
+            include: { dealerDetail: true },
+          });
           const oldDd = (oldCust as any)?.dealerDetail;
           if (oldDd?.id) {
-            await (tx as any).dealerDetail.update({ where: { id: oldDd.id }, data: { promotionBudget: { increment: currentSpent } } });
+            await (tx as any).dealerDetail.update({
+              where: { id: oldDd.id },
+              data: { promotionBudget: { increment: currentSpent } },
+            });
           } else {
             // If cannot refund to old, block to avoid budget loss
-            throw new Error('PROMO_REFUND_TARGET_MISSING');
+            throw new Error("PROMO_REFUND_TARGET_MISSING");
           }
         }
         // Deduct full requested from new customer (if any)
         if (requestedSpent > 0) {
-          const newCust = await (tx as any).customer.findUnique({ where: { id: newCustomerId }, include: { dealerDetail: true } });
+          const newCust = await (tx as any).customer.findUnique({
+            where: { id: newCustomerId },
+            include: { dealerDetail: true },
+          });
           const newDd = (newCust as any)?.dealerDetail;
           if (!newDd?.id) {
-            throw new Error('PROMO_NOT_SUPPORTED');
+            throw new Error("PROMO_NOT_SUPPORTED");
           }
           const result = await (tx as any).dealerDetail.updateMany({
             where: { id: newDd.id, promotionBudget: { gte: requestedSpent } },
             data: { promotionBudget: { decrement: requestedSpent } },
           });
           if (!result || (result.count ?? 0) !== 1) {
-            throw new Error('PROMO_BUDGET_NOT_ENOUGH');
+            throw new Error("PROMO_BUDGET_NOT_ENOUGH");
           }
         }
       } else {
         // Same customer: apply delta change only
         const delta = requestedSpent - currentSpent;
         if (delta > 0) {
-          const cust = await (tx as any).customer.findUnique({ where: { id: newCustomerId }, include: { dealerDetail: true } });
+          const cust = await (tx as any).customer.findUnique({
+            where: { id: newCustomerId },
+            include: { dealerDetail: true },
+          });
           const dd = (cust as any)?.dealerDetail;
           if (!dd?.id) {
-            throw new Error('PROMO_NOT_SUPPORTED');
+            throw new Error("PROMO_NOT_SUPPORTED");
           }
           const result = await (tx as any).dealerDetail.updateMany({
             where: { id: dd.id, promotionBudget: { gte: delta } },
             data: { promotionBudget: { decrement: delta } },
           });
           if (!result || (result.count ?? 0) !== 1) {
-            throw new Error('PROMO_BUDGET_NOT_ENOUGH');
+            throw new Error("PROMO_BUDGET_NOT_ENOUGH");
           }
         } else if (delta < 0) {
           const refund = Math.abs(delta);
-          const cust = await (tx as any).customer.findUnique({ where: { id: newCustomerId }, include: { dealerDetail: true } });
+          const cust = await (tx as any).customer.findUnique({
+            where: { id: newCustomerId },
+            include: { dealerDetail: true },
+          });
           const dd = (cust as any)?.dealerDetail;
           if (!dd?.id) {
-            throw new Error('PROMO_REFUND_TARGET_MISSING');
+            throw new Error("PROMO_REFUND_TARGET_MISSING");
           }
-          await (tx as any).dealerDetail.update({ where: { id: dd.id }, data: { promotionBudget: { increment: refund } } });
+          await (tx as any).dealerDetail.update({
+            where: { id: dd.id },
+            data: { promotionBudget: { increment: refund } },
+          });
         }
       }
 
@@ -299,7 +380,9 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ orderId
 
       // If approving, ensure approver user exists to avoid FK violation
       const actorId = nextStatus === "APPROVED" && session?.user?.id ? session.user.id : undefined;
-      const approver = actorId ? await tx.user.findUnique({ where: { id: actorId }, select: { id: true } }) : null;
+      const approver = actorId
+        ? await tx.user.findUnique({ where: { id: actorId }, select: { id: true } })
+        : null;
 
       // update order header and recreate items
       const order = await (tx as any).saleOrder.update({
@@ -328,8 +411,18 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ orderId
           rejectReason: (data as any).rejectReason,
           cancelReason: (data as any).cancelReason,
           // Approval metadata update
-          approvedAt: nextStatus === "APPROVED" ? new Date() : (prevStatus === "APPROVED" && nextStatus !== "APPROVED" ? null : (exists as any).approvedAt),
-          approvedByUserId: nextStatus === "APPROVED" ? (approver?.id ?? null) : (prevStatus === "APPROVED" && nextStatus !== "APPROVED" ? null : (exists as any).approvedByUserId),
+          approvedAt:
+            nextStatus === "APPROVED"
+              ? new Date()
+              : prevStatus === "APPROVED" && nextStatus !== "APPROVED"
+                ? null
+                : (exists as any).approvedAt,
+          approvedByUserId:
+            nextStatus === "APPROVED"
+              ? (approver?.id ?? null)
+              : prevStatus === "APPROVED" && nextStatus !== "APPROVED"
+                ? null
+                : (exists as any).approvedByUserId,
           subTotal: totals.subTotal,
           discountTotal: totals.discountTotal,
           taxAmount: totals.taxAmount,
@@ -353,20 +446,23 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ orderId
                 expDate: it.expDate ? new Date(it.expDate) : null,
                 note: it.note,
               };
-            })
-          }
+            }),
+          },
         },
         include: { items: true },
       });
 
       // Reserve or deduct stock per items depending on shippingDate or status
-      for (const item of (order.items as any[])) {
+      for (const item of order.items as any[]) {
         if (!item.productId || !item.qty) continue;
         let remaining = Math.max(0, Math.floor(Number(item.qty)));
         if (!Number.isFinite(remaining) || remaining <= 0) continue;
-        const stocks = await tx.stock.findMany({ where: { productId: item.productId, deletedAt: null }, orderBy: [{ expDate: "asc" }, { mfgDate: "asc" }, { createdAt: "asc" }] });
+        const stocks = await tx.stock.findMany({
+          where: { productId: item.productId, deletedAt: null },
+          orderBy: [{ expDate: "asc" }, { mfgDate: "asc" }, { createdAt: "asc" }],
+        });
         // Issue immediately if there is a shipping date OR order status is SHIPPED (COMPLETED in UI)
-        const isImmediateIssue = Boolean(order.shippingDate) || (order.status === "SHIPPED");
+        const isImmediateIssue = Boolean(order.shippingDate) || order.status === "SHIPPED";
         for (const s of stocks as any[]) {
           if (remaining <= 0) break;
           const onHand = Number(s.qtyOnHand || 0);
@@ -376,12 +472,36 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ orderId
           const alloc = Math.min(available, remaining);
           if (alloc <= 0) continue;
           if (isImmediateIssue) {
-            await tx.stock.update({ where: { id: s.id }, data: { qtyOnHand: { decrement: alloc } } });
-            await (tx as any).stockMovement.create({ data: { stockId: s.id, productId: s.productId, saleOrderId: order.id, type: 'ISSUE', qty: alloc } });
+            await tx.stock.update({
+              where: { id: s.id },
+              data: { qtyOnHand: { decrement: alloc } },
+            });
+            await (tx as any).stockMovement.create({
+              data: {
+                stockId: s.id,
+                productId: s.productId,
+                saleOrderId: order.id,
+                type: "ISSUE",
+                qty: alloc,
+              },
+            });
           } else {
-            await tx.stock.update({ where: { id: s.id }, data: { qtyReserved: { increment: alloc } } });
-            await (tx as any).saleOrderStockReservation.create({ data: { saleOrderId: order.id, stockId: s.id, qty: alloc } });
-            await (tx as any).stockMovement.create({ data: { stockId: s.id, productId: s.productId, saleOrderId: order.id, type: 'RESERVE', qty: alloc } });
+            await tx.stock.update({
+              where: { id: s.id },
+              data: { qtyReserved: { increment: alloc } },
+            });
+            await (tx as any).saleOrderStockReservation.create({
+              data: { saleOrderId: order.id, stockId: s.id, qty: alloc },
+            });
+            await (tx as any).stockMovement.create({
+              data: {
+                stockId: s.id,
+                productId: s.productId,
+                saleOrderId: order.id,
+                type: "RESERVE",
+                qty: alloc,
+              },
+            });
           }
           remaining -= alloc;
         }
@@ -398,22 +518,34 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ orderId
       return NextResponse.json({ error: "เอกสารสถานะสำเร็จ ไม่สามารถแก้ไขได้" }, { status: 400 });
     }
     if (err instanceof Error && err.message === "LOCKED_APPROVED") {
-      return NextResponse.json({ error: "เอกสารถูกอนุมัติแล้ว ต้องเปลี่ยนสถานะเป็นรออนุมัติจึงจะแก้ไขได้" }, { status: 400 });
+      return NextResponse.json(
+        { error: "เอกสารถูกอนุมัติแล้ว ต้องเปลี่ยนสถานะเป็นรออนุมัติจึงจะแก้ไขได้" },
+        { status: 400 },
+      );
     }
     if (err instanceof Error && err.message === "NO_APPROVE") {
-      return NextResponse.json({ error: "ไม่มีสิทธิ์เปลี่ยนแปลงสถานะ/อนุมัติเอกสาร" }, { status: 403 });
+      return NextResponse.json(
+        { error: "ไม่มีสิทธิ์เปลี่ยนแปลงสถานะ/อนุมัติเอกสาร" },
+        { status: 403 },
+      );
     }
     if (err instanceof Error && err.message === "NO_REJECT") {
       return NextResponse.json({ error: "ไม่มีสิทธิ์ปฏิเสธ/ยกเลิกเอกสาร" }, { status: 403 });
     }
-    if (err instanceof Error && err.message === 'PROMO_NOT_SUPPORTED') {
-      return NextResponse.json({ error: "ลูกค้ารายนี้ไม่รองรับวงเงินส่งเสริมการขาย" }, { status: 400 });
+    if (err instanceof Error && err.message === "PROMO_NOT_SUPPORTED") {
+      return NextResponse.json(
+        { error: "ลูกค้ารายนี้ไม่รองรับวงเงินส่งเสริมการขาย" },
+        { status: 400 },
+      );
     }
-    if (err instanceof Error && err.message === 'PROMO_BUDGET_NOT_ENOUGH') {
+    if (err instanceof Error && err.message === "PROMO_BUDGET_NOT_ENOUGH") {
       return NextResponse.json({ error: "วงเงินส่งเสริมการขายคงเหลือไม่พอ" }, { status: 400 });
     }
-    if (err instanceof Error && err.message === 'PROMO_REFUND_TARGET_MISSING') {
-      return NextResponse.json({ error: "ไม่สามารถคืนวงเงินส่งเสริมการขายเดิมได้" }, { status: 400 });
+    if (err instanceof Error && err.message === "PROMO_REFUND_TARGET_MISSING") {
+      return NextResponse.json(
+        { error: "ไม่สามารถคืนวงเงินส่งเสริมการขายเดิมได้" },
+        { status: 400 },
+      );
     }
     console.error("[PUT /api/sales/orders/:id] error", err);
     return NextResponse.json({ error: "บันทึกการแก้ไขไม่สำเร็จ" }, { status: 500 });

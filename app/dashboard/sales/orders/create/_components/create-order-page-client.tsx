@@ -2,9 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+
 import { canShowRandomFill } from "@/lib/ui-permissions";
-import type { Option, ProductOption } from "../../types";
+
 import { OrderForm } from "../../_components/order-form";
+
+import type { Option, ProductOption } from "../../types";
 
 type Props = {
   customerOptions: Option[];

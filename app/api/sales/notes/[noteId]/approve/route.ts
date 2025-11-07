@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
+
 import { authOptions } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
+import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
@@ -24,11 +25,17 @@ export async function POST(_req: NextRequest, context: { params: Promise<{ noteI
       if (status !== "SUBMITTED" && status !== "DRAFT") throw new Error("INVALID_STATE");
 
       const actorId = session?.user?.id as string | undefined;
-      const actor = actorId ? await tx.user.findUnique({ where: { id: actorId }, select: { id: true } }) : null;
+      const actor = actorId
+        ? await tx.user.findUnique({ where: { id: actorId }, select: { id: true } })
+        : null;
 
       const note = await tx.salesNote.update({
         where: { id: noteId },
-        data: { status: "APPROVED" as any, approvedAt: new Date(), approvedByUserId: actor?.id ?? null },
+        data: {
+          status: "APPROVED" as any,
+          approvedAt: new Date(),
+          approvedByUserId: actor?.id ?? null,
+        },
         include: { customer: true, creator: true, manager: true, approvedBy: true },
       });
       return note;
@@ -49,4 +56,3 @@ export async function POST(_req: NextRequest, context: { params: Promise<{ noteI
     return NextResponse.json({ error: "อนุมัติไม่สำเร็จ" }, { status: 500 });
   }
 }
-

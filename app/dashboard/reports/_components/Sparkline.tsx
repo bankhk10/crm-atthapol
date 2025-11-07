@@ -7,7 +7,12 @@ type SparklineProps = {
   height?: number;
 };
 
-export function Sparkline({ data, stroke = "#1976d2", fill = "rgba(25, 118, 210, 0.12)", height = 48 }: SparklineProps) {
+export function Sparkline({
+  data,
+  stroke = "#1976d2",
+  fill = "rgba(25, 118, 210, 0.12)",
+  height = 48,
+}: SparklineProps) {
   if (!data.length) return null;
 
   const width = 240; // logical width; SVG scales via viewBox
@@ -28,8 +33,14 @@ export function Sparkline({ data, stroke = "#1976d2", fill = "rgba(25, 118, 210,
   return (
     <Box component="svg" viewBox={`0 0 ${width} ${height}`} width="100%" height={height}>
       <path d={areaD} fill={fill} />
-      <path d={pathD} fill="none" stroke={stroke} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+      <path
+        d={pathD}
+        fill="none"
+        stroke={stroke}
+        strokeWidth={2}
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
     </Box>
   );
 }
-

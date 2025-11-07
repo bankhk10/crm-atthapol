@@ -1,11 +1,16 @@
 import { getCustomers } from "@/app/dashboard/customers/data";
-import { prisma } from "@/lib/prisma";
 import { getEmployees } from "@/app/dashboard/employees/data";
 import { getProducts } from "@/app/dashboard/products/data";
-import { EditOrderPageClient } from "./_components/edit-order-page-client";
+import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/require-permission";
 
-export default async function EditSalesOrderPage({ params }: { params: Promise<{ orderId: string }> }) {
+import { EditOrderPageClient } from "./_components/edit-order-page-client";
+
+export default async function EditSalesOrderPage({
+  params,
+}: {
+  params: Promise<{ orderId: string }>;
+}) {
   await requirePermission("sales", "edit");
   const { orderId } = await params;
   const [customers, employees, products, order] = await Promise.all([
@@ -28,13 +33,13 @@ export default async function EditSalesOrderPage({ params }: { params: Promise<{
       district: (c as any).district ?? null,
       subdistrict: (c as any).subdistrict ?? null,
       postalCode: (c as any).postalCode ?? null,
-  }));
+    }));
 
   // Ensure current order's customer appears in options even if not DEALER (view-only fallback)
   if (order?.customer && !customerOptions.some((o) => o.id === order.customerId)) {
     const c = order.customer as any;
     const label =
-      (c.companyName && c.companyName.trim().length > 0)
+      c.companyName && c.companyName.trim().length > 0
         ? c.companyName
         : [c.prefix, c.firstName, c.lastName].filter(Boolean).join(" ");
     customerOptions = [
@@ -52,7 +57,10 @@ export default async function EditSalesOrderPage({ params }: { params: Promise<{
   }
   const employeeOptions = employees.map((e) => ({
     id: e.id,
-    label: ([e.prefix, e.firstName, e.lastName].filter(Boolean).join(" ") || e.user?.name || e.user?.email || e.id) as string,
+    label: ([e.prefix, e.firstName, e.lastName].filter(Boolean).join(" ") ||
+      e.user?.name ||
+      e.user?.email ||
+      e.id) as string,
   }));
   const productOptions = products.map((p) => ({
     id: p.id,
@@ -72,4 +80,3 @@ export default async function EditSalesOrderPage({ params }: { params: Promise<{
     />
   );
 }
-

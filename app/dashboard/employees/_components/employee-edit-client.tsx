@@ -1,15 +1,12 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { Stack } from "@mui/material";
+import { useRouter } from "next/navigation";
 
 import { EmployeeForm } from "./employee-form";
 import { updateEmployee } from "../actions";
-import type {
-  EmployeeFormValues,
-  EmployeeRoleOption,
-  RoleDefinitionOption,
-} from "../types";
+
+import type { EmployeeFormValues, EmployeeRoleOption, RoleDefinitionOption } from "../types";
 
 type EmployeeEditClientProps = {
   employeeId: string;
