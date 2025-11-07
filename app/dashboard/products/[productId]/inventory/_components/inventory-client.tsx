@@ -160,6 +160,37 @@ export default function InventoryClient({
     return [];
   };
   const [freebieRows, setFreebieRows] = useState<FreebieRow[]>(parseInitialFreebies);
+
+  // Other promotion items (ชื่อสินค้า, จำนวนคงเหลือ, ราคา, หมายเหตุ)
+  type PromoRow = { id: string; name: string; qtyOnHand: string; price: string; note: string };
+  const parseInitialPromotions = (): PromoRow[] => {
+    const raw = product.otherPromotion ?? "";
+    try {
+      if (raw && (raw.trim().startsWith("[") || raw.trim().startsWith("{"))) {
+        const data = JSON.parse(raw);
+        const items = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : [];
+        return items
+          .map((it: any, idx: number) => ({
+            id: `op-${idx}-${Math.random().toString(36).slice(2)}`,
+            name: String(it?.name ?? ""),
+            qtyOnHand: it?.qtyOnHand != null ? String(it.qtyOnHand) : "",
+            price: it?.price != null ? String(it.price) : "",
+            note: String(it?.note ?? ""),
+          }))
+          .filter(
+            (x: PromoRow) =>
+              x.name.trim() !== "" || x.qtyOnHand.trim() !== "" || x.price.trim() !== "" || x.note.trim() !== "",
+          );
+      }
+    } catch {}
+    if (raw.trim() !== "") {
+      return [
+        { id: `op-0-${Math.random().toString(36).slice(2)}`, name: raw.trim(), qtyOnHand: "", price: "", note: "" },
+      ];
+    }
+    return [];
+  };
+  const [promoRows, setPromoRows] = useState<PromoRow[]>(parseInitialPromotions);
   const [rows, setRows] = useState<LotRow[]>(() =>
     (lots || []).map((r) => ({
       id: r.id,
@@ -259,7 +290,16 @@ export default function InventoryClient({
         price: price === "" ? undefined : Number(price),
         freebiesList,
         promotionBudget: promotionBudget === "" ? undefined : Number(promotionBudget),
+        // Keep legacy string only if no new list is provided
         otherPromotion: otherPromotion ?? undefined,
+        otherPromotionList: promoRows
+          .map((r) => ({
+            name: r.name.trim(),
+            qtyOnHand: r.qtyOnHand === "" ? 0 : Number(r.qtyOnHand),
+            price: r.price === "" ? 0 : Number(r.price),
+            note: r.note?.trim() || undefined,
+          }))
+          .filter((it) => it.name !== "" || (Number.isFinite(it.qtyOnHand) && it.qtyOnHand > 0) || (Number.isFinite(it.price) && it.price > 0)),
       });
 
       const lotUpdatePromises = rows
@@ -378,12 +418,6 @@ export default function InventoryClient({
                     <Typography sx={{ mr: 1, fontWeight: 600, fontSize: 18 }}>฿</Typography>
                   ),
                 }}
-              />
-              <TextField
-                label="รายการส่งเสริมการขายอื่น"
-                value={otherPromotion}
-                onChange={(e) => setOtherPromotion(e.target.value)}
-                sx={{ minWidth: 240, width: { xs: "100%", sm: 300 } }}
               />
             </Stack>
           </CardContent>
@@ -617,6 +651,170 @@ export default function InventoryClient({
                               <DeleteIcon fontSize="small" />
                             </IconButton>
                           </Stack>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* --- การ์ดรายการส่งเสริมการขายอื่น --- */}
+        <Card variant="outlined">
+          <CardHeader
+            title={<Typography variant="subtitle1" fontWeight={700}>รายการส่งเสริมการขายอื่น</Typography>}
+            action={
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<AddCircleOutlineIcon />}
+                onClick={() =>
+                  setPromoRows((prev) => [
+                    ...prev,
+                    { id: `op-${Math.random().toString(36).slice(2)}`, name: "", qtyOnHand: "", price: "", note: "" },
+                  ])
+                }
+                disabled={isPending}
+                sx={{ width: { xs: "100%", sm: "auto" } }}
+              >
+                เพิ่มรายการ
+              </Button>
+            }
+          />
+          <CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}>
+            {isMobile ? (
+              <Stack spacing={1.25} sx={{ p: 1.5 }}>
+                {promoRows.map((r) => (
+                  <Card key={r.id} variant="outlined" sx={{ p: 1.25 }}>
+                    <Stack spacing={1.25}>
+                      <TextField
+                        label="ชื่อสินค้า"
+                        value={r.name}
+                        onChange={(e) => {
+                          const v = e.target.value ?? "";
+                          setPromoRows((prev) => prev.map((x) => (x.id === r.id ? { ...x, name: v } : x)));
+                        }}
+                        size="small"
+                        fullWidth
+                      />
+                      <TextField
+                        label="จำนวนคงเหลือ"
+                        type="number"
+                        value={r.qtyOnHand}
+                        onChange={(e) => {
+                          const digits = (e.target.value ?? "").replace(/[^0-9]/g, "");
+                          setPromoRows((prev) => prev.map((x) => (x.id === r.id ? { ...x, qtyOnHand: digits } : x)));
+                        }}
+                        size="small"
+                        inputProps={{ min: 0, step: 1 }}
+                        fullWidth
+                      />
+                      <TextField
+                        label="ราคา"
+                        type="number"
+                        value={r.price}
+                        onChange={(e) => {
+                          const v = e.target.value ?? "";
+                          setPromoRows((prev) => prev.map((x) => (x.id === r.id ? { ...x, price: v } : x)));
+                        }}
+                        size="small"
+                        inputProps={{ min: 0, step: 1 }}
+                        fullWidth
+                      />
+                      <TextField
+                        label="หมายเหตุ"
+                        value={r.note}
+                        onChange={(e) => {
+                          const v = e.target.value ?? "";
+                          setPromoRows((prev) => prev.map((x) => (x.id === r.id ? { ...x, note: v } : x)));
+                        }}
+                        size="small"
+                        fullWidth
+                      />
+                      <Stack direction="row" justifyContent="flex-end">
+                        <Button color="error" variant="outlined" onClick={() => setPromoRows((prev) => prev.filter((x) => x.id !== r.id))}>
+                          ลบ
+                        </Button>
+                      </Stack>
+                    </Stack>
+                  </Card>
+                ))}
+              </Stack>
+            ) : (
+              <TableContainer>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={{ width: 240 }} align="center">ชื่อสินค้า</TableCell>
+                      <TableCell sx={{ width: 160 }} align="center">จำนวนคงเหลือ</TableCell>
+                      <TableCell sx={{ width: 160 }} align="center">ราคา</TableCell>
+                      <TableCell align="center">หมายเหตุ</TableCell>
+                      <TableCell sx={{ width: 120 }} align="center">จัดการ</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {promoRows.map((r) => (
+                      <TableRow key={r.id} hover>
+                        <TableCell align="center">
+                          <TextField
+                            value={r.name}
+                            onChange={(e) => {
+                              const v = e.target.value ?? "";
+                              setPromoRows((prev) => prev.map((x) => (x.id === r.id ? { ...x, name: v } : x)));
+                            }}
+                            size="small"
+                            placeholder="ชื่อสินค้า"
+                            fullWidth
+                          />
+                        </TableCell>
+                        <TableCell align="center">
+                          <TextField
+                            type="number"
+                            value={r.qtyOnHand}
+                            onChange={(e) => {
+                              const digits = (e.target.value ?? "").replace(/[^0-9]/g, "");
+                              setPromoRows((prev) =>
+                                prev.map((x) => (x.id === r.id ? { ...x, qtyOnHand: digits } : x)),
+                              );
+                            }}
+                            size="small"
+                            inputProps={{ min: 0, step: 1 }}
+                            fullWidth
+                          />
+                        </TableCell>
+                        <TableCell align="center">
+                          <TextField
+                            type="number"
+                            value={r.price}
+                            onChange={(e) => {
+                              const v = e.target.value ?? "";
+                              setPromoRows((prev) => prev.map((x) => (x.id === r.id ? { ...x, price: v } : x)));
+                            }}
+                            size="small"
+                            inputProps={{ min: 0, step: 1 }}
+                            fullWidth
+                          />
+                        </TableCell>
+                        <TableCell align="center">
+                          <TextField
+                            value={r.note}
+                            onChange={(e) => {
+                              const v = e.target.value ?? "";
+                              setPromoRows((prev) =>
+                                prev.map((x) => (x.id === r.id ? { ...x, note: v } : x)),
+                              );
+                            }}
+                            size="small"
+                            placeholder="หมายเหตุ"
+                            fullWidth
+                          />
+                        </TableCell>
+                        <TableCell align="center">
+                          <IconButton color="error" onClick={() => setPromoRows((prev) => prev.filter((x) => x.id !== r.id))}>
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
                         </TableCell>
                       </TableRow>
                     ))}

@@ -222,9 +222,45 @@ export default async function ProductDetailPage({
                           value={`฿${Number((product as any).promotionBudget).toLocaleString("th-TH", { maximumFractionDigits: 2 })}`}
                         />
                       )}
-                      {(product as any)?.otherPromotion && (
-                        <Info label="ส่งเสริมการขายอื่น : " value={(product as any).otherPromotion} />
-                      )}
+                      {(product as any)?.otherPromotion && (() => {
+                        const raw = String((product as any).otherPromotion ?? "").trim();
+                        try {
+                          if (raw.startsWith("[") || raw.startsWith("{")) {
+                            const data = JSON.parse(raw);
+                            const items = Array.isArray(data)
+                              ? data
+                              : Array.isArray(data?.items)
+                                ? data.items
+                                : [];
+                            if (items.length > 0) {
+                              return (
+                                <Info
+                                  label="ส่งเสริมการขายอื่น : "
+                                  value={
+                                    <Stack spacing={0.5}>
+                                      {items.map((it: any, idx: number) => (
+                                        <Typography key={idx} variant="body2">
+                                          {[
+                                            it?.name ? `ชื่อ ${String(it.name)}` : null,
+                                            (it?.qtyOnHand ?? null) != null ? `คงเหลือ ${Number(it.qtyOnHand)}` : null,
+                                            (it?.price ?? null) != null
+                                              ? `ราคา ฿${Number(it.price).toLocaleString('th-TH', { maximumFractionDigits: 2 })}`
+                                              : null,
+                                            it?.note ? `หมายเหตุ ${String(it.note)}` : null,
+                                          ]
+                                            .filter(Boolean)
+                                            .join(' — ')}
+                                        </Typography>
+                                      ))}
+                                    </Stack>
+                                  }
+                                />
+                              );
+                            }
+                          }
+                        } catch {}
+                        return <Info label="ส่งเสริมการขายอื่น : " value={raw} />;
+                      })()}
                       {product.mfgDate && (
                         <Info
                           label="วันที่ผลิต : "

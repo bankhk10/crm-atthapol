@@ -38,6 +38,29 @@ const priceSchema = z.object({
     .preprocess((v) => (typeof v === "string" ? v.trim() : v), z.string().trim().max(2000))
     .optional()
     .nullable(),
+  otherPromotionList: z
+    .array(
+      z.object({
+        name: z
+          .preprocess((v) => (typeof v === "string" ? v.trim() : v), z.string().trim().max(500))
+          .optional(),
+        qtyOnHand: z
+          .preprocess((v) => (typeof v === "string" ? v.trim() : v), z.coerce.number().int().min(0))
+          .optional()
+          .default(0),
+        price: z
+          .preprocess((v) => (typeof v === "string" ? v.trim() : v), z.coerce.number().min(0))
+          .optional()
+          .default(0),
+        note: z
+          .preprocess(
+            (v) => (typeof v === "string" && v.trim().length === 0 ? undefined : v),
+            z.string().trim().max(500),
+          )
+          .optional(),
+      }),
+    )
+    .optional(),
 });
 
 const lotSchema = z.object({
@@ -122,6 +145,17 @@ export async function updateProductPrice(productId: string, raw: unknown) {
     freebiesStored = parsed.data.freebies.trim();
   }
 
+  // Decide how to store otherPromotion: prefer structured list -> JSON string
+  let otherPromotionStored: string | null = null;
+  if (parsed.data.otherPromotionList && parsed.data.otherPromotionList.length > 0) {
+    const items = parsed.data.otherPromotionList.filter(
+      (x) => (x?.name && x.name.trim().length > 0) || (x?.qtyOnHand ?? 0) > 0 || (x?.price ?? 0) > 0 || Boolean(x?.note),
+    );
+    otherPromotionStored = items.length > 0 ? JSON.stringify({ items }) : null;
+  } else if (typeof parsed.data.otherPromotion === "string" && parsed.data.otherPromotion.trim().length > 0) {
+    otherPromotionStored = parsed.data.otherPromotion.trim();
+  }
+
   await prisma.product.update({
     where: { id },
     data: {
@@ -129,7 +163,7 @@ export async function updateProductPrice(productId: string, raw: unknown) {
       freebies: freebiesStored,
       promotionBudget:
         parsed.data.promotionBudget !== undefined ? Number(parsed.data.promotionBudget) : null,
-      otherPromotion: (parsed.data.otherPromotion as string | null | undefined) ?? null,
+      otherPromotion: otherPromotionStored,
     },
   });
   revalidatePath(`/dashboard/products/${id}`);
