@@ -389,7 +389,7 @@ export async function createCustomer(rawValues: CustomerFormValues) {
               String(values.creditLimit) !== ""
                 ? Number(values.creditLimit)
                 : undefined,
-            promotionBudget:
+            promotionBudgetLimit:
               values.promotionBudget !== undefined &&
               values.promotionBudget !== null &&
               String(values.promotionBudget) !== ""
@@ -644,7 +644,7 @@ export async function updateCustomer(customerId: string, rawValues: CustomerForm
               String(values.creditLimit) !== ""
                 ? Number(values.creditLimit)
                 : undefined,
-            promotionBudget:
+            promotionBudgetLimit:
               values.promotionBudget !== undefined &&
               values.promotionBudget !== null &&
               String(values.promotionBudget) !== ""
@@ -680,7 +680,7 @@ export async function updateCustomer(customerId: string, rawValues: CustomerForm
               String(values.creditLimit) !== ""
                 ? Number(values.creditLimit)
                 : undefined,
-            promotionBudget:
+            promotionBudgetLimit:
               values.promotionBudget !== undefined &&
               values.promotionBudget !== null &&
               String(values.promotionBudget) !== ""
