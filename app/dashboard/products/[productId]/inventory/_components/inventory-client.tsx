@@ -447,11 +447,6 @@ export default function InventoryClient({
                   );
                   return (
                     <>
-                      <Chip
-                        label={`ทั้งหมด ${summary.count} รายการ`}
-                        variant="outlined"
-                        size="small"
-                      />
                     </>
                   );
                 })()}
@@ -474,7 +469,7 @@ export default function InventoryClient({
                   disabled={isPending}
                   sx={{ width: { xs: "100%", sm: "auto" } }}
                 >
-                  เพิ่มรายการของแถม
+                  เพิ่มรายการ
                 </Button>
               </Stack>
             }

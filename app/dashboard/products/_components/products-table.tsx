@@ -413,7 +413,7 @@ export function ProductsTable({ products, query }: Props) {
               </Stack>
               {showActions && (
                 <Stack direction="row" spacing={0.5} justifyContent="flex-end">
-                  <Tooltip title="จัดการสต็อก/ราคา" arrow>
+                  <Tooltip title="จัดสินค้า" arrow>
                     <IconButton
                       component={Link}
                       href={`/dashboard/products/${p.id}/inventory`}
@@ -629,7 +629,7 @@ export function ProductsTable({ products, query }: Props) {
                 {showActions && (
                   <TableCell align="center" sx={{ width: 120 }}>
                     <Stack direction="row" justifyContent="center" spacing={0.5}>
-                      <Tooltip title="จัดการสต็อก/ราคา" arrow>
+                      <Tooltip title="จัดสินค้า" arrow>
                         <IconButton
                           component={Link}
                           href={`/dashboard/products/${p.id}/inventory`}
