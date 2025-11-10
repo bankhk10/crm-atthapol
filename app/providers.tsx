@@ -1,12 +1,13 @@
 "use client";
-
+import { ThemeProvider } from "@mui/material/styles";
 import { SessionProvider } from "next-auth/react";
+import { SnackbarProvider } from "notistack";
 import { useEffect, type ReactNode } from "react";
 
 import SessionExpiryWatcher from "@/components/SessionExpiryWatcher";
+import { theme } from "@/lib/theme"; //
 
 export function Providers({ children }: { children: ReactNode }) {
-  // Prevent mouse wheel from changing any input[type=number] globally
   useEffect(() => {
     const findNumberInput = (target: EventTarget | null): HTMLInputElement | null => {
       let el: HTMLElement | null = target as HTMLElement | null;
@@ -19,7 +20,6 @@ export function Providers({ children }: { children: ReactNode }) {
     const onWheel = (e: WheelEvent) => {
       const input = findNumberInput(e.target);
       if (!input) return;
-      // Block value change via wheel; blur to allow page scroll
       e.preventDefault();
       if (document.activeElement === input) input.blur();
     };
@@ -29,7 +29,9 @@ export function Providers({ children }: { children: ReactNode }) {
 
   return (
     <SessionProvider>
-      {children}
+      <SnackbarProvider maxSnack={3} anchorOrigin={{ vertical: "top", horizontal: "right" }}>
+        <ThemeProvider theme={theme}>{children}</ThemeProvider>
+      </SnackbarProvider>
       <SessionExpiryWatcher />
     </SessionProvider>
   );

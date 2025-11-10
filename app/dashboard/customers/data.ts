@@ -12,6 +12,11 @@ export type CustomerListItem = {
   subdistrict?: string | null;
   postalCode?: string | null;
   createdAt: string;
+  branches: Array<{
+    id: string; // Customer ID ของร้านรอง
+    name: string;
+    phone: string | null;
+  }>;
 };
 
 const displayName = (c: {
@@ -43,6 +48,25 @@ export async function getCustomers(): Promise<CustomerListItem[]> {
       subdistrict: true,
       postalCode: true,
       createdAt: true,
+      dealerDetail: {
+        select: {
+          branches: {
+            where: { customer: { deletedAt: null } },
+            select: {
+              customer: {
+                select: {
+                  id: true,
+                  companyName: true,
+                  prefix: true,
+                  firstName: true,
+                  lastName: true,
+                  phone: true,
+                },
+              },
+            },
+          },
+        },
+      },
     },
   });
 
@@ -73,6 +97,16 @@ export async function getCustomers(): Promise<CustomerListItem[]> {
       (c as any)?.createdAt && typeof (c as any).createdAt?.toISOString === "function"
         ? (c as any).createdAt.toISOString()
         : String((c as any)?.createdAt ?? ""),
+    branches: (c.dealerDetail?.branches ?? []).map((b: any) => ({
+      id: b.customer.id, // Customer ID ของร้านรอง
+      name: displayName({
+        companyName: b.customer.companyName ?? null,
+        prefix: b.customer.prefix ?? null,
+        firstName: b.customer.firstName ?? null,
+        lastName: b.customer.lastName ?? null,
+      }),
+      phone: b.customer.phone ?? null,
+    })),
   }));
 
   return mapped;

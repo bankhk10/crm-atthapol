@@ -362,7 +362,8 @@ export async function createCustomer(rawValues: CustomerFormValues) {
         await (tx as any).dealerDetail.create({
           data: {
             customerId: created.id,
-            parentDealerId: values.parentDealer || undefined,
+            // +++ FIX +++ (ใช้ || null แทน || undefined)
+            parentDealerId: values.parentDealer || null,
             contactName:
               values.contactPerson && values.contactPerson.trim().length
                 ? values.contactPerson
@@ -551,6 +552,36 @@ export async function updateCustomer(customerId: string, rawValues: CustomerForm
           ? values.email || values.contactEmail
           : values.email;
 
+      // +++ START BUG FIX (Circular Dependency check - อันนี้เหมือนเดิม) +++
+      if (values.type === "DEALER") {
+        // (***) เราจะใช้ || null เพื่อให้ได้ค่า null ถ้ามันว่าง
+        const selectedParentDealerId = values.parentDealer || null;
+
+        const currentDealerDetail = await (tx as any).dealerDetail.findUnique({
+          where: { customerId: customerId },
+          select: { id: true },
+        });
+
+        if (currentDealerDetail) {
+          if (selectedParentDealerId === currentDealerDetail.id) {
+            throw new Error("ไม่สามารถตั้งค่าร้านค้าตัวเองเป็นร้านหลักได้");
+          }
+
+          if (selectedParentDealerId) {
+            const branches = await (tx as any).dealerDetail.findMany({
+              where: { parentDealerId: currentDealerDetail.id },
+              select: { id: true },
+            });
+            const branchIds = branches.map((b: any) => b.id);
+
+            if (branchIds.includes(selectedParentDealerId)) {
+              throw new Error("ไม่สามารถตั้งค่าร้านรองของตัวเองเป็นร้านหลักได้ (ป้องกันการอ้างอิงวงกลม)");
+            }
+          }
+        }
+      }
+      // +++ END BUG FIX +++
+
       await (tx as any).customer.update({
         where: { id: customerId },
         data: {
@@ -586,7 +617,8 @@ export async function updateCustomer(customerId: string, rawValues: CustomerForm
         await (tx as any).dealerDetail.upsert({
           where: { customerId: customerId },
           update: {
-            parentDealerId: values.parentDealer || undefined,
+            // +++ FIX +++ (ใช้ || null แทน || undefined)
+            parentDealerId: values.parentDealer || null, // <--- แก้ไข
             contactName:
               values.contactPerson && values.contactPerson.trim().length
                 ? values.contactPerson
@@ -621,7 +653,8 @@ export async function updateCustomer(customerId: string, rawValues: CustomerForm
           },
           create: {
             customerId,
-            parentDealerId: values.parentDealer || undefined,
+            // +++ FIX +++ (ใช้ || null แทน || undefined)
+            parentDealerId: values.parentDealer || null, // <--- แก้ไข
             contactName:
               values.contactPerson && values.contactPerson.trim().length
                 ? values.contactPerson
@@ -808,8 +841,8 @@ export async function updateCustomer(customerId: string, rawValues: CustomerForm
               p.planting_area !== undefined &&
               p.planting_area !== null &&
               String(p.planting_area) !== ""
-                ? Number(p.planting_area)
-                : undefined,
+                  ? Number(p.planting_area)
+                  : undefined,
             cropType: p.crop_type || undefined,
             cropVariety: p.crop_variety || undefined,
             soilType: p.soil_type || undefined,

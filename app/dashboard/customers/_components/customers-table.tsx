@@ -2,6 +2,9 @@
 
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
+import SubdirectoryArrowRightIcon from "@mui/icons-material/SubdirectoryArrowRight";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import {
   Chip,
@@ -20,19 +23,21 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  // TextField,
   Typography,
   TableSortLabel,
   TablePagination,
   Tooltip,
+  Collapse,
+  Box,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
-// import SearchIcon from "@mui/icons-material/Search";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { useMemo, useState } from "react";
+// +++ เพิ่ม import +++
+import { useSnackbar } from "notistack"; // สำหรับแสดง Error
+import React, { useMemo, useState } from "react";
 
 import { hasPermission } from "@/lib/permissions";
 
@@ -58,11 +63,232 @@ function typeLabel(type: CustomerListItem["type"]) {
   }
 }
 
+function CustomerRow(props: {
+  customer: CustomerListItem;
+  headCells: readonly any[];
+  showActions: boolean;
+  canView: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
+  setDeleteTarget: (customer: CustomerListItem | null) => void;
+}) {
+  const { customer: c, headCells, showActions, canView, canEdit, canDelete, setDeleteTarget } = props;
+  const [isOpen, setIsOpen] = useState(false);
+  const hasBranches = c.type === "DEALER" && c.branches && c.branches.length > 0;
+  const address = [c.address, c.subdistrict, c.district, c.province, c.postalCode]
+    .filter(Boolean)
+    .join(" ");
+
+  const totalColumns = headCells.length + (showActions ? 1 : 0);
+
+  return (
+    <React.Fragment>
+      {/* === แถวหลัก === */}
+      <TableRow
+        hover
+        sx={{
+          "&:nth-of-type(even)": { bgcolor: "#fafafa" },
+          "&:hover": { bgcolor: "#f0f0f0" },
+          "& > *": { borderBottom: "unset" },
+        }}
+      >
+        {/* ชื่อลูกค้า (เพิ่มปุ่ม expand) */}
+        <TableCell
+          sx={{
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+        >
+          <Stack direction="row" alignItems="center" spacing={0.5}>
+            <IconButton
+              aria-label="expand row"
+              size="small"
+              onClick={() => setIsOpen(!isOpen)}
+              sx={{ visibility: hasBranches ? "visible" : "hidden" }}
+            >
+              {isOpen ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+            </IconButton>
+            <Tooltip title={c.name} arrow>
+              <span>{c.name}</span>
+            </Tooltip>
+          </Stack>
+        </TableCell>
+        {/* เบอร์โทร */}
+        <TableCell
+          sx={{
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+        >
+          <Tooltip title={c.phone} arrow>
+            <span>{c.phone}</span>
+          </Tooltip>
+        </TableCell>
+        {/* อีเมล */}
+        <TableCell
+          sx={{
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+        >
+          <Tooltip title={c.email || "-"} arrow>
+            <span>{c.email || "-"}</span>
+          </Tooltip>
+        </TableCell>
+        {/* ที่อยู่ */}
+        <TableCell
+          sx={{
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+        >
+          <Tooltip title={address || "-"} arrow>
+            <span>{address || "-"}</span>
+          </Tooltip>
+        </TableCell>
+        {/* ประเภท */}
+        <TableCell align="center">
+          <Tooltip title={typeLabel(c.type)} arrow>
+            <Chip
+              size="small"
+              label={typeLabel(c.type)}
+              sx={{
+                fontWeight: 600,
+                px: 1.5,
+                py: 2,
+                borderRadius: "9999px",
+                color: "#fff",
+                bgcolor:
+                  c.type === "FARMER"
+                    ? "#11853bff"
+                    : c.type === "SUBDEALER"
+                      ? "#7C3AED"
+                      : c.type === "BROKER"
+                        ? "#F59E0B"
+                        : "#3B82F6",
+              }}
+            />
+          </Tooltip>
+        </TableCell>
+        {/* การกระทำ */}
+        {showActions && (
+          <TableCell align="center" sx={{ whiteSpace: "nowrap" }}>
+            <Stack direction="row" justifyContent="center" spacing={0.5}>
+              {canView && (
+                <Tooltip title="ดูรายละเอียด" arrow>
+                  <IconButton
+                    component={Link}
+                    href={`/dashboard/customers/${c.id}`}
+                    size="small"
+                  >
+                    <VisibilityOutlinedIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              )}
+              {canEdit && (
+                <Tooltip title="แก้ไข" arrow>
+                  <IconButton
+                    component={Link}
+                    href={`/dashboard/customers/${c.id}/edit`}
+                    aria-label="edit"
+                    size="small"
+                  >
+                    <EditOutlinedIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              )}
+              {canDelete && (
+                <Tooltip title="ลบ" arrow>
+                  <IconButton
+                    aria-label="delete"
+                    size="small"
+                    onClick={() => setDeleteTarget(c)}
+                  >
+                    <DeleteOutlineIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              )}
+            </Stack>
+          </TableCell>
+        )}
+      </TableRow>
+
+      {/* === แถว Collapsible (ร้านรอง) === */}
+      {hasBranches && (
+        <TableRow>
+          <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={totalColumns}>
+            <Collapse in={isOpen} timeout="auto" unmountOnExit>
+              <Box sx={{ margin: 1, ml: 10, p: 2, bgcolor: "#fafafa", borderRadius: 2 }}>
+                <Typography variant="h6" gutterBottom component="div" sx={{ fontSize: "1rem", fontWeight: 600 }}>
+                  ร้านรอง ({c.branches.length})
+                </Typography>
+                <Table size="small" aria-label="branches">
+                  <TableHead>
+                    <TableRow sx={{ "& .MuiTableCell-root": { fontWeight: "bold", border: "none" } }}>
+                      <TableCell>ชื่อร้านรอง</TableCell>
+                      <TableCell>เบอร์โทร</TableCell>
+                      <TableCell align="right">การกระทำ</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {c.branches.map((branch) => (
+                      <TableRow key={branch.id} sx={{ "& .MuiTableCell-root": { border: "none" } }}>
+                        <TableCell>
+                          <Stack direction="row" alignItems="center" spacing={1}>
+                            <SubdirectoryArrowRightIcon fontSize="small" color="action" />
+                            <span>{branch.name}</span>
+                          </Stack>
+                        </TableCell>
+                        <TableCell>{branch.phone || "-"}</TableCell>
+                        <TableCell align="right">
+                          {canView && (
+                            <Tooltip title="ดูรายละเอียด" arrow>
+                              <IconButton
+                                component={Link}
+                                href={`/dashboard/customers/${branch.id}`}
+                                size="small"
+                              >
+                                <VisibilityOutlinedIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                          {canEdit && (
+                            <Tooltip title="แก้ไข" arrow>
+                              <IconButton
+                                component={Link}
+                                href={`/dashboard/customers/${branch.id}/edit`}
+                                size="small"
+                              >
+                                <EditOutlinedIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </Box>
+            </Collapse>
+          </TableCell>
+        </TableRow>
+      )}
+    </React.Fragment>
+  );
+}
+
 export function CustomersTable({ customers, query }: CustomersTableProps) {
   const router = useRouter();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const { data: session } = useSession();
+  // +++ เพิ่ม +++
+  const { enqueueSnackbar } = useSnackbar();
+
   const perms = session?.user?.permissions ?? [];
   const canView = hasPermission(perms, "customers", "view");
   const canEdit = hasPermission(perms, "customers", "edit");
@@ -71,7 +297,7 @@ export function CustomersTable({ customers, query }: CustomersTableProps) {
 
   const [deleteTarget, setDeleteTarget] = useState<CustomerListItem | null>(null);
 
-  // Sorting & pagination like products table
+  // Sorting & pagination
   type Order = "asc" | "desc";
   type SortableKeys = "type" | "name" | "phone" | "email" | "address" | "createdAt";
 
@@ -149,13 +375,14 @@ export function CustomersTable({ customers, query }: CustomersTableProps) {
         fontFamily: "Prompt, sans-serif",
       }}
     >
-      {/* search is moved to parent Toolbar; table only renders data */}
+      {/* ... (ส่วน Mobile View ไม่เปลี่ยนแปลง logic) ... */}
       {isMobile ? (
         <Stack spacing={1.25} sx={{ p: 1.5 }}>
           {visibleRows.map((c) => {
             const address = [c.address, c.subdistrict, c.district, c.province, c.postalCode]
               .filter(Boolean)
               .join(" ");
+            const hasBranches = c.type === "DEALER" && c.branches && c.branches.length > 0;
             return (
               <Paper key={c.id} variant="outlined" sx={{ p: 1.25, borderRadius: 2 }}>
                 <Stack spacing={1}>
@@ -194,6 +421,53 @@ export function CustomersTable({ customers, query }: CustomersTableProps) {
                   >
                     {address || "-"}
                   </Typography>
+
+                  {/* Mobile branches view */}
+                  {hasBranches && (
+                    <Box sx={{ pt: 1, mt: 1, borderTop: "1px solid #eee" }}>
+                      <Typography variant="body2" fontWeight={600} sx={{ mb: 0.5 }}>
+                        ร้านรอง ({c.branches.length}):
+                      </Typography>
+                      <Stack spacing={0.5} sx={{ pl: 2 }}>
+                        {c.branches.map((branch) => (
+                          <Stack
+                            key={branch.id}
+                            direction="row"
+                            justifyContent="space-between"
+                            alignItems="center"
+                          >
+                            <Typography variant="body2" color="text.secondary">
+                              - {branch.name} ({branch.phone || "N/A"})
+                            </Typography>
+                            <Stack direction="row" spacing={0}>
+                              {canView && (
+                                <IconButton
+                                  component={Link}
+                                  href={`/dashboard/customers/${branch.id}`}
+                                  size="small"
+                                  sx={{ p: 0.5 }}
+                                >
+                                  <VisibilityOutlinedIcon fontSize="inherit" />
+                                </IconButton>
+                              )}
+                              {canEdit && (
+                                <IconButton
+                                  component={Link}
+                                  href={`/dashboard/customers/${branch.id}/edit`}
+                                  size="small"
+                                  sx={{ p: 0.5 }}
+                                >
+                                  <EditOutlinedIcon fontSize="inherit" />
+                                </IconButton>
+                              )}
+                            </Stack>
+                          </Stack>
+                        ))}
+                      </Stack>
+                    </Box>
+                  )}
+
+                  {/* Mobile actions */}
                   {showActions && (
                     <Stack direction="row" spacing={0.5} justifyContent="flex-end">
                       {canView && (
@@ -238,6 +512,7 @@ export function CustomersTable({ customers, query }: CustomersTableProps) {
           )}
         </Stack>
       ) : (
+        // ... (ส่วน TableContainer, TableHead ไม่เปลี่ยนแปลง) ...
         <TableContainer
           sx={{
             borderTopLeftRadius: 12,
@@ -264,7 +539,6 @@ export function CustomersTable({ customers, query }: CustomersTableProps) {
                 },
               }}
             >
-              {/* TableRow and TableCells go here as before */}
               <TableRow>
                 {headCells.map((h) => (
                   <TableCell key={h.id} align={h.align ?? "left"} sx={{ width: h.width }}>
@@ -275,7 +549,7 @@ export function CustomersTable({ customers, query }: CustomersTableProps) {
                         sx={{
                           color: "inherit !important",
                           "& .MuiTableSortLabel-icon": {
-                            color: "inherit !important", // ไอคอนจะใช้สีเดียวกับตัวอักษร
+                            color: "inherit !important",
                           },
                         }}
                         onClick={(e) => handleRequestSort(e, h.id)}
@@ -293,129 +567,18 @@ export function CustomersTable({ customers, query }: CustomersTableProps) {
               </TableRow>
             </TableHead>
             <TableBody>
-              {visibleRows.map((c) => {
-                const address = [c.address, c.subdistrict, c.district, c.province, c.postalCode]
-                  .filter(Boolean)
-                  .join(" ");
-                return (
-                  <TableRow
-                    hover
-                    key={c.id}
-                    sx={{
-                      "&:nth-of-type(even)": { bgcolor: "#fafafa" },
-                      "&:hover": { bgcolor: "#f0f0f0" },
-                    }}
-                  >
-                    <TableCell
-                      sx={{
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
-                    >
-                      <Tooltip title={c.name} arrow>
-                        <span>{c.name}</span>
-                      </Tooltip>
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
-                    >
-                      <Tooltip title={c.phone} arrow>
-                        <span>{c.phone}</span>
-                      </Tooltip>
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
-                    >
-                      <Tooltip title={c.email || "-"} arrow>
-                        <span>{c.email || "-"}</span>
-                      </Tooltip>
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
-                    >
-                      <Tooltip title={address || "-"} arrow>
-                        <span>{address || "-"}</span>
-                      </Tooltip>
-                    </TableCell>
-                    <TableCell align="center">
-                      <Tooltip title={typeLabel(c.type)} arrow>
-                        <Chip
-                          size="small"
-                          label={typeLabel(c.type)}
-                          sx={{
-                            fontWeight: 600,
-                            px: 1.5,
-                            py: 2,
-                            borderRadius: "9999px",
-                            color: "#fff",
-                            bgcolor:
-                              c.type === "FARMER"
-                                ? "#11853bff"
-                                : c.type === "SUBDEALER"
-                                  ? "#7C3AED"
-                                  : c.type === "BROKER"
-                                    ? "#F59E0B"
-                                    : "#3B82F6",
-                          }}
-                        />
-                      </Tooltip>
-                    </TableCell>
-                    {showActions && (
-                      <TableCell align="center" sx={{ whiteSpace: "nowrap" }}>
-                        <Stack direction="row" justifyContent="center" spacing={0.5}>
-                          {canView && (
-                            <Tooltip title="ดูรายละเอียด" arrow>
-                              <IconButton
-                                component={Link}
-                                href={`/dashboard/customers/${c.id}`}
-                                size="small"
-                              >
-                                <VisibilityOutlinedIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          )}
-                          {canEdit && (
-                            <Tooltip title="แก้ไข" arrow>
-                              <IconButton
-                                component={Link}
-                                href={`/dashboard/customers/${c.id}/edit`}
-                                aria-label="edit"
-                                size="small"
-                              >
-                                <EditOutlinedIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          )}
-                          {canDelete && (
-                            <Tooltip title="ลบ" arrow>
-                              <IconButton
-                                aria-label="delete"
-                                size="small"
-                                onClick={() => setDeleteTarget(c)}
-                              >
-                                <DeleteOutlineIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          )}
-                        </Stack>
-                      </TableCell>
-                    )}
-                  </TableRow>
-                );
-              })}
+              {visibleRows.map((c) => (
+                <CustomerRow
+                  key={c.id}
+                  customer={c}
+                  headCells={headCells}
+                  showActions={showActions}
+                  canView={canView}
+                  canEdit={canEdit}
+                  canDelete={canDelete}
+                  setDeleteTarget={setDeleteTarget}
+                />
+              ))}
               {visibleRows.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={headCells.length + (showActions ? 1 : 0)} align="center">
@@ -453,14 +616,19 @@ export function CustomersTable({ customers, query }: CustomersTableProps) {
             ยกเลิก
           </Button>
           <Button
+            // +++ แก้ไข Logic ใน onClick +++
             onClick={async () => {
               if (!deleteTarget) return;
               try {
                 await deleteCustomer(deleteTarget.id);
-                setDeleteTarget(null);
+                setDeleteTarget(null); // ปิด Dialog เมื่อลบสำเร็จ
                 router.refresh();
-              } catch (e) {
-                setDeleteTarget(null);
+                enqueueSnackbar("ลบลูกค้าสำเร็จ", { variant: "success" });
+              } catch (e: any) {
+                // ถ้า Error, ไม่ต้องปิด Dialog
+                // และแสดง Error ที่โยนมาจาก Server Action
+                const message = e.message || "เกิดข้อผิดพลาดในการลบ";
+                enqueueSnackbar(message, { variant: "error" });
               }
             }}
             color="error"
