@@ -275,6 +275,22 @@ type SidebarProps = {
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
   const [openMenu, setOpenMenu] = useState<string | null>(null);
+
+  // ถ้ามี path ย่อยที่ต้องการแมปให้ active เป็น child ตัวอื่น
+  // ให้เพิ่ม pattern -> target (pattern จะถูกตรวจด้วย startsWith)
+  const ACTIVE_OVERRIDES: Array<{ pattern: string; target: string }> = [
+    // เมื่อเข้า /dashboard/customers/new/* ให้ active เป็น /dashboard/customers/information
+    { pattern: "/dashboard/customers/new", target: "/dashboard/customers/information" },
+    // ตัวอย่างเพิ่มเติมถ้าต้องการแมป path อื่น ๆ
+    // { pattern: '/dashboard/customers/edit', target: '/dashboard/customers/information' },
+  ];
+
+  const effectivePath = (() => {
+    for (const o of ACTIVE_OVERRIDES) {
+      if (pathname.startsWith(o.pattern)) return o.target;
+    }
+    return pathname;
+  })();
   const { data: session } = useSession();
   const permissionList = session?.user?.permissions;
 
@@ -304,12 +320,18 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   }, [permissionList]);
 
   useEffect(() => {
-    const parent = accessibleNavItems.find(
-      (item) =>
-        item.children?.some((child) => pathname.startsWith(child.href)) || pathname === item.href,
-    );
+    // กรณีลูกค้า: เปิดเมนูเมื่อ path เริ่มต้นด้วย /dashboard/customers
+    // ใช้ effectivePath เพื่อให้ overrides มีผลกับการเปิดเมนู
+    const parent = accessibleNavItems.find((item) => {
+      if (item.href === "/dashboard/customers" && effectivePath.startsWith("/dashboard/customers")) {
+        return true;
+      }
+      return (
+        item.children?.some((child) => effectivePath.startsWith(child.href)) || effectivePath === item.href
+      );
+    });
     setOpenMenu(parent ? parent.href : null);
-  }, [pathname, accessibleNavItems]);
+  }, [effectivePath, accessibleNavItems]);
 
   const content = (
     <Box
@@ -346,7 +368,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             isOpen={openMenu === item.href}
             onToggle={() => setOpenMenu((current) => (current === item.href ? null : item.href))}
             onLinkClick={onClose}
-            pathname={pathname}
+            pathname={effectivePath}
           />
         ))}
       </List>
