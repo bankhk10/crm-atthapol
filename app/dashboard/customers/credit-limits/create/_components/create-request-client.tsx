@@ -14,6 +14,10 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { th } from "date-fns/locale";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { SaveBackButtons } from "@/components/SaveBackButtons";
@@ -100,15 +104,17 @@ export function CreateRequestClient({ customerOptions }: Props) {
                 }}
               />
 
-              <TextField
-                label="วันที่หมดอายุ"
-                type="date"
-                value={expiryDate}
-                onChange={(e) => setExpiryDate(e.target.value)}
-                InputLabelProps={{
-                  shrink: true,
-                }}
-              />
+              <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={th}>
+                <DatePicker
+                  label="วันที่หมดอายุ"
+                  value={expiryDate ? new Date(expiryDate) : null}
+                  onChange={(newValue) => {
+                    setExpiryDate(newValue ? newValue.toISOString().slice(0, 10) : "");
+                  }}
+                  slotProps={{ textField: { fullWidth: true } }}
+                  minDate={new Date()}
+                />
+              </LocalizationProvider>
             </Stack>
           </CardContent>
         </Card>
