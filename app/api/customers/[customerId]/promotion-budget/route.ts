@@ -1,52 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
+import { resolveEffectiveDealer } from "@/lib/customer-dealer";
 
 export const runtime = "nodejs";
 
 export async function GET(_req: NextRequest, ctx: { params: Promise<{ customerId: string }> }) {
   const { customerId } = await ctx.params;
   try {
-    // 1) Direct dealer (customer has DealerDetail)
-    const dealer = await (prisma as any).dealerDetail.findUnique({
-      where: { customerId },
-      select: { promotionBudget: true },
-    });
-    if (dealer) {
+    // Resolve effective dealer (main dealer) for the customer and return its promotionBudget
+    const effDealer = await resolveEffectiveDealer(customerId);
+    if (effDealer?.id) {
       return NextResponse.json({
-        promotionBudget: Number(dealer.promotionBudget ?? 0),
-        promotionSupported: true,
-      });
-    }
-
-    // 2) Sub-dealer: follow its dealerId → DealerDetail
-    const subDealer = await (prisma as any).subDealerDetail.findUnique({
-      where: { customerId },
-      select: { dealerId: true },
-    });
-    if (subDealer?.dealerId) {
-      const parentDealer = await (prisma as any).dealerDetail.findUnique({
-        where: { id: subDealer.dealerId },
-        select: { promotionBudget: true },
-      });
-      return NextResponse.json({
-        promotionBudget: Number(parentDealer?.promotionBudget ?? 0),
-        promotionSupported: true,
-      });
-    }
-
-    // 3) Farmer: follow its dealerId → DealerDetail
-    const farmer = await (prisma as any).farmerDetail.findUnique({
-      where: { customerId },
-      select: { dealerId: true },
-    });
-    if (farmer?.dealerId) {
-      const parentDealer = await (prisma as any).dealerDetail.findUnique({
-        where: { id: farmer.dealerId },
-        select: { promotionBudget: true },
-      });
-      return NextResponse.json({
-        promotionBudget: Number(parentDealer?.promotionBudget ?? 0),
+        promotionBudget: Number(effDealer.promotionBudget ?? 0),
         promotionSupported: true,
       });
     }

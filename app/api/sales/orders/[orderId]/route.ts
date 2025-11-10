@@ -5,6 +5,7 @@ import { z } from "zod";
 import { authOptions } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { resolveEffectiveDealer, resolveEffectiveDealerWith } from "@/lib/customer-dealer";
 import { buildSaleOrderVisibilityWhere } from "@/lib/sales-visibility";
 
 export const runtime = "nodejs";
@@ -224,30 +225,27 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ orderId
       const effectivePaymentCondition =
         (data as any).paymentCondition ?? existsHeader?.paymentCondition ?? "PREPAID";
       if (effectivePaymentCondition === "POSTPAID") {
-        const customer = await (prisma as any).customer.findUnique({
-          where: { id: data.customerId },
-          include: { dealerDetail: true },
-        });
-        if (!customer) {
-          return NextResponse.json({ error: "ไม่พบลูกค้า" }, { status: 400 });
-        }
-        const creditLimit = (customer as any)?.dealerDetail?.creditLimit as
-          | number
-          | null
-          | undefined;
-        if (typeof creditLimit === "number") {
-          const relationshipScore = (customer as any)?.relationshipScore as
-            | number
-            | null
-            | undefined;
-          const enoughCredit = (totals.grandTotal ?? 0) <= creditLimit;
-          if (!enoughCredit) {
-            const canOverride = typeof relationshipScore === "number" && relationshipScore > 3;
-            if (!canOverride) {
-              return NextResponse.json(
-                { error: "วงเงินเครดิตไม่พอ และคะแนนความสัมพันธ์ไม่ถึงเกณฑ์" },
-                { status: 400 },
-              );
+        // Use effective dealer (main dealer) for branch/sub-dealer/farmer credit limit
+        const effDealer = await resolveEffectiveDealer(data.customerId);
+        if (!effDealer) {
+          // No dealer — continue (no credit limit applies)
+        } else {
+          const creditLimit = effDealer.creditLimit as number | null | undefined;
+          if (typeof creditLimit === "number") {
+            const customer = await prisma.customer.findUnique({ where: { id: data.customerId } });
+            const relationshipScore = (customer as any)?.relationshipScore as
+              | number
+              | null
+              | undefined;
+            const enoughCredit = (totals.grandTotal ?? 0) <= creditLimit;
+            if (!enoughCredit) {
+              const canOverride = typeof relationshipScore === "number" && relationshipScore > 3;
+              if (!canOverride) {
+                return NextResponse.json(
+                  { error: "วงเงินเครดิตไม่พอ และคะแนนความสัมพันธ์ไม่ถึงเกณฑ์" },
+                  { status: 400 },
+                );
+              }
             }
           }
         }
@@ -300,38 +298,30 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ orderId
         : 0;
       const oldCustomerId = (exists as any).customerId as string;
       const newCustomerId = data.customerId as string;
-      if (oldCustomerId !== newCustomerId) {
+        if (oldCustomerId !== newCustomerId) {
         // Refund full current to old customer (if any)
         if (currentSpent > 0) {
-          const oldCust = await (tx as any).customer.findUnique({
-            where: { id: oldCustomerId },
-            include: { dealerDetail: true },
-          });
-          const oldDd = (oldCust as any)?.dealerDetail;
-          if (oldDd?.id) {
-            await (tx as any).dealerDetail.update({
-              where: { id: oldDd.id },
-              data: { promotionBudget: { increment: currentSpent } },
-            });
-          } else {
-            // If cannot refund to old, block to avoid budget loss
-            throw new Error("PROMO_REFUND_TARGET_MISSING");
-          }
+            const oldEff = await resolveEffectiveDealerWith(tx, oldCustomerId);
+            if (oldEff?.id) {
+              await (tx as any).dealerDetail.update({
+                where: { id: oldEff.id },
+                data: { promotionBudget: { increment: currentSpent } },
+              });
+            } else {
+              // If cannot refund to old, block to avoid budget loss
+              throw new Error("PROMO_REFUND_TARGET_MISSING");
+            }
         }
         // Deduct full requested from new customer (if any)
         if (requestedSpent > 0) {
-          const newCust = await (tx as any).customer.findUnique({
-            where: { id: newCustomerId },
-            include: { dealerDetail: true },
-          });
-          const newDd = (newCust as any)?.dealerDetail;
-          if (!newDd?.id) {
-            throw new Error("PROMO_NOT_SUPPORTED");
-          }
-          const result = await (tx as any).dealerDetail.updateMany({
-            where: { id: newDd.id, promotionBudget: { gte: requestedSpent } },
-            data: { promotionBudget: { decrement: requestedSpent } },
-          });
+            const newEff = await resolveEffectiveDealerWith(tx, newCustomerId);
+            if (!newEff?.id) {
+              throw new Error("PROMO_NOT_SUPPORTED");
+            }
+            const result = await (tx as any).dealerDetail.updateMany({
+              where: { id: newEff.id, promotionBudget: { gte: requestedSpent } },
+              data: { promotionBudget: { decrement: requestedSpent } },
+            });
           if (!result || (result.count ?? 0) !== 1) {
             throw new Error("PROMO_BUDGET_NOT_ENOUGH");
           }
@@ -340,35 +330,27 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ orderId
         // Same customer: apply delta change only
         const delta = requestedSpent - currentSpent;
         if (delta > 0) {
-          const cust = await (tx as any).customer.findUnique({
-            where: { id: newCustomerId },
-            include: { dealerDetail: true },
-          });
-          const dd = (cust as any)?.dealerDetail;
-          if (!dd?.id) {
-            throw new Error("PROMO_NOT_SUPPORTED");
-          }
-          const result = await (tx as any).dealerDetail.updateMany({
-            where: { id: dd.id, promotionBudget: { gte: delta } },
-            data: { promotionBudget: { decrement: delta } },
-          });
-          if (!result || (result.count ?? 0) !== 1) {
-            throw new Error("PROMO_BUDGET_NOT_ENOUGH");
-          }
+            const eff = await resolveEffectiveDealerWith(tx, newCustomerId);
+            if (!eff?.id) {
+              throw new Error("PROMO_NOT_SUPPORTED");
+            }
+            const result = await (tx as any).dealerDetail.updateMany({
+              where: { id: eff.id, promotionBudget: { gte: delta } },
+              data: { promotionBudget: { decrement: delta } },
+            });
+            if (!result || (result.count ?? 0) !== 1) {
+              throw new Error("PROMO_BUDGET_NOT_ENOUGH");
+            }
         } else if (delta < 0) {
           const refund = Math.abs(delta);
-          const cust = await (tx as any).customer.findUnique({
-            where: { id: newCustomerId },
-            include: { dealerDetail: true },
-          });
-          const dd = (cust as any)?.dealerDetail;
-          if (!dd?.id) {
-            throw new Error("PROMO_REFUND_TARGET_MISSING");
-          }
-          await (tx as any).dealerDetail.update({
-            where: { id: dd.id },
-            data: { promotionBudget: { increment: refund } },
-          });
+            const eff = await resolveEffectiveDealerWith(tx, newCustomerId);
+            if (!eff?.id) {
+              throw new Error("PROMO_REFUND_TARGET_MISSING");
+            }
+            await (tx as any).dealerDetail.update({
+              where: { id: eff.id },
+              data: { promotionBudget: { increment: refund } },
+            });
         }
       }
 

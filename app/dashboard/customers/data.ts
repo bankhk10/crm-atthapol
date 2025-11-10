@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { resolveEffectiveDealerWith } from "@/lib/customer-dealer";
 
 export type CustomerListItem = {
   id: string;
@@ -183,14 +184,16 @@ export async function getCustomer(customerId: string) {
   } as any;
 
   if (type === "DEALER") {
+    // If this dealer is a branch, show the main dealer's credit/promotion values
+    const eff = await resolveEffectiveDealerWith(prisma, customerId);
     return {
       ...base,
       companyName: c.companyName ?? base.name,
       contactPerson: c.dealerDetail?.contactName ?? base.name,
       contactPhone: c.dealerDetail?.contactPhone ?? null,
       contactEmail: (c as any).dealerDetail?.contactEmail ?? null,
-      creditLimit: c.dealerDetail?.creditLimit ?? null,
-      promotionBudget: (c as any)?.dealerDetail?.promotionBudget ?? null,
+      creditLimit: eff?.creditLimit ?? c.dealerDetail?.creditLimit ?? null,
+      promotionBudget: eff?.promotionBudget ?? (c as any)?.dealerDetail?.promotionBudget ?? null,
       relationshipScore: (c as any)?.relationshipScore ?? null,
       averageMonthlyPurchase: null,
       mainProducts: null,

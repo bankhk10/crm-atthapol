@@ -5,6 +5,7 @@ import { z } from "zod";
 import { authOptions } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { resolveEffectiveDealer, resolveEffectiveDealerWith } from "@/lib/customer-dealer";
 import { buildSaleOrderVisibilityWhere, getVisibilityScope } from "@/lib/sales-visibility";
 
 export const runtime = "nodejs";
@@ -306,26 +307,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "ไม่มีสิทธิ์ปฏิเสธ/ยกเลิกเอกสาร" }, { status: 403 });
     }
 
-    // Pre-check credit if POSTPAID
+    // Pre-check credit if POSTPAID. Use effective dealer (main dealer) for branches/sub-dealers/farmers.
     if ((data.paymentCondition ?? "PREPAID") === "POSTPAID") {
-      const customer = await prisma.customer.findUnique({
-        where: { id: data.customerId },
-        include: { dealerDetail: true },
-      });
-      if (!customer) {
-        return NextResponse.json({ error: "ไม่พบลูกค้า" }, { status: 400 });
-      }
-      const creditLimit = (customer as any)?.dealerDetail?.creditLimit as number | null | undefined;
-      if (typeof creditLimit === "number") {
-        const relationshipScore = (customer as any)?.relationshipScore as number | null | undefined;
-        const enoughCredit = totals.grandTotal <= creditLimit;
-        if (!enoughCredit) {
-          const canOverride = typeof relationshipScore === "number" && relationshipScore > 3;
-          if (!canOverride) {
-            return NextResponse.json(
-              { error: "วงเงินเครดิตไม่พอ และคะแนนความสัมพันธ์ไม่ถึงเกณฑ์" },
-              { status: 400 },
-            );
+      const effDealer = await resolveEffectiveDealer(data.customerId);
+      if (!effDealer) {
+        // No dealer — continue (no credit limit applies)
+      } else {
+        const creditLimit = effDealer.creditLimit as number | null | undefined;
+        if (typeof creditLimit === "number") {
+          // relationshipScore is stored on customer, we still fetch customer for that
+          const customer = await prisma.customer.findUnique({ where: { id: data.customerId } });
+          const relationshipScore = (customer as any)?.relationshipScore as number | null | undefined;
+          const enoughCredit = totals.grandTotal <= creditLimit;
+          if (!enoughCredit) {
+            const canOverride = typeof relationshipScore === "number" && relationshipScore > 3;
+            if (!canOverride) {
+              return NextResponse.json(
+                { error: "วงเงินเครดิตไม่พอ และคะแนนความสัมพันธ์ไม่ถึงเกณฑ์" },
+                { status: 400 },
+              );
+            }
           }
         }
       }
@@ -362,17 +363,14 @@ export async function POST(req: NextRequest) {
           let promoUsed = 0;
           if (data.usePromotion && (data.promotionAmount ?? 0) > 0) {
             const amt = Number(data.promotionAmount || 0);
-            const cust = await (tx as any).customer.findUnique({
-              where: { id: data.customerId },
-              include: { dealerDetail: true },
-            });
-            const dd = (cust as any)?.dealerDetail;
-            if (!dd?.id) {
+            // Resolve effective dealer under transaction (so branches point to main dealer)
+            const eff = await resolveEffectiveDealerWith(tx, data.customerId);
+            if (!eff?.id) {
               throw new Error("PROMO_NOT_SUPPORTED");
             }
-            // atomic conditional decrement
+            // atomic conditional decrement on the resolved dealer id
             const result = await (tx as any).dealerDetail.updateMany({
-              where: { id: dd.id, promotionBudget: { gte: amt } },
+              where: { id: eff.id, promotionBudget: { gte: amt } },
               data: { promotionBudget: { decrement: amt } },
             });
             if (!result || (result.count ?? 0) !== 1) {

@@ -73,7 +73,7 @@ export default async function CustomerEditPage({
     contactEmail:
       customer.type === "FARMER" || customer.type === "BROKER"
         ? (customer.email ?? "")
-        : ((customer as any).contactEmail ?? null ?? customer.email ?? ""),
+        : ((customer as any).contactEmail ?? customer.email ?? ""),
     creditLimit: (customer as any).creditLimit ?? "",
     promotionBudget: (customer as any).promotionBudget ?? "",
     parentDealer: (customer as any).parentDealer ?? "",
