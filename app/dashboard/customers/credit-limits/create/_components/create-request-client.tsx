@@ -37,6 +37,7 @@ export function CreateRequestClient({ customerOptions }: Props) {
   const [customerId, setCustomerId] = useState("");
   const [amount, setAmount] = useState<string>("");
   const [expiryDate, setExpiryDate] = useState<string>("");
+  const [reason, setReason] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSubmit = async () => {
@@ -53,6 +54,7 @@ export function CreateRequestClient({ customerOptions }: Props) {
         body: JSON.stringify({
           amount: parseFloat(amount),
           expiryDate: new Date(expiryDate).toISOString(),
+          reason: reason.trim() || undefined,
         }),
       });
 
@@ -115,6 +117,16 @@ export function CreateRequestClient({ customerOptions }: Props) {
                   minDate={new Date()}
                 />
               </LocalizationProvider>
+
+              <TextField
+                label="หมายเหตุ"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                fullWidth
+                multiline
+                minRows={2}
+                placeholder="ระบุเหตุผลที่ขอวงเงินเครดิตชั่วคราว"
+              />
             </Stack>
           </CardContent>
         </Card>
