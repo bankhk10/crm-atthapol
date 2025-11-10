@@ -746,7 +746,7 @@ export default function InventoryClient({
                       <TableCell sx={{ width: 160 }} align="center">จำนวนคงเหลือ</TableCell>
                       <TableCell sx={{ width: 160 }} align="center">ราคา</TableCell>
                       <TableCell align="center">หมายเหตุ</TableCell>
-                      <TableCell sx={{ width: 120 }} align="center">จัดการ</TableCell>
+                      <TableCell sx={{ width: 120 }} align="center">ลบ</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
