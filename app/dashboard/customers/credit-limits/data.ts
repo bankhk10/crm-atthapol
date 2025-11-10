@@ -7,6 +7,12 @@ export async function getDealers(): Promise<CustomerWithDetails[]> {
       customerType: "DEALER",
       status: "ACTIVE",
       deletedAt: null,
+      // Only include dealers that are main branches (parentDealerId is null)
+      dealerDetail: {
+        is: {
+          parentDealerId: null,
+        },
+      },
     },
     include: {
       dealerDetail: true,
