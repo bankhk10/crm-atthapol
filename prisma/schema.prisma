@@ -493,6 +493,7 @@ model Customer {
 
   sales        Sale[]
   interactions Interaction[]
+  tempCreditRequests TempCreditRequest[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -500,23 +501,25 @@ model Customer {
 }
 
 model DealerDetail {
-  id              String        @id @default(cuid())
-  customerId      String        @unique
-  region          String?
-  status          PartnerStatus @default(ACTIVE)
-  contactName     String?
-  contactPhone    String?
-  contactEmail    String?
-  creditLimit     Float?
-  promotionBudget Float?
+  id                     String        @id @default(cuid())
+  customerId             String        @unique
+  region                 String?
+  status                 PartnerStatus @default(ACTIVE)
+  contactName            String?
+  contactPhone           String?
+  contactEmail           String?
+  creditLimit            Float?        // วงเงินเครดิตหลัก
+  promotionBudgetLimit   Float?        // วงเงินส่งเสริมการขาย
+  temporaryCreditLimit   Float?        // วงเงินเครดิตชั่วคราว
+  temporaryCreditExpiry DateTime?      // วันหมดอายุวงเงินเครดิตชั่วคราว
   // New: store geolocation and notes for Dealer
-  latitude        Float?
-  longitude       Float?
-  businessNotes   String?
+  latitude               Float?
+  longitude              Float?
+  businessNotes          String?
   // +++ เพิ่ม 3 บรรทัดนี้ +++
-  parentDealerId String? // ID ของ Dealer ที่เป็นร้านหลัก
-  parentDealer   DealerDetail?    @relation("DealerBranches", fields: [parentDealerId], references: [id], onDelete: SetNull)
-  branches       DealerDetail[]   @relation("DealerBranches") // รายการร้านรองที่อยู่ใต้ร้านนี้
+  parentDealerId         String? // ID ของ Dealer ที่เป็นร้านหลัก
+  parentDealer           DealerDetail?    @relation("DealerBranches", fields: [parentDealerId], references: [id], onDelete: SetNull)
+  branches               DealerDetail[]   @relation("DealerBranches") // รายการร้านรองที่อยู่ใต้ร้านนี้
 
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
@@ -604,6 +607,31 @@ model BrokerDetail {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
+}
+
+// Temporary credit request for dealers/sub-dealers
+enum TempCreditRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model TempCreditRequest {
+  id                 String                  @id @default(cuid())
+  customerId         String
+  requestedByUserId  String?
+  amount             Float
+  expiryDate         DateTime?
+  reason             String?
+  status             TempCreditRequestStatus @default(PENDING)
+  processedByUserId  String?
+  processedAt        DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 }
 
 model FarmPlot {

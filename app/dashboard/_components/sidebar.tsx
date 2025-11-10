@@ -122,6 +122,18 @@ const navItems: NavItem[] = [
     label: "ลูกค้า",
     icon: <PersonIcon fontSize="small" />,
     resource: "customers",
+    children: [
+      {
+        href: "/dashboard/customers/information",
+        label: "ข้อมูลลูกค้า",
+        resource: "customers",
+      },
+      {
+        href: "/dashboard/customers/credit-limits",
+        label: "จัดการวงเงิน",
+        resource: "customers",
+      },
+    ],
   },
   {
     href: "/dashboard/employees",
