@@ -20,6 +20,7 @@ type DealerFormSectionProps = {
   fieldErrors: Record<string, string>;
   handleChange: (field: keyof CustomerFormValues) => (e: any) => void;
   employeeOptions?: { id: string; label: string }[];
+  dealerOptions?: { id: string; label: string }[]; 
 };
 
 export default function DealerFormSection({
@@ -28,6 +29,7 @@ export default function DealerFormSection({
   fieldErrors,
   handleChange,
   employeeOptions = [],
+  dealerOptions = [],
 }: DealerFormSectionProps) {
   const { data: session } = useSession();
   const perms = session?.user?.permissions ?? [];
@@ -153,6 +155,52 @@ export default function DealerFormSection({
           ข้อมูลบริษัท
         </Typography>
       </Box>
+
+
+      {/* 1 */}
+      
+
+{/* +++ ส่วนที่เพิ่มเข้ามา +++ */}
+  <Box sx={{ backgroundColor: "#d9d9dbff", borderRadius: 2, px: 2, py: 2 }}>
+    <Typography variant="h6" fontWeight={960}>
+      ข้อมูลร้านหลัก (สำหรับร้านรอง)
+    </Typography>
+  </Box>
+
+  <Stack>
+    <Autocomplete
+      options={dealerOptions}
+      getOptionLabel={(option) => option.label}
+      renderOption={(props, option) => (
+        <li {...props} key={option.id}>
+          {option.label}
+        </li>
+      )}
+      value={
+        dealerOptions.find((opt) => opt.id === (values.parentDealer ?? "")) ?? null
+      }
+      onChange={(_e, option) =>
+        setValues((prev) => ({
+          ...prev,
+          parentDealer: option ? option.id : "", // ใช้ field 'parentDealer'
+        }))
+      }
+      renderInput={(params) => (
+        <TextField
+          {...params}
+          label="ร้านหลัก (Main Dealer)"
+          placeholder="ค้นหาชื่อร้านหลัก (ถ้ามี)"
+          fullWidth
+        />
+      )}
+      isOptionEqualToValue={(opt, val) => opt.id === val.id}
+      fullWidth
+    />
+  </Stack>
+  {/* +++ สิ้นสุดส่วนที่เพิ่มเข้ามา +++ */}
+
+
+      {/* 1 */}
 
       {/* แถว 1: ชื่อร้านค้า, เลขผู้เสียภาษี, เบอร์โทร (บริษัท) */}
       <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>

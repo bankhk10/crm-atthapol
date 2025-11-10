@@ -29,7 +29,10 @@ export default async function CustomerEditPage({
   const customer = await getCustomer(customerId);
   if (!customer) return notFound();
   const employees: EmployeesWithUser = await getEmployees();
-  const dealers = await getDealerOptions();
+  const allDealers = await getDealerOptions();
+  const currentDealerDetailId = (customer as any).dealerDetailId;
+  const dealers = allDealers.filter(d => d.id !== currentDealerDetailId);
+  // const dealers = await getDealerOptions();
   const employeeOptions = employees
     .filter((e: EmployeesWithUser[number]) => !e.deletedAt)
     .map((e: EmployeesWithUser[number]) => ({

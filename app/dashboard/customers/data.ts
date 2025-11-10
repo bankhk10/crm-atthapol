@@ -162,6 +162,8 @@ export async function getCustomer(customerId: string) {
       mainProducts: null,
       brandsSold: null,
       businessNotes: (c as any)?.dealerDetail?.businessNotes ?? null,
+      parentDealer: c.dealerDetail?.parentDealerId ?? null,
+      dealerDetailId: c.dealerDetail?.id ?? null,
     } as any;
   }
 

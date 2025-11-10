@@ -362,6 +362,7 @@ export async function createCustomer(rawValues: CustomerFormValues) {
         await (tx as any).dealerDetail.create({
           data: {
             customerId: created.id,
+            parentDealerId: values.parentDealer || undefined,
             contactName:
               values.contactPerson && values.contactPerson.trim().length
                 ? values.contactPerson
@@ -585,6 +586,7 @@ export async function updateCustomer(customerId: string, rawValues: CustomerForm
         await (tx as any).dealerDetail.upsert({
           where: { customerId: customerId },
           update: {
+            parentDealerId: values.parentDealer || undefined,
             contactName:
               values.contactPerson && values.contactPerson.trim().length
                 ? values.contactPerson
@@ -619,6 +621,7 @@ export async function updateCustomer(customerId: string, rawValues: CustomerForm
           },
           create: {
             customerId,
+            parentDealerId: values.parentDealer || undefined,
             contactName:
               values.contactPerson && values.contactPerson.trim().length
                 ? values.contactPerson

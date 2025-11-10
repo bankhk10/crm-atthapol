@@ -146,6 +146,7 @@ export function CustomerForm({
             fieldErrors={fieldErrors}
             handleChange={(field) => handleChange(field as any)}
             employeeOptions={employeeOptions}
+            dealerOptions={dealerOptions}
           />
         )}
         {values.type === "SUBDEALER" && (

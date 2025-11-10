@@ -513,6 +513,10 @@ model DealerDetail {
   latitude        Float?
   longitude       Float?
   businessNotes   String?
+  // +++ เพิ่ม 3 บรรทัดนี้ +++
+  parentDealerId String? // ID ของ Dealer ที่เป็นร้านหลัก
+  parentDealer   DealerDetail?    @relation("DealerBranches", fields: [parentDealerId], references: [id], onDelete: SetNull)
+  branches       DealerDetail[]   @relation("DealerBranches") // รายการร้านรองที่อยู่ใต้ร้านนี้
 
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
