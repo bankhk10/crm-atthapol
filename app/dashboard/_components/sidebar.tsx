@@ -277,17 +277,23 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const [openMenu, setOpenMenu] = useState<string | null>(null);
 
   // ถ้ามี path ย่อยที่ต้องการแมปให้ active เป็น child ตัวอื่น
-  // ให้เพิ่ม pattern -> target (pattern จะถูกตรวจด้วย startsWith)
-  const ACTIVE_OVERRIDES: Array<{ pattern: string; target: string }> = [
+  // pattern สามารถเป็น string (ใช้ startsWith) หรือ RegExp (ใช้ .test)
+  const ACTIVE_OVERRIDES: Array<{ pattern: string | RegExp; target: string }> = [
     // เมื่อเข้า /dashboard/customers/new/* ให้ active เป็น /dashboard/customers/information
     { pattern: "/dashboard/customers/new", target: "/dashboard/customers/information" },
-    // ตัวอย่างเพิ่มเติมถ้าต้องการแมป path อื่น ๆ
-    // { pattern: '/dashboard/customers/edit', target: '/dashboard/customers/information' },
+    // แมปเส้นทางแก้ไข เช่น /dashboard/customers/<id>/edit (ใช้ regex)
+    { pattern: /\/dashboard\/customers\/[^/]+\/edit$/, target: "/dashboard/customers/information" },
+    // กรณี path แบบ /dashboard/customers/edit/<id> หรือ /dashboard/customers/edit
+    { pattern: "/dashboard/customers/edit", target: "/dashboard/customers/information" },
   ];
 
   const effectivePath = (() => {
     for (const o of ACTIVE_OVERRIDES) {
-      if (pathname.startsWith(o.pattern)) return o.target;
+      if (typeof o.pattern === "string") {
+        if (pathname.startsWith(o.pattern)) return o.target;
+      } else {
+        if (o.pattern.test(pathname)) return o.target;
+      }
     }
     return pathname;
   })();
