@@ -15,9 +15,10 @@ import type { CustomerWithDetails } from "../types";
 type CreditLimitEditDialogProps = {
   customer: CustomerWithDetails;
   onClose: () => void;
+  onSaved?: () => void;
 };
 
-export function CreditLimitEditDialog({ customer, onClose }: CreditLimitEditDialogProps) {
+export function CreditLimitEditDialog({ customer, onClose, onSaved }: CreditLimitEditDialogProps) {
   const [creditLimit, setCreditLimit] = useState<string>(
     customer.dealerDetail?.creditLimit?.toString() || ""
   );
@@ -54,7 +55,14 @@ export function CreditLimitEditDialog({ customer, onClose }: CreditLimitEditDial
         throw new Error("Failed to update credit limit");
       }
 
+      // notify parent that we saved successfully so it can reload and show a saved banner
       onClose();
+      // call optional onSaved callback
+      try {
+        (onSaved as any)?.();
+      } catch (_) {
+        // ignore
+      }
     } catch (error) {
       console.error("Error updating credit limit:", error);
       // TODO: Show error message

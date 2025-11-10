@@ -7,16 +7,16 @@ export type EmptyTableMessageProps = {
   message: string;
 };
 
-/** Renders a standardized empty-state row inside MUI TableBody. */
+/** Renders a standardized empty-state message for tables.
+ *
+ * Note: This component intentionally returns only the inner cell content (Typography).
+ * When you need a full row, wrap this component in a <TableRow><TableCell colSpan=...>...
+ */
 export function EmptyTableMessage({ colSpan, message }: EmptyTableMessageProps) {
   return (
-    <TableRow>
-      <TableCell colSpan={colSpan}>
-        <Typography textAlign="center" color="text.secondary" py={4}>
-          {message}
-        </Typography>
-      </TableCell>
-    </TableRow>
+    <Typography textAlign="center" color="text.secondary" py={4}>
+      {message}
+    </Typography>
   );
 }
 
