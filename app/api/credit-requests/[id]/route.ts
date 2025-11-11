@@ -45,3 +45,37 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ error: "Failed to process request" }, { status: 500 });
   }
 }
+
+export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  try {
+    const session = await getServerSession(authOptions);
+    const userId = session?.user?.id ?? null;
+
+    // Find the request
+    const rec = await prisma.tempCreditRequest.findUnique({ where: { id } });
+    if (!rec) return NextResponse.json({ error: "ไม่พบคำขอ" }, { status: 404 });
+
+    // Allow deletion if user is approver (has approve permission) or the original requester
+    try {
+      await requirePermission("customers", "approve");
+      // approver allowed
+    } catch (_) {
+      // not an approver, only allow owner
+      if (rec.requestedByUserId !== userId) {
+        return NextResponse.json({ error: "ไม่มีสิทธิ์ลบคำขอ" }, { status: 403 });
+      }
+    }
+
+    // Only allow deleting pending requests
+    if (rec.status !== "PENDING") {
+      return NextResponse.json({ error: "ไม่สามารถลบคำขอที่ผ่านการดำเนินการแล้ว" }, { status: 400 });
+    }
+
+    await prisma.tempCreditRequest.delete({ where: { id } });
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: "ลบคำขอไม่สำเร็จ" }, { status: 500 });
+  }
+}

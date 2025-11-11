@@ -37,6 +37,7 @@ import { CreditLimitEditDialog } from "./credit-limit-edit-dialog";
 import IconButton from "@mui/material/IconButton";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 
 export function CreditLimitsClient() {
   const router = useRouter();
@@ -139,6 +140,7 @@ export function CreditLimitsClient() {
   const [selected, setSelected] = useState<any | null>(null);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectNote, setRejectNote] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState<any | null>(null);
 
   const getValue = (row: any, key: SortKey) => {
     const dd = row.customer?.dealerDetail ?? {};
@@ -443,6 +445,19 @@ export function CreditLimitsClient() {
                                       </IconButton>
                                     </Tooltip>
                                   )}
+                                  {/* delete button: approver or requester can delete pending */}
+                                  {((canApprove) || req.requestedBy?.id === session?.user?.id || req.requestedByUserId === session?.user?.id) && (
+                                    <Tooltip title="ลบ" arrow>
+                                      <IconButton
+                                        size="small"
+                                        color="error"
+                                        aria-label="ลบ"
+                                        onClick={() => setConfirmDelete(req)}
+                                      >
+                                        <DeleteOutlineIcon fontSize="inherit" />
+                                      </IconButton>
+                                    </Tooltip>
+                                  )}
                                 </>
                               )}
                             </Stack>
@@ -513,6 +528,16 @@ export function CreditLimitsClient() {
                             onClick={() => setEditCustomer(req.customer)}
                           >
                             แก้ไข
+                          </Button>
+                        )}
+                        {/* delete for mobile: approver or owner */}
+                        {((canApprove) || req.requestedBy?.id === session?.user?.id || req.requestedByUserId === session?.user?.id) && (
+                          <Button
+                            size="small"
+                            color="error"
+                            onClick={() => setConfirmDelete(req)}
+                          >
+                            ลบ
                           </Button>
                         )}
                         <Button
@@ -670,6 +695,40 @@ export function CreditLimitsClient() {
             }}
           >
             ยืนยันปฏิเสธ
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Confirm Dialog */}
+      <Dialog open={Boolean(confirmDelete)} onClose={() => setConfirmDelete(null)} fullWidth maxWidth="xs">
+        <DialogTitle>ยืนยันการลบคำขอ</DialogTitle>
+        <DialogContent>
+          <Typography>
+            คุณต้องการลบคำขอวงเงินนี้หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmDelete(null)}>ยกเลิก</Button>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={async () => {
+              if (!confirmDelete) return;
+              try {
+                const res = await fetch(`/api/credit-requests/${confirmDelete.id}`, { method: "DELETE" });
+                if (!res.ok) {
+                  const d = await res.json().catch(() => ({}));
+                  throw new Error(d?.error || "ลบไม่สำเร็จ");
+                }
+                setConfirmDelete(null);
+                load();
+              } catch (err) {
+                console.error(err);
+                setConfirmDelete(null);
+              }
+            }}
+          >
+            ยืนยัน
           </Button>
         </DialogActions>
       </Dialog>
