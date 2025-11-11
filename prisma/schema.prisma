@@ -264,6 +264,8 @@ model User {
   createdInteractions Interaction[]   @relation("UserCreatedInteractions")
   approvedSaleOrders  SaleOrder[]     @relation("UserApprovedSaleOrders")
   approvedSalesNotes  SalesNote[]     @relation("UserApprovedSalesNotes")
+  requestedCreditRequests TempCreditRequest[] @relation("RequestedByUser")
+  processedCreditRequests TempCreditRequest[] @relation("ProcessedByUser")
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -632,7 +634,9 @@ model TempCreditRequest {
   updatedAt DateTime @updatedAt
   deletedAt DateTime?
 
-  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customer     Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  requestedBy  User?    @relation("RequestedByUser", fields: [requestedByUserId], references: [id], onDelete: SetNull)
+  processedBy  User?    @relation("ProcessedByUser", fields: [processedByUserId], references: [id], onDelete: SetNull)
 }
 
 model FarmPlot {

@@ -91,7 +91,11 @@ export async function GET(request: NextRequest) {
     const findOpts: any = {
       where,
       orderBy: { createdAt: "desc" },
-      include: { customer: { include: { dealerDetail: true } } },
+      include: {
+        customer: { include: { dealerDetail: true } },
+        requestedBy: { select: { id: true, name: true, email: true } },
+        processedBy: { select: { id: true, name: true, email: true } },
+      },
     };
 
     if (pageSize && page > 0) {

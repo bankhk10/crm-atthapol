@@ -4,20 +4,22 @@ import {
   Box,
   Button,
   Paper,
+  Stack,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
+  TableSortLabel,
+  TablePagination,
   TextField,
-  Stack,
-  Pagination,
   Chip,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
@@ -29,6 +31,7 @@ import { hasPermission } from "@/lib/permissions";
 import { Snackbar } from "@mui/material";
 import { EmptyTableMessage } from "@/components/ui/EmptyTableMessage";
 import { formatNumber } from "@/lib/format";
+import { CreditLimitEditDialog } from "./credit-limit-edit-dialog";
 
 export function CreditLimitsClient() {
   const router = useRouter();
@@ -37,8 +40,8 @@ export function CreditLimitsClient() {
 
   const [items, setItems] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [rowsPerPage] = useState(10);
+  const [page, setPage] = useState(0); // 0-based for TablePagination
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [qInput, setQInput] = useState("");
   const [q, setQ] = useState("");
   const [showSaved, setShowSaved] = useState(false);
@@ -47,6 +50,7 @@ export function CreditLimitsClient() {
 
   const canApprove = hasPermission(session?.user?.permissions, "customers", "approve");
   const canReject = hasPermission(session?.user?.permissions, "customers", "reject") || canApprove;
+  const canEditLimits = hasPermission(session?.user?.permissions, "customers", "edit");
 
   const pageSize = rowsPerPage;
 
@@ -54,7 +58,8 @@ export function CreditLimitsClient() {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      params.set("page", String(page));
+      // convert to 1-based page for API
+      params.set("page", String(page + 1));
       params.set("pageSize", String(pageSize));
       if (q.trim()) params.set("q", q.trim());
       const res = await fetch(`/api/credit-requests?${params.toString()}`);
@@ -72,7 +77,7 @@ export function CreditLimitsClient() {
   useEffect(() => {
     const sp = searchParams;
     const p = Number(sp?.get("page") || "");
-    if (Number.isFinite(p) && p > 0) setPage(p);
+    if (Number.isFinite(p) && p > 0) setPage(p - 1);
     const q0 = (sp?.get("q") || "").trim();
     if (q0) {
       setQInput(q0);
@@ -82,7 +87,6 @@ export function CreditLimitsClient() {
     const saved = sp?.get("saved");
     if (saved) {
       setShowSaved(true);
-      // remove saved param from URL
       const nxt = new URLSearchParams(sp.toString());
       nxt.delete("saved");
       router.replace(`${pathname}${nxt.toString() ? `?${nxt.toString()}` : ""}`);
@@ -93,61 +97,133 @@ export function CreditLimitsClient() {
   // Debounce input -> q
   useEffect(() => {
     const h = setTimeout(() => {
-      setPage(1);
+      setPage(0);
       setQ(qInput.trim());
     }, 350);
     return () => clearTimeout(h);
   }, [qInput]);
 
-  // Load when page or q changes
+  // Load when page or q or rowsPerPage changes
   useEffect(() => {
     load();
-    // reflect into URL
+    // reflect into URL (1-based page)
     const next = new URLSearchParams(searchParams?.toString() || "");
     if (q.trim()) next.set("q", q.trim());
     else next.delete("q");
-    next.set("page", String(page));
+    next.set("page", String(page + 1));
     next.set("pageSize", String(pageSize));
     router.replace(`${pathname}?${next.toString()}`);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, q]);
+  }, [page, q, rowsPerPage]);
 
-  const [detailOpen, setDetailOpen] = useState(false);
+  // sorting
+  type Order = "asc" | "desc";
+  type SortKey =
+    | "name"
+    | "creditLimit"
+    | "promotionBudgetLimit"
+    | "amount"
+    | "expiryDate"
+    | "status"
+    | "requestedBy";
+
+  const [order, setOrder] = useState<Order>("asc");
+  const [orderBy, setOrderBy] = useState<SortKey>("name");
+
+  // selection states
   const [selected, setSelected] = useState<any | null>(null);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectNote, setRejectNote] = useState("");
 
-  const openDetails = (req: any) => {
-    setSelected(req);
-    setDetailOpen(true);
+  const getValue = (row: any, key: SortKey) => {
+    const dd = row.customer?.dealerDetail ?? {};
+    switch (key) {
+      case "name":
+        return (row.customer?.companyName || row.customer?.name || "").toString();
+      case "creditLimit":
+        return dd.creditLimit ?? 0;
+      case "promotionBudgetLimit":
+        return dd.promotionBudgetLimit ?? 0;
+      case "amount":
+        return row.amount ?? 0;
+      case "expiryDate":
+        return row.expiryDate ? new Date(row.expiryDate).getTime() : 0;
+      case "status": {
+        const exp = row.expiryDate ? new Date(row.expiryDate) : null;
+        const isExpired = row.status === "APPROVED" && exp && exp.getTime() < Date.now();
+        const display = isExpired ? "EXPIRED" : row.status || "";
+        return display;
+      }
+      case "requestedBy":
+        return row.requestedBy?.name || row.requestedByUserId || "";
+    }
   };
 
-  const openReject = (req: any) => {
-    setSelected(req);
-    setRejectNote(req.rejectReason || "");
-    setRejectOpen(true);
+  const descendingComparator = (a: any, b: any, key: SortKey) => {
+    const av = getValue(a, key);
+    const bv = getValue(b, key);
+    const as = typeof av === "number" ? av : String(av).toLowerCase();
+    const bs = typeof bv === "number" ? bv : String(bv).toLowerCase();
+    if (bs < as) return -1;
+    if (bs > as) return 1;
+    return 0;
+  };
+  const getComparator = (ord: Order, key: SortKey) =>
+    ord === "asc"
+      ? (a: any, b: any) => descendingComparator(a, b, key)
+      : (a: any, b: any) => -descendingComparator(a, b, key);
+
+  interface HeadCell {
+    id: SortKey;
+    label: string;
+    width: number;
+    align?: "left" | "right" | "center";
+  }
+
+  const headCells: readonly HeadCell[] = [
+    { id: "name", label: "ชื่อร้าน", width: 260, align: "left" },
+    { id: "creditLimit", label: "วงเงินเครดิต", width: 140, align: "right" },
+    { id: "promotionBudgetLimit", label: "วงเงินส่งเสริมกิจกรรม", width: 200, align: "right" },
+    { id: "amount", label: "วงเงินเครดิตชั่วคราว", width: 180, align: "right" },
+    { id: "expiryDate", label: "วันหมดอายุวงเงินเครดิตชั่วคราว", width: 220, align: "right" },
+    { id: "status", label: "สถานะ", width: 140, align: "left" },
+    { id: "requestedBy", label: "คนขอทำรายการ", width: 200, align: "left" },
+  ];
+
+  const filteredSorted = useMemo(() => {
+    // API already filtered by q and paginated; we sort the current page client-side
+    return [...items].sort(getComparator(order, orderBy));
+  }, [items, order, orderBy]);
+
+  const handleRequestSort = (_: React.MouseEvent<unknown>, property: SortKey) => {
+    const isAsc = orderBy === property && order === "asc";
+    setOrder(isAsc ? "desc" : "asc");
+    setOrderBy(property);
   };
 
-  const closeReject = () => {
-    setSelected(null);
-    setRejectNote("");
-    setRejectOpen(false);
-  };
+  // state for edit dialog
+  const [editCustomer, setEditCustomer] = useState<any | null>(null);
 
-  const closeDetails = () => {
-    setSelected(null);
-    setDetailOpen(false);
-  };
-
-  const renderStatusChip = (status: string) => {
-    if (status === "PENDING") return <Chip label="รออนุมัติ" color="warning" size="small" />;
-    if (status === "APPROVED") return <Chip label="อนุมัติ" color="success" size="small" />;
-    if (status === "REJECTED") return <Chip label="ปฏิเสธ" color="error" size="small" />;
-    return <Chip label={status} size="small" />;
+  const renderStatusChip = (row: any) => {
+    const base = row.status;
+    const exp = row.expiryDate ? new Date(row.expiryDate) : null;
+    const isExpired = base === "APPROVED" && exp && exp.getTime() < Date.now();
+    const label =
+      base === "PENDING"
+        ? "รออนุมัติ"
+        : base === "APPROVED"
+          ? isExpired ? "หมดอายุ" : "อนุมัติ"
+          : base === "REJECTED"
+            ? "ปฏิเสธ"
+            : base;
+    const color: any =
+      label === "รออนุมัติ" ? "warning" : label === "อนุมัติ" ? "success" : label === "ปฏิเสธ" ? "error" : "default";
+    return <Chip label={label} color={color} size="small" />;
   };
 
   return (
     <>
+      {/* Toolbar: search + create button */}
       <Stack
         direction={{ xs: "column", sm: "row" }}
         spacing={2}
@@ -155,13 +231,12 @@ export function CreditLimitsClient() {
         alignItems="center"
         sx={{ px: { sm: 2 }, py: 1 }}
       >
-        {/* search */}
         <Box sx={{ width: { xs: "100%", sm: 260, md: 360 } }}>
           <TextField
             fullWidth
             value={qInput}
             onChange={(e) => setQInput(e.target.value)}
-            placeholder="ค้นหาร้าน (ชื่อ/ผู้ติดต่อ)"
+            placeholder="ค้นหา (ชื่อร้าน/ผู้ติดต่อ)"
             InputProps={{
               startAdornment: <SearchIcon fontSize="small" style={{ marginRight: 8 }} />,
             }}
@@ -169,94 +244,139 @@ export function CreditLimitsClient() {
           />
         </Box>
 
-        {/* action buttons group */}
-        <Stack
-          direction="row"
-          spacing={1}
-          justifyContent="flex-end"
-          sx={{ width: { xs: "100%", sm: "auto" } }}
-        >
-          <Button
-            component={Link}
-            href="/dashboard/customers/credit-limits/create"
-            variant="contained"
-            color="primary"
-          >
+        <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{ width: { xs: "100%", sm: "auto" } }}>
+          <Button component={Link} href="/dashboard/customers/credit-limits/create" variant="contained" color="primary">
             ขอวงเงินเครดิตชั่วคราว
           </Button>
         </Stack>
       </Stack>
 
-      <TableContainer component={Paper} sx={{ mt: 2 }}>
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell>รหัสคำขอ</TableCell>
-              <TableCell>ร้าน</TableCell>
-              <TableCell>ผู้ติดต่อ</TableCell>
-              <TableCell align="right">จำนวน (THB)</TableCell>
-              <TableCell align="right">วันหมดอายุ</TableCell>
-              <TableCell>สถานะ</TableCell>
-              <TableCell>สร้างเมื่อ</TableCell>
-              <TableCell align="center">จัดการ</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {items.length === 0 ? (
+      <Paper
+        variant="outlined"
+        sx={{
+          borderRadius: 2,
+          overflow: "hidden",
+          borderColor: "#ddd",
+          fontFamily: "Prompt, sans-serif",
+          mt: 2,
+        }}
+      >
+        <Box sx={{ overflowX: "auto" }}>
+          <TableContainer
+            sx={{
+              borderTopLeftRadius: 12,
+              borderTopRightRadius: 12,
+              "&::-webkit-scrollbar": { width: 8 },
+              "&::-webkit-scrollbar-thumb": { backgroundColor: "#ccc", borderRadius: 6 },
+            }}
+          >
+            <Table aria-labelledby="tableTitle" sx={{ minWidth: 1000, tableLayout: "fixed" }} size="small">
+            <TableHead
+              sx={{
+                bgcolor: "#ccccceff",
+                "& .MuiTableCell-root": {
+                  bgcolor: "#ccccceff",
+                  color: "#1a1919ff",
+                  fontFamily: "Prompt, sans-serif",
+                  fontSize: "1rem",
+                  fontWeight: 800,
+                  borderBottom: "none",
+                  whiteSpace: "nowrap",
+                },
+              }}
+            >
               <TableRow>
-                <TableCell colSpan={8}>
-                  <EmptyTableMessage colSpan={8} message={loading ? "กำลังโหลด..." : "ไม่พบคำขอ"} />
-                </TableCell>
+                {headCells.map((h) => (
+                  <TableCell key={h.id} align={h.align ?? "left"} sx={{ width: h.width }}>
+                    <Tooltip title={`เรียงตาม ${h.label}`} arrow>
+                      <TableSortLabel
+                        active={orderBy === h.id}
+                        direction={orderBy === h.id ? order : "asc"}
+                        sx={{
+                          color: "inherit !important",
+                          "& .MuiTableSortLabel-icon": { color: "inherit !important" },
+                        }}
+                        onClick={(e) => handleRequestSort(e, h.id)}
+                      >
+                        {h.label}
+                      </TableSortLabel>
+                    </Tooltip>
+                  </TableCell>
+                ))}
+                <TableCell align="center" sx={{ width: 220 }}>การกระทำ</TableCell>
               </TableRow>
-            ) : (
-              items.map((req) => (
-                <TableRow key={req.id}>
-                  <TableCell>{req.id}</TableCell>
-                  <TableCell>{req.customer?.companyName || req.customer?.name || "-"}</TableCell>
-                  <TableCell>{req.customer?.dealerDetail?.contactName || "-"}</TableCell>
-                  <TableCell align="right">{req.amount ? formatNumber(req.amount) : "-"}</TableCell>
-                  <TableCell align="right">{req.expiryDate ? new Date(req.expiryDate).toLocaleDateString("th-TH") : "-"}</TableCell>
-                  <TableCell>{renderStatusChip(req.status)}</TableCell>
-                  <TableCell>{req.createdAt ? new Date(req.createdAt).toLocaleString("th-TH") : "-"}</TableCell>
-                  <TableCell align="center">
-                    <Button size="small" onClick={() => openDetails(req)}>
-                      ดู
-                    </Button>
-                    {req.status === "PENDING" && (
-                      <>
-                        {canApprove && (
-                          <Button size="small" color="success" onClick={async () => {
-                            if (!confirm("ยืนยันอนุมัติคำขอ?")) return;
-                            try {
-                              await fetch(`/api/credit-requests/${req.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "approve" }) });
-                              load();
-                            } catch (err) { console.error(err); }
-                          }}>อนุมัติ</Button>
+            </TableHead>
+            <TableBody>
+              {filteredSorted.map((req) => {
+                const dd = req.customer?.dealerDetail;
+                const name = req.customer?.companyName || req.customer?.name || "-";
+                const tempAmount = req.amount ? formatNumber(req.amount) : "-";
+                const exp = req.expiryDate ? new Date(req.expiryDate) : null;
+                return (
+                  <TableRow key={req.id} hover sx={{ "&:nth-of-type(even)": { bgcolor: "#fafafa" } }}>
+                    <TableCell>{name}</TableCell>
+                    <TableCell align="right">{dd?.creditLimit != null ? formatNumber(dd.creditLimit) : "-"}</TableCell>
+                    <TableCell align="right">{dd?.promotionBudgetLimit != null ? formatNumber(dd.promotionBudgetLimit) : "-"}</TableCell>
+                    <TableCell align="right">{tempAmount}</TableCell>
+                    <TableCell align="right">{exp ? exp.toLocaleDateString("th-TH") : "-"}</TableCell>
+                    <TableCell>{renderStatusChip(req)}</TableCell>
+                    <TableCell>{req.requestedBy?.name || req.requestedByUserId || "-"}</TableCell>
+                    <TableCell align="center">
+                      <Stack direction="row" spacing={1} justifyContent="center">
+                        {canEditLimits && (
+                          <Button size="small" onClick={() => setEditCustomer(req.customer)} variant="outlined">
+                            แก้ไขวงเงิน
+                          </Button>
                         )}
-                        {canReject && (
-                          <Button size="small" color="error" sx={{ ml: 1 }} onClick={() => openReject(req)}>ปฏิเสธ</Button>
+                        <Button size="small" onClick={() => router.push(`/dashboard/customers/${req.customer?.id}`)}>
+                          ดูร้าน
+                        </Button>
+                        {req.status === "PENDING" && (
+                          <>
+                            {canApprove && (
+                              <Button size="small" color="success" onClick={async () => {
+                                if (!confirm("ยืนยันอนุมัติคำขอ?")) return;
+                                try {
+                                  await fetch(`/api/credit-requests/${req.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "approve" }) });
+                                  load();
+                                } catch (err) { console.error(err); }
+                              }}>อนุมัติ</Button>
+                            )}
+                            {canReject && (
+                              <Button size="small" color="error" onClick={() => { setSelected(req); setRejectOpen(true); }}>ปฏิเสธ</Button>
+                            )}
+                          </>
                         )}
-                        {!(canApprove || canReject) && (
-                          <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>ไม่มีสิทธิ์</Typography>
-                        )}
-                      </>
-                    )}
-                    {req.status !== "PENDING" && <span>-</span>}
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+              {filteredSorted.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={headCells.length + 1}>
+                    <EmptyTableMessage colSpan={headCells.length + 1} message={loading ? "กำลังโหลด..." : "ไม่พบคำขอ"} />
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+        </Box>
 
-      <Box sx={{ mt: 2, display: "flex", justifyContent: "center" }}>
-        <Pagination
-          count={Math.max(1, Math.ceil(total / pageSize))}
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25]}
+          component="div"
+          count={total}
+          rowsPerPage={rowsPerPage}
           page={page}
-          onChange={(_, p) => setPage(p)}
+          onPageChange={(_, p) => setPage(p)}
+          onRowsPerPageChange={(e) => {
+            setRowsPerPage(parseInt(e.target.value, 10));
+            setPage(0);
+          }}
         />
-      </Box>
+      </Paper>
 
       <Snackbar
         open={showSaved}
@@ -265,7 +385,9 @@ export function CreditLimitsClient() {
         onClose={() => setShowSaved(false)}
         autoHideDuration={3000}
       />
-      <Dialog open={detailOpen} onClose={closeDetails} fullWidth maxWidth="sm">
+
+      {/* Details Dialog (unchanged) */}
+      <Dialog open={Boolean(selected) && !rejectOpen} onClose={() => setSelected(null)} fullWidth maxWidth="sm">
         <DialogTitle>รายละเอียดคำขอ</DialogTitle>
         <DialogContent>
           {selected ? (
@@ -274,11 +396,12 @@ export function CreditLimitsClient() {
               <Typography><strong>ร้าน:</strong> {selected.customer?.companyName || selected.customer?.name || '-'}</Typography>
               <Typography><strong>จำนวน:</strong> {selected.amount ? formatNumber(selected.amount) : '-'}</Typography>
               <Typography><strong>วันหมดอายุ:</strong> {selected.expiryDate ? new Date(selected.expiryDate).toLocaleDateString('th-TH') : '-'}</Typography>
-              <Typography><strong>สถานะ:</strong> {selected.status}</Typography>
-              <Typography><strong>ผู้ขอ:</strong> {selected.requestedByUserId || '-'}</Typography>
+              <Typography><strong>สถานะ:</strong> {renderStatusChip(selected)}</Typography>
+              <Typography><strong>ผู้ขอ:</strong> {selected.requestedBy?.name || selected.requestedByUserId || '-'}</Typography>
               <Typography><strong>เหตุผล / หมายเหตุ:</strong></Typography>
               <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>{selected.reason || '-'}</Typography>
-              {selected.processedByUserId && <Typography><strong>ดำเนินการโดย:</strong> {selected.processedByUserId}</Typography>}
+              {selected.processedBy?.name && <Typography><strong>ดำเนินการโดย:</strong> {selected.processedBy.name}</Typography>}
+              {!selected.processedBy?.name && selected.processedByUserId && <Typography><strong>ดำเนินการโดย:</strong> {selected.processedByUserId}</Typography>}
               {selected.processedAt && <Typography><strong>ดำเนินการเมื่อ:</strong> {new Date(selected.processedAt).toLocaleString('th-TH')}</Typography>}
               {selected.rejectReason && (
                 <>
@@ -290,11 +413,12 @@ export function CreditLimitsClient() {
           ) : null}
         </DialogContent>
         <DialogActions>
-          <Button onClick={closeDetails}>ปิด</Button>
+          <Button onClick={() => setSelected(null)}>ปิด</Button>
         </DialogActions>
       </Dialog>
 
-      <Dialog open={rejectOpen} onClose={closeReject} fullWidth maxWidth="sm">
+      {/* Reject Dialog */}
+      <Dialog open={rejectOpen} onClose={() => setRejectOpen(false)} fullWidth maxWidth="sm">
         <DialogTitle>ปฏิเสธคำขอ พร้อมหมายเหตุ</DialogTitle>
         <DialogContent>
           <Stack spacing={1} sx={{ mt: 1 }}>
@@ -310,12 +434,13 @@ export function CreditLimitsClient() {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={closeReject}>ยกเลิก</Button>
+          <Button onClick={() => setRejectOpen(false)}>ยกเลิก</Button>
           <Button color="error" onClick={async () => {
             if (!selected) return;
             try {
               await fetch(`/api/credit-requests/${selected.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'reject', note: rejectNote }) });
-              closeReject();
+              setRejectOpen(false);
+              setSelected(null);
               load();
             } catch (err) {
               console.error(err);
@@ -323,6 +448,19 @@ export function CreditLimitsClient() {
           }}>ยืนยันปฏิเสธ</Button>
         </DialogActions>
       </Dialog>
+
+      {/* Edit limits dialog */}
+      {editCustomer && canEditLimits && (
+        <CreditLimitEditDialog
+          customer={editCustomer}
+          onClose={() => setEditCustomer(null)}
+          onSaved={() => {
+            setEditCustomer(null);
+            setShowSaved(true);
+            load();
+          }}
+        />
+      )}
     </>
   );
 }
