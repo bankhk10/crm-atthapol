@@ -10,6 +10,13 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   const session = await getServerSession(authOptions);
   const processedByUserId = session?.user?.id ?? null;
 
+  // Validate processedByUserId exists in DB. If not, don't write the foreign key to avoid P2003.
+  let processedByUserIdValidated: string | null = null;
+  if (processedByUserId) {
+    const u = await prisma.user.findUnique({ where: { id: processedByUserId } });
+    processedByUserIdValidated = u ? processedByUserId : null;
+  }
+
   const body = await request.json();
   const { action, note } = body; // action: 'approve' | 'reject'
 
@@ -28,16 +35,35 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     if (action === 'approve') {
       // Approve: update TempCreditRequest and update dealerDetail
       await prisma.$transaction(async (tx) => {
-  await tx.tempCreditRequest.update({ where: { id }, data: { status: 'APPROVED', processedByUserId, processedAt: new Date(), rejectReason: null } as any });
+        await tx.tempCreditRequest.update({
+          where: { id },
+          data: {
+            status: 'APPROVED',
+            processedByUserId: processedByUserIdValidated,
+            processedAt: new Date(),
+            rejectReason: null,
+          } as any,
+        });
 
-        await tx.dealerDetail.update({ where: { customerId: req.customerId }, data: { temporaryCreditLimit: req.amount, temporaryCreditExpiry: req.expiryDate } });
+        await tx.dealerDetail.update({
+          where: { customerId: req.customerId },
+          data: { temporaryCreditLimit: req.amount, temporaryCreditExpiry: req.expiryDate },
+        });
       });
 
       return NextResponse.json({ success: true });
     }
 
     // reject: save provided note as rejectReason
-  await prisma.tempCreditRequest.update({ where: { id }, data: { status: 'REJECTED', processedByUserId, processedAt: new Date(), rejectReason: note || null } as any });
+  await prisma.tempCreditRequest.update({
+    where: { id },
+    data: {
+      status: 'REJECTED',
+      processedByUserId: processedByUserIdValidated,
+      processedAt: new Date(),
+      rejectReason: note || null,
+    } as any,
+  });
 
     return NextResponse.json({ success: true });
   } catch (err) {
