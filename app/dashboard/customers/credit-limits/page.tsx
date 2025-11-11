@@ -1,7 +1,6 @@
 import { Stack, Typography, Box, Button } from "@mui/material";
 import Link from "next/link";
 import { requirePermission } from "@/lib/require-permission";
-import { CreditRequestList } from "./_components/credit-request-list";
 import { CreditLimitsClient } from "./_components/credit-limits-client";
 
 export default async function CustomersCreditLimitsPage() {
@@ -28,7 +27,6 @@ export default async function CustomersCreditLimitsPage() {
         </Box>
 
         <Box sx={{ my: 4 }}>
-          <CreditRequestList />
           <CreditLimitsClient />
         </Box>
       </Stack>
