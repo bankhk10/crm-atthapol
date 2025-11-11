@@ -37,6 +37,7 @@ import { CreditLimitEditDialog } from "./credit-limit-edit-dialog";
 import IconButton from "@mui/material/IconButton";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import FirstPageIcon from "@mui/icons-material/FirstPage";
 import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
@@ -479,6 +480,21 @@ export function CreditLimitsClient() {
                           <TableCell align="right">{renderStatusChip(req)}</TableCell>
                           <TableCell align="center" sx={{ width: 120 }}>
                             <Stack direction="row" spacing={0} justifyContent="center">
+                              <Tooltip title="รายละเอียด" arrow>
+                                <IconButton
+                                  size="small"
+                                  aria-label="รายละเอียด"
+                                  onClick={() => setSelected(req)}
+                                  sx={{
+                                    color: "primary.main",
+                                    borderRadius: 2,
+                                    "&:hover": { bgcolor: "primary.main", color: "common.white" },
+                                    transition: "all .15s ease",
+                                  }}
+                                >
+                                  <VisibilityOutlinedIcon fontSize="inherit" />
+                                </IconButton>
+                              </Tooltip>
                               {req.status === "PENDING" && (
                                 <>
                                   {canApprove && (
