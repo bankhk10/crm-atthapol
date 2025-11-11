@@ -21,6 +21,8 @@ import {
   DialogActions,
   Tooltip,
   Typography,
+  useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import Link from "next/link";
@@ -47,6 +49,9 @@ export function CreditLimitsClient() {
   const [showSaved, setShowSaved] = useState(false);
   const [loading, setLoading] = useState(false);
   const { data: session } = useSession();
+
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   const canApprove = hasPermission(session?.user?.permissions, "customers", "approve");
   const canReject = hasPermission(session?.user?.permissions, "customers", "reject") || canApprove;
@@ -287,156 +292,204 @@ export function CreditLimitsClient() {
           mt: 2,
         }}
       >
-        <Box sx={{ overflowX: "auto" }}>
-          <TableContainer
-            sx={{
-              borderTopLeftRadius: 12,
-              borderTopRightRadius: 12,
-              "&::-webkit-scrollbar": { width: 8 },
-              "&::-webkit-scrollbar-thumb": { backgroundColor: "#ccc", borderRadius: 6 },
-            }}
-          >
-            <Table
-              aria-labelledby="tableTitle"
-              sx={{ minWidth: 1000, tableLayout: "fixed" }}
-              size="small"
-            >
-              <TableHead
+        <Box sx={{ px: { xs: 1, sm: 0 } }}>
+          {/* Desktop / tablet: table. Mobile: stacked list */}
+          {!isMobile ? (
+            <Box sx={{ overflowX: "auto" }}>
+              <TableContainer
                 sx={{
-                  bgcolor: "#ccccceff",
-                  "& .MuiTableCell-root": {
-                    bgcolor: "#ccccceff",
-                    color: "#1a1919ff",
-                    fontFamily: "Prompt, sans-serif",
-                    fontSize: "1rem",
-                    fontWeight: 800,
-                    borderBottom: "none",
-                    whiteSpace: "nowrap",
-                  },
+                  borderTopLeftRadius: 12,
+                  borderTopRightRadius: 12,
+                  "&::-webkit-scrollbar": { width: 8 },
+                  "&::-webkit-scrollbar-thumb": { backgroundColor: "#ccc", borderRadius: 6 },
                 }}
               >
-                <TableRow>
-                  {headCells.map((h) => (
-                    <TableCell key={h.id} align={h.align ?? "left"} sx={{ width: h.width }}>
-                      <Tooltip title={`เรียงตาม ${h.label}`} arrow>
-                        <TableSortLabel
-                          active={orderBy === h.id}
-                          direction={orderBy === h.id ? order : "asc"}
-                          sx={{
-                            color: "inherit !important",
-                            "& .MuiTableSortLabel-icon": { color: "inherit !important" },
-                          }}
-                          onClick={(e) => handleRequestSort(e, h.id)}
-                        >
-                          {h.label}
-                        </TableSortLabel>
-                      </Tooltip>
-                    </TableCell>
-                  ))}
-                  <TableCell align="center" sx={{ width: 220 }}>
-                    การกระทำ
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredSorted.map((req) => {
-                  const dd = req.customer?.dealerDetail;
-                  const name = req.customer?.companyName || req.customer?.name || "-";
-                  const tempAmount = req.amount ? formatNumber(req.amount) : "-";
-                  const exp = req.expiryDate ? new Date(req.expiryDate) : null;
-                  return (
-                    <TableRow
-                      key={req.id}
-                      hover
-                      sx={{ "&:nth-of-type(even)": { bgcolor: "#fafafa" } }}
-                    >
-                      <TableCell>{name}</TableCell>
-                      <TableCell align="center">
-                        {dd?.creditLimit != null ? formatNumber(dd.creditLimit) : "-"}
-                      </TableCell>
-                      <TableCell align="right">
-                        {dd?.promotionBudgetLimit != null
-                          ? formatNumber(dd.promotionBudgetLimit)
-                          : "-"}
-                      </TableCell>
-                      <TableCell align="right">{tempAmount}</TableCell>
-                      <TableCell align="right">
-                        {exp ? exp.toLocaleDateString("th-TH") : "-"}
-                      </TableCell>
-                      <TableCell>{renderStatusChip(req)}</TableCell>
-                      <TableCell>{req.requestedBy?.name || req.requestedByUserId || "-"}</TableCell>
-                      <TableCell align="center">
-                        <Stack direction="row" spacing={1} justifyContent="center">
-                          {canEditLimits && (
-                            <Button
-                              size="small"
-                              onClick={() => setEditCustomer(req.customer)}
-                              variant="outlined"
+                <Table
+                  aria-labelledby="tableTitle"
+                  sx={{ minWidth: 1000, tableLayout: "fixed" }}
+                  size="small"
+                >
+                  <TableHead
+                    sx={{
+                      bgcolor: "#ccccceff",
+                      "& .MuiTableCell-root": {
+                        bgcolor: "#ccccceff",
+                        color: "#1a1919ff",
+                        fontFamily: "Prompt, sans-serif",
+                        fontSize: "1rem",
+                        fontWeight: 800,
+                        borderBottom: "none",
+                        whiteSpace: "nowrap",
+                      },
+                    }}
+                  >
+                    <TableRow>
+                      {headCells.map((h) => (
+                        <TableCell key={h.id} align={h.align ?? "left"} sx={{ width: h.width }}>
+                          <Tooltip title={`เรียงตาม ${h.label}`} arrow>
+                            <TableSortLabel
+                              active={orderBy === h.id}
+                              direction={orderBy === h.id ? order : "asc"}
+                              sx={{
+                                color: "inherit !important",
+                                "& .MuiTableSortLabel-icon": { color: "inherit !important" },
+                              }}
+                              onClick={(e) => handleRequestSort(e, h.id)}
                             >
-                              แก้ไขวงเงิน
-                            </Button>
-                          )}
-                          <Button
-                            size="small"
-                            onClick={() => router.push(`/dashboard/customers/${req.customer?.id}`)}
-                          >
-                            ดูร้าน
-                          </Button>
-                          {req.status === "PENDING" && (
-                            <>
-                              {canApprove && (
-                                <Button
-                                  size="small"
-                                  color="success"
-                                  onClick={async () => {
-                                    if (!confirm("ยืนยันอนุมัติคำขอ?")) return;
-                                    try {
-                                      await fetch(`/api/credit-requests/${req.id}`, {
-                                        method: "PUT",
-                                        headers: { "Content-Type": "application/json" },
-                                        body: JSON.stringify({ action: "approve" }),
-                                      });
-                                      load();
-                                    } catch (err) {
-                                      console.error(err);
-                                    }
-                                  }}
-                                >
-                                  อนุมัติ
-                                </Button>
-                              )}
-                              {canReject && (
-                                <Button
-                                  size="small"
-                                  color="error"
-                                  onClick={() => {
-                                    setSelected(req);
-                                    setRejectOpen(true);
-                                  }}
-                                >
-                                  ปฏิเสธ
-                                </Button>
-                              )}
-                            </>
-                          )}
-                        </Stack>
+                              {h.label}
+                            </TableSortLabel>
+                          </Tooltip>
+                        </TableCell>
+                      ))}
+                      <TableCell align="center" sx={{ width: 220 }}>
+                        การกระทำ
                       </TableCell>
                     </TableRow>
-                  );
-                })}
-                {filteredSorted.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={headCells.length + 1}>
-                      <EmptyTableMessage
-                        colSpan={headCells.length + 1}
-                        message={loading ? "กำลังโหลด..." : "ไม่พบคำขอ"}
-                      />
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                  </TableHead>
+                  <TableBody>
+                    {filteredSorted.map((req) => {
+                      const dd = req.customer?.dealerDetail;
+                      const name = req.customer?.companyName || req.customer?.name || "-";
+                      const tempAmount = req.amount ? formatNumber(req.amount) : "-";
+                      const exp = req.expiryDate ? new Date(req.expiryDate) : null;
+                      return (
+                        <TableRow
+                          key={req.id}
+                          hover
+                          sx={{ "&:nth-of-type(even)": { bgcolor: "#fafafa" } }}
+                        >
+                          <TableCell>{name}</TableCell>
+                          <TableCell align="center">
+                            {dd?.creditLimit != null ? formatNumber(dd.creditLimit) : "-"}
+                          </TableCell>
+                          <TableCell align="right">
+                            {dd?.promotionBudgetLimit != null
+                              ? formatNumber(dd.promotionBudgetLimit)
+                              : "-"}
+                          </TableCell>
+                          <TableCell align="right">{tempAmount}</TableCell>
+                          <TableCell align="right">
+                            {exp ? exp.toLocaleDateString("th-TH") : "-"}
+                          </TableCell>
+                          <TableCell>{renderStatusChip(req)}</TableCell>
+                          <TableCell>{req.requestedBy?.name || req.requestedByUserId || "-"}</TableCell>
+                          <TableCell align="center">
+                            <Stack direction="row" spacing={1} justifyContent="center">
+                              {canEditLimits && (
+                                <Button
+                                  size="small"
+                                  onClick={() => setEditCustomer(req.customer)}
+                                  variant="outlined"
+                                >
+                                  แก้ไขวงเงิน
+                                </Button>
+                              )}
+                              <Button
+                                size="small"
+                                onClick={() => router.push(`/dashboard/customers/${req.customer?.id}`)}
+                              >
+                                ดูร้าน
+                              </Button>
+                              {req.status === "PENDING" && (
+                                <>
+                                  {canApprove && (
+                                    <Button
+                                      size="small"
+                                      color="success"
+                                      onClick={async () => {
+                                        if (!confirm("ยืนยันอนุมัติคำขอ?")) return;
+                                        try {
+                                          await fetch(`/api/credit-requests/${req.id}`, {
+                                            method: "PUT",
+                                            headers: { "Content-Type": "application/json" },
+                                            body: JSON.stringify({ action: "approve" }),
+                                          });
+                                          load();
+                                        } catch (err) {
+                                          console.error(err);
+                                        }
+                                      }}
+                                    >
+                                      อนุมัติ
+                                    </Button>
+                                  )}
+                                  {canReject && (
+                                    <Button
+                                      size="small"
+                                      color="error"
+                                      onClick={() => {
+                                        setSelected(req);
+                                        setRejectOpen(true);
+                                      }}
+                                    >
+                                      ปฏิเสธ
+                                    </Button>
+                                  )}
+                                </>
+                              )}
+                            </Stack>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                    {filteredSorted.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={headCells.length + 1}>
+                          <EmptyTableMessage
+                            colSpan={headCells.length + 1}
+                            message={loading ? "กำลังโหลด..." : "ไม่พบคำขอ"}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Box>
+          ) : (
+            <Stack spacing={1} sx={{ p: 1 }}>
+              {filteredSorted.map((req) => {
+                const dd = req.customer?.dealerDetail;
+                const name = req.customer?.companyName || req.customer?.name || "-";
+                const tempAmount = req.amount ? formatNumber(req.amount) : "-";
+                const exp = req.expiryDate ? new Date(req.expiryDate) : null;
+                return (
+                  <Paper key={req.id} variant="outlined" sx={{ p: 1 }}>
+                    <Stack direction="row" spacing={1} alignItems="flex-start" justifyContent="space-between">
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography noWrap sx={{ fontWeight: 700 }}>{name}</Typography>
+                        <Stack direction="row" spacing={1} sx={{ mt: 0.5, flexWrap: "wrap" }}>
+                          <Typography variant="body2">วงเงิน: {dd?.creditLimit != null ? formatNumber(dd.creditLimit) : "-"}</Typography>
+                          <Typography variant="body2">วงเงินชั่วคราว: {tempAmount}</Typography>
+                          <Typography variant="body2">หมดอายุ: {exp ? exp.toLocaleDateString("th-TH") : "-"}</Typography>
+                        </Stack>
+                        <Stack direction="row" spacing={1} sx={{ mt: 0.5 }} alignItems="center">
+                          {renderStatusChip(req)}
+                          <Typography variant="body2">ผู้ขอ: {req.requestedBy?.name || req.requestedByUserId || "-"}</Typography>
+                        </Stack>
+                      </Box>
+                      <Stack spacing={1} sx={{ ml: 1 }}>
+                        {canEditLimits && (
+                          <Button size="small" variant="outlined" onClick={() => setEditCustomer(req.customer)}>
+                            แก้ไข
+                          </Button>
+                        )}
+                        <Button size="small" onClick={() => router.push(`/dashboard/customers/${req.customer?.id}`)}>
+                          ดูร้าน
+                        </Button>
+                        <Button size="small" onClick={() => { setSelected(req); }}>
+                          รายละเอียด
+                        </Button>
+                      </Stack>
+                    </Stack>
+                  </Paper>
+                );
+              })}
+              {filteredSorted.length === 0 && (
+                <EmptyTableMessage colSpan={1} message={loading ? "กำลังโหลด..." : "ไม่พบคำขอ"} />
+              )}
+            </Stack>
+          )}
         </Box>
 
         <TablePagination
