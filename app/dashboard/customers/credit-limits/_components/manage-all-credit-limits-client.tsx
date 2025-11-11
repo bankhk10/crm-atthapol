@@ -109,7 +109,7 @@ export function ManageAllCreditLimitsClient() {
   const headCells = [
     { id: "name" as SortKey, label: "ชื่อร้าน", width: 300, align: "left" as const },
     { id: "creditLimit" as SortKey, label: "วงเงินเครดิต", width: 200, align: "right" as const },
-    { id: "promotionBudgetLimit" as SortKey, label: "วงเงินส่งเสริมกิจกรรม", width: 250, align: "right" as const },
+  { id: "promotionBudgetLimit" as SortKey, label: "วงเงินส่งเสริมการขาย", width: 250, align: "right" as const },
   ];
 
   const filteredSorted = useMemo(() => {

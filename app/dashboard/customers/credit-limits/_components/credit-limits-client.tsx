@@ -193,7 +193,7 @@ export function CreditLimitsClient() {
   const headCells: readonly HeadCell[] = [
     { id: "name", label: "ชื่อร้าน", width: 250, align: "left" },
     { id: "creditLimit", label: "วงเงินเครดิต", width: 80, align: "center" },
-    { id: "promotionBudgetLimit", label: "วงเงินส่งเสริมกิจกรรม", width: 180, align: "right" },
+  { id: "promotionBudgetLimit", label: "วงเงินส่งเสริมการขาย", width: 180, align: "right" },
     { id: "amount", label: "วงเงินเครดิตชั่วคราว", width: 120, align: "right" },
     { id: "expiryDate", label: "วันหมดอายุ", width: 150, align: "right" },
     { id: "status", label: "สถานะ", width: 100, align: "right" },
