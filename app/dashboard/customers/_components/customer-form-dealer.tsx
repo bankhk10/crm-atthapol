@@ -45,6 +45,16 @@ export default function DealerFormSection({
       "ไทยการเกษตร",
       "ดีลเลอร์เซ็นเตอร์",
       "เอสเคซัพพลาย",
+      "รุ่งเรืองการเกษตร",
+      "มิตรแท้เกษตรกร",
+      "เจริญผลเคมีเกษตร",
+      "เกษตรสยาม",
+      "พันธมิตรการค้า",
+      "ทรัพย์ทวีคูณ",
+      "โชคชัยการเกษตร",
+      "เกษตรพัฒนา",
+      "เพิ่มผลผลิต",
+      "ก้าวหน้าซัพพลาย",
     ];
     const firstNames = [
       "สมชาย",
@@ -105,8 +115,8 @@ export default function DealerFormSection({
     const day = randInt(1, 28);
     const birthDate = `${year}-${pad(month, 2)}-${pad(day, 2)}`;
 
-    const creditLimit = String(randInt(50000, 500000));
-    const promotionBudget = String(randInt(0, 50000));
+    // const creditLimit = String(randInt(50000, 500000)); // <-- ถูกลบออก
+    // const promotionBudget = String(randInt(0, 50000)); // <-- ถูกลบออก
     const relationshipScore = randInt(1, 5);
     const businessNotes = "ข้อมูลทดสอบ สร้างโดยการสุ่ม";
 
@@ -131,8 +141,8 @@ export default function DealerFormSection({
       birthDate,
       contactPhone,
       contactEmail,
-      creditLimit,
-      promotionBudget,
+      // creditLimit, // <-- ถูกลบออก
+      // promotionBudget, // <-- ถูกลบออก
       relationshipScore,
       businessNotes,
       address,
