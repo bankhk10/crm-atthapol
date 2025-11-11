@@ -91,7 +91,6 @@ export function CreditLimitsClient() {
     // show saved banner if present
     const saved = sp?.get("saved");
     if (saved) {
-      setShowSaved(true);
       const nxt = new URLSearchParams(sp.toString());
       nxt.delete("saved");
       router.replace(`${pathname}${nxt.toString() ? `?${nxt.toString()}` : ""}`);
@@ -129,9 +128,7 @@ export function CreditLimitsClient() {
     | "promotionBudgetLimit"
     | "amount"
     | "expiryDate"
-    | "status"
-    | "requestedBy";
-
+    | "status";
   const [order, setOrder] = useState<Order>("asc");
   const [orderBy, setOrderBy] = useState<SortKey>("name");
 
@@ -159,8 +156,6 @@ export function CreditLimitsClient() {
         const display = isExpired ? "EXPIRED" : row.status || "";
         return display;
       }
-      case "requestedBy":
-        return row.requestedBy?.name || row.requestedByUserId || "";
     }
   };
 
@@ -186,13 +181,12 @@ export function CreditLimitsClient() {
   }
 
   const headCells: readonly HeadCell[] = [
-    { id: "name", label: "ชื่อร้าน", width: 260, align: "left" },
-    { id: "creditLimit", label: "วงเงินเครดิต", width: 140, align: "right" },
-    { id: "promotionBudgetLimit", label: "วงเงินส่งเสริมกิจกรรม", width: 200, align: "right" },
-    { id: "amount", label: "วงเงินเครดิตชั่วคราว", width: 180, align: "right" },
-    { id: "expiryDate", label: "วันหมดอายุ", width: 200, align: "right" },
-    { id: "status", label: "สถานะ", width: 140, align: "left" },
-    { id: "requestedBy", label: "คนขอทำรายการ", width: 200, align: "left" },
+    { id: "name", label: "ชื่อร้าน", width: 250, align: "left" },
+    { id: "creditLimit", label: "วงเงินเครดิต", width: 80, align: "center" },
+    { id: "promotionBudgetLimit", label: "วงเงินส่งเสริมกิจกรรม", width: 180, align: "right" },
+    { id: "amount", label: "วงเงินเครดิตชั่วคราว", width: 120, align: "right" },
+    { id: "expiryDate", label: "วันหมดอายุ", width: 150, align: "right" },
+    { id: "status", label: "สถานะ", width: 100, align: "right" },
   ];
 
   const filteredSorted = useMemo(() => {
@@ -232,6 +226,13 @@ export function CreditLimitsClient() {
             ? "error"
             : "default";
     return <Chip label={label} color={color} size="small" />;
+  };
+
+  // truncate helper (33 characters requested)
+  const truncate = (s?: string | null, max = 33) => {
+    if (!s) return "-";
+    const str = String(s);
+    return str.length > max ? `${str.slice(0, max)}...` : str;
   };
 
   return (
@@ -358,11 +359,32 @@ export function CreditLimitsClient() {
                           hover
                           sx={{ "&:nth-of-type(even)": { bgcolor: "#fafafa" } }}
                         >
-                          <TableCell>{name}</TableCell>
+                          <TableCell
+                            sx={{
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}
+                          >
+                            <Tooltip title={name} arrow>
+                              <Box
+                                component="span"
+                                sx={{
+                                  display: "inline-block",
+                                  maxWidth: "100%",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {truncate(name, 33)}
+                              </Box>
+                            </Tooltip>
+                          </TableCell>
                           <TableCell align="center">
                             {dd?.creditLimit != null ? formatNumber(dd.creditLimit) : "-"}
                           </TableCell>
-                          <TableCell align="right">
+                          <TableCell align="center">
                             {dd?.promotionBudgetLimit != null
                               ? formatNumber(dd.promotionBudgetLimit)
                               : "-"}
@@ -371,10 +393,7 @@ export function CreditLimitsClient() {
                           <TableCell align="right">
                             {exp ? exp.toLocaleDateString("th-TH") : "-"}
                           </TableCell>
-                          <TableCell>{renderStatusChip(req)}</TableCell>
-                          <TableCell>
-                            {req.requestedBy?.name || req.requestedByUserId || "-"}
-                          </TableCell>
+                          <TableCell align="right" >{renderStatusChip(req)}</TableCell>
                           <TableCell align="center">
                             <Stack direction="row" spacing={1} justifyContent="center">
                               {req.status === "PENDING" && (
@@ -449,9 +468,21 @@ export function CreditLimitsClient() {
                       justifyContent="space-between"
                     >
                       <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography noWrap sx={{ fontWeight: 700 }}>
-                          {name}
-                        </Typography>
+                        <Tooltip title={name} arrow>
+                          <Typography
+                            component="span"
+                            noWrap
+                            sx={{
+                              display: "inline-block",
+                              fontWeight: 700,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              maxWidth: "100%",
+                            }}
+                          >
+                            {truncate(name, 33)}
+                          </Typography>
+                        </Tooltip>
                         <Stack direction="row" spacing={1} sx={{ mt: 0.5, flexWrap: "wrap" }}>
                           <Typography variant="body2">
                             วงเงิน: {dd?.creditLimit != null ? formatNumber(dd.creditLimit) : "-"}
@@ -459,12 +490,6 @@ export function CreditLimitsClient() {
                           <Typography variant="body2">วงเงินชั่วคราว: {tempAmount}</Typography>
                           <Typography variant="body2">
                             หมดอายุ: {exp ? exp.toLocaleDateString("th-TH") : "-"}
-                          </Typography>
-                        </Stack>
-                        <Stack direction="row" spacing={1} sx={{ mt: 0.5 }} alignItems="center">
-                          {renderStatusChip(req)}
-                          <Typography variant="body2">
-                            ผู้ขอ: {req.requestedBy?.name || req.requestedByUserId || "-"}
                           </Typography>
                         </Stack>
                       </Box>
@@ -555,10 +580,6 @@ export function CreditLimitsClient() {
               </Typography>
               <Typography>
                 <strong>สถานะ:</strong> {renderStatusChip(selected)}
-              </Typography>
-              <Typography>
-                <strong>ผู้ขอ:</strong>{" "}
-                {selected.requestedBy?.name || selected.requestedByUserId || "-"}
               </Typography>
               <Typography>
                 <strong>เหตุผล / หมายเหตุ:</strong>
