@@ -38,6 +38,10 @@ import IconButton from "@mui/material/IconButton";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import FirstPageIcon from "@mui/icons-material/FirstPage";
+import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
+import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
+import LastPageIcon from "@mui/icons-material/LastPage";
 
 export function CreditLimitsClient() {
   const router = useRouter();
@@ -203,6 +207,81 @@ export function CreditLimitsClient() {
     const isAsc = orderBy === property && order === "asc";
     setOrder(isAsc ? "desc" : "asc");
     setOrderBy(property);
+  };
+
+  // Modern pagination actions (matching products table)
+  const TablePaginationActionsModern = ({
+    count,
+    page,
+    rowsPerPage,
+    onPageChange,
+  }: {
+    count: number;
+    page: number;
+    rowsPerPage: number;
+    onPageChange: (event: React.MouseEvent<HTMLButtonElement>, newPage: number) => void;
+  }) => {
+    const lastPage = Math.max(0, Math.ceil(count / rowsPerPage) - 1);
+    return (
+      <Stack direction="row" spacing={0.5} alignItems="center">
+        <IconButton
+          onClick={(e) => onPageChange(e as any, 0)}
+          disabled={page === 0}
+          size="small"
+          sx={{
+            color: "primary.main",
+            borderRadius: 2,
+            "&:hover": { bgcolor: "primary.main", color: "common.white" },
+            transition: "all .15s ease",
+          }}
+          aria-label="first page"
+        >
+          <FirstPageIcon fontSize="small" />
+        </IconButton>
+        <IconButton
+          onClick={(e) => onPageChange(e as any, Math.max(0, page - 1))}
+          disabled={page === 0}
+          size="small"
+          sx={{
+            color: "primary.main",
+            borderRadius: 2,
+            "&:hover": { bgcolor: "primary.main", color: "common.white" },
+            transition: "all .15s ease",
+          }}
+          aria-label="previous page"
+        >
+          <KeyboardArrowLeft fontSize="small" />
+        </IconButton>
+        <IconButton
+          onClick={(e) => onPageChange(e as any, Math.min(lastPage, page + 1))}
+          disabled={page >= lastPage}
+          size="small"
+          sx={{
+            color: "primary.main",
+            borderRadius: 2,
+            "&:hover": { bgcolor: "primary.main", color: "common.white" },
+            transition: "all .15s ease",
+          }}
+          aria-label="next page"
+        >
+          <KeyboardArrowRight fontSize="small" />
+        </IconButton>
+        <IconButton
+          onClick={(e) => onPageChange(e as any, lastPage)}
+          disabled={page >= lastPage}
+          size="small"
+          sx={{
+            color: "primary.main",
+            borderRadius: 2,
+            "&:hover": { bgcolor: "primary.main", color: "common.white" },
+            transition: "all .15s ease",
+          }}
+          aria-label="last page"
+        >
+          <LastPageIcon fontSize="small" />
+        </IconButton>
+      </Stack>
+    );
   };
 
   // state for edit dialog
@@ -566,8 +645,9 @@ export function CreditLimitsClient() {
           )}
         </Box>
 
+        {/* Modern pagination (match products) */}
         <TablePagination
-          rowsPerPageOptions={[5, 10, 25]}
+          rowsPerPageOptions={[5, 10, 25, 50]}
           component="div"
           count={total}
           rowsPerPage={rowsPerPage}
@@ -576,6 +656,30 @@ export function CreditLimitsClient() {
           onRowsPerPageChange={(e) => {
             setRowsPerPage(parseInt(e.target.value, 10));
             setPage(0);
+          }}
+          labelRowsPerPage="แสดงต่อหน้า"
+          labelDisplayedRows={({ from, to, count }) => `${from}–${to} จาก ${count}`}
+          slots={{ actions: TablePaginationActionsModern as any }}
+          sx={{
+            px: 2,
+            borderTop: "1px solid",
+            borderColor: "divider",
+            bgcolor: "grey.50",
+            "& .MuiTablePagination-toolbar": {
+              gap: 1,
+              justifyContent: { xs: "center", sm: "space-between" },
+            },
+            "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows": {
+              fontWeight: 600,
+              color: "text.secondary",
+            },
+            "& .MuiTablePagination-select": {
+              borderRadius: 2,
+              px: 1,
+            },
+            "& .MuiTablePagination-actions": {
+              alignItems: "center",
+            },
           }}
         />
       </Paper>
