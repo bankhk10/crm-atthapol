@@ -310,7 +310,15 @@ export function CreditLimitsClient() {
           : label === "ปฏิเสธ"
             ? "error"
             : "default";
-    return <Chip label={label} color={color} size="small" />;
+    return (
+      <Chip
+        component="span"
+        label={label}
+        color={color}
+        size="small"
+        sx={{ display: "inline-flex" }}
+      />
+    );
   };
 
   // truncate helper (33 characters requested)
