@@ -389,11 +389,7 @@ export function CreditLimitsClient() {
                   "&::-webkit-scrollbar-thumb": { backgroundColor: "#ccc", borderRadius: 6 },
                 }}
               >
-                <Table
-                  aria-labelledby="tableTitle"
-                  sx={{ minWidth: 1000, tableLayout: "fixed" }}
-                  size="small"
-                >
+                <Table aria-labelledby="tableTitle" sx={{ minWidth: 900, tableLayout: "fixed" }}>
                   <TableHead
                     sx={{
                       bgcolor: "#ccccceff",
@@ -426,7 +422,7 @@ export function CreditLimitsClient() {
                           </Tooltip>
                         </TableCell>
                       ))}
-                      <TableCell align="center" sx={{ width: 220 }}>
+                      <TableCell align="center" sx={{ width: 120 }}>
                         การกระทำ
                       </TableCell>
                     </TableRow>
@@ -441,7 +437,10 @@ export function CreditLimitsClient() {
                         <TableRow
                           key={req.id}
                           hover
-                          sx={{ "&:nth-of-type(even)": { bgcolor: "#fafafa" } }}
+                          sx={{
+                            "&:nth-of-type(even)": { bgcolor: "#fafafa" },
+                            "&:hover": { bgcolor: "#f0f0f0" },
+                          }}
                         >
                           <TableCell
                             sx={{
@@ -478,7 +477,7 @@ export function CreditLimitsClient() {
                             {exp ? exp.toLocaleDateString("th-TH") : "-"}
                           </TableCell>
                           <TableCell align="right">{renderStatusChip(req)}</TableCell>
-                          <TableCell align="center">
+                          <TableCell align="center" sx={{ width: 120 }}>
                             <Stack direction="row" spacing={0} justifyContent="center">
                               {req.status === "PENDING" && (
                                 <>
@@ -525,7 +524,9 @@ export function CreditLimitsClient() {
                                     </Tooltip>
                                   )}
                                   {/* delete button: approver or requester can delete pending */}
-                                  {((canApprove) || req.requestedBy?.id === session?.user?.id || req.requestedByUserId === session?.user?.id) && (
+                                  {(canApprove ||
+                                    req.requestedBy?.id === session?.user?.id ||
+                                    req.requestedByUserId === session?.user?.id) && (
                                     <Tooltip title="ลบ" arrow>
                                       <IconButton
                                         size="small"
@@ -610,12 +611,10 @@ export function CreditLimitsClient() {
                           </Button>
                         )}
                         {/* delete for mobile: approver or owner */}
-                        {((canApprove) || req.requestedBy?.id === session?.user?.id || req.requestedByUserId === session?.user?.id) && (
-                          <Button
-                            size="small"
-                            color="error"
-                            onClick={() => setConfirmDelete(req)}
-                          >
+                        {(canApprove ||
+                          req.requestedBy?.id === session?.user?.id ||
+                          req.requestedByUserId === session?.user?.id) && (
+                          <Button size="small" color="error" onClick={() => setConfirmDelete(req)}>
                             ลบ
                           </Button>
                         )}
@@ -804,12 +803,15 @@ export function CreditLimitsClient() {
       </Dialog>
 
       {/* Delete Confirm Dialog */}
-      <Dialog open={Boolean(confirmDelete)} onClose={() => setConfirmDelete(null)} fullWidth maxWidth="xs">
+      <Dialog
+        open={Boolean(confirmDelete)}
+        onClose={() => setConfirmDelete(null)}
+        fullWidth
+        maxWidth="xs"
+      >
         <DialogTitle>ยืนยันการลบคำขอ</DialogTitle>
         <DialogContent>
-          <Typography>
-            คุณต้องการลบคำขอวงเงินนี้หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้
-          </Typography>
+          <Typography>คุณต้องการลบคำขอวงเงินนี้หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้</Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setConfirmDelete(null)}>ยกเลิก</Button>
@@ -819,7 +821,9 @@ export function CreditLimitsClient() {
             onClick={async () => {
               if (!confirmDelete) return;
               try {
-                const res = await fetch(`/api/credit-requests/${confirmDelete.id}`, { method: "DELETE" });
+                const res = await fetch(`/api/credit-requests/${confirmDelete.id}`, {
+                  method: "DELETE",
+                });
                 if (!res.ok) {
                   const d = await res.json().catch(() => ({}));
                   throw new Error(d?.error || "ลบไม่สำเร็จ");

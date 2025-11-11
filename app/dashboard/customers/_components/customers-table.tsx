@@ -72,7 +72,15 @@ function CustomerRow(props: {
   canDelete: boolean;
   setDeleteTarget: (customer: CustomerListItem | null) => void;
 }) {
-  const { customer: c, headCells, showActions, canView, canEdit, canDelete, setDeleteTarget } = props;
+  const {
+    customer: c,
+    headCells,
+    showActions,
+    canView,
+    canEdit,
+    canDelete,
+    setDeleteTarget,
+  } = props;
   const [isOpen, setIsOpen] = useState(false);
   const hasBranches = c.type === "DEALER" && c.branches && c.branches.length > 0;
   const address = [c.address, c.subdistrict, c.district, c.province, c.postalCode]
@@ -83,7 +91,6 @@ function CustomerRow(props: {
 
   return (
     <React.Fragment>
-      {/* === แถวหลัก === */}
       <TableRow
         hover
         sx={{
@@ -92,7 +99,6 @@ function CustomerRow(props: {
           "& > *": { borderBottom: "unset" },
         }}
       >
-        {/* ชื่อลูกค้า (เพิ่มปุ่ม expand) */}
         <TableCell
           sx={{
             whiteSpace: "nowrap",
@@ -180,11 +186,7 @@ function CustomerRow(props: {
             <Stack direction="row" justifyContent="center" spacing={0.5}>
               {canView && (
                 <Tooltip title="ดูรายละเอียด" arrow>
-                  <IconButton
-                    component={Link}
-                    href={`/dashboard/customers/${c.id}`}
-                    size="small"
-                  >
+                  <IconButton component={Link} href={`/dashboard/customers/${c.id}`} size="small">
                     <VisibilityOutlinedIcon fontSize="small" />
                   </IconButton>
                 </Tooltip>
@@ -203,11 +205,7 @@ function CustomerRow(props: {
               )}
               {canDelete && (
                 <Tooltip title="ลบ" arrow>
-                  <IconButton
-                    aria-label="delete"
-                    size="small"
-                    onClick={() => setDeleteTarget(c)}
-                  >
+                  <IconButton aria-label="delete" size="small" onClick={() => setDeleteTarget(c)}>
                     <DeleteOutlineIcon fontSize="small" />
                   </IconButton>
                 </Tooltip>
@@ -223,12 +221,19 @@ function CustomerRow(props: {
           <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={totalColumns}>
             <Collapse in={isOpen} timeout="auto" unmountOnExit>
               <Box sx={{ margin: 1, ml: 10, p: 2, bgcolor: "#fafafa", borderRadius: 2 }}>
-                <Typography variant="h6" gutterBottom component="div" sx={{ fontSize: "1rem", fontWeight: 600 }}>
+                <Typography
+                  variant="h6"
+                  gutterBottom
+                  component="div"
+                  sx={{ fontSize: "1rem", fontWeight: 600 }}
+                >
                   ร้านรอง ({c.branches.length})
                 </Typography>
                 <Table size="small" aria-label="branches">
                   <TableHead>
-                    <TableRow sx={{ "& .MuiTableCell-root": { fontWeight: "bold", border: "none" } }}>
+                    <TableRow
+                      sx={{ "& .MuiTableCell-root": { fontWeight: "bold", border: "none" } }}
+                    >
                       <TableCell>ชื่อร้านรอง</TableCell>
                       <TableCell>เบอร์โทร</TableCell>
                       <TableCell align="right">การกระทำ</TableCell>
