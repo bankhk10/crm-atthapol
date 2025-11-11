@@ -34,6 +34,9 @@ import { Snackbar } from "@mui/material";
 import { EmptyTableMessage } from "@/components/ui/EmptyTableMessage";
 import { formatNumber } from "@/lib/format";
 import { CreditLimitEditDialog } from "./credit-limit-edit-dialog";
+import IconButton from "@mui/material/IconButton";
+import CheckIcon from "@mui/icons-material/Check";
+import CloseIcon from "@mui/icons-material/Close";
 
 export function CreditLimitsClient() {
   const router = useRouter();
@@ -393,43 +396,52 @@ export function CreditLimitsClient() {
                           <TableCell align="right">
                             {exp ? exp.toLocaleDateString("th-TH") : "-"}
                           </TableCell>
-                          <TableCell align="right" >{renderStatusChip(req)}</TableCell>
+                          <TableCell align="right">{renderStatusChip(req)}</TableCell>
                           <TableCell align="center">
-                            <Stack direction="row" spacing={1} justifyContent="center">
+                            <Stack direction="row" spacing={0} justifyContent="center">
                               {req.status === "PENDING" && (
                                 <>
                                   {canApprove && (
-                                    <Button
-                                      size="small"
-                                      color="success"
-                                      onClick={async () => {
-                                        if (!confirm("ยืนยันอนุมัติคำขอ?")) return;
-                                        try {
-                                          await fetch(`/api/credit-requests/${req.id}`, {
-                                            method: "PUT",
-                                            headers: { "Content-Type": "application/json" },
-                                            body: JSON.stringify({ action: "approve" }),
-                                          });
-                                          load();
-                                        } catch (err) {
-                                          console.error(err);
-                                        }
-                                      }}
-                                    >
-                                      อนุมัติ
-                                    </Button>
+                                    // 1. ครอบ IconButton ด้วย Tooltip
+                                    // 2. ใส่ "title" ที่ต้องการให้แสดง
+                                    <Tooltip title="อนุมัติ">
+                                      <IconButton
+                                        size="small"
+                                        color="success"
+                                        aria-label="อนุมัติ" // สำคัญมาก: เพื่อ Accessibility
+                                        onClick={async () => {
+                                          if (!confirm("ยืนยันอนุมัติคำขอ?")) return;
+                                          try {
+                                            await fetch(`/api/credit-requests/${req.id}`, {
+                                              method: "PUT",
+                                              headers: { "Content-Type": "application/json" },
+                                              body: JSON.stringify({ action: "approve" }),
+                                            });
+                                            load();
+                                          } catch (err) {
+                                            console.error(err);
+                                          }
+                                        }}
+                                      >
+                                        <CheckIcon fontSize="inherit" />
+                                      </IconButton>
+                                    </Tooltip>
                                   )}
+
                                   {canReject && (
-                                    <Button
-                                      size="small"
-                                      color="error"
-                                      onClick={() => {
-                                        setSelected(req);
-                                        setRejectOpen(true);
-                                      }}
-                                    >
-                                      ปฏิเสธ
-                                    </Button>
+                                    <Tooltip title="ปฏิเสธ">
+                                      <IconButton
+                                        size="small"
+                                        color="error"
+                                        aria-label="ปฏิเสธ" // สำคัญมาก: เพื่อ Accessibility
+                                        onClick={() => {
+                                          setSelected(req);
+                                          setRejectOpen(true);
+                                        }}
+                                      >
+                                        <CloseIcon fontSize="inherit" />
+                                      </IconButton>
+                                    </Tooltip>
                                   )}
                                 </>
                               )}
