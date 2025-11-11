@@ -190,7 +190,7 @@ export function CreditLimitsClient() {
     { id: "creditLimit", label: "วงเงินเครดิต", width: 140, align: "right" },
     { id: "promotionBudgetLimit", label: "วงเงินส่งเสริมกิจกรรม", width: 200, align: "right" },
     { id: "amount", label: "วงเงินเครดิตชั่วคราว", width: 180, align: "right" },
-    { id: "expiryDate", label: "วันหมดอายุวงเงินเครดิตชั่วคราว", width: 220, align: "right" },
+    { id: "expiryDate", label: "วันหมดอายุ", width: 200, align: "right" },
     { id: "status", label: "สถานะ", width: 140, align: "left" },
     { id: "requestedBy", label: "คนขอทำรายการ", width: 200, align: "left" },
   ];
@@ -372,24 +372,11 @@ export function CreditLimitsClient() {
                             {exp ? exp.toLocaleDateString("th-TH") : "-"}
                           </TableCell>
                           <TableCell>{renderStatusChip(req)}</TableCell>
-                          <TableCell>{req.requestedBy?.name || req.requestedByUserId || "-"}</TableCell>
+                          <TableCell>
+                            {req.requestedBy?.name || req.requestedByUserId || "-"}
+                          </TableCell>
                           <TableCell align="center">
                             <Stack direction="row" spacing={1} justifyContent="center">
-                              {canEditLimits && (
-                                <Button
-                                  size="small"
-                                  onClick={() => setEditCustomer(req.customer)}
-                                  variant="outlined"
-                                >
-                                  แก้ไขวงเงิน
-                                </Button>
-                              )}
-                              <Button
-                                size="small"
-                                onClick={() => router.push(`/dashboard/customers/${req.customer?.id}`)}
-                              >
-                                ดูร้าน
-                              </Button>
                               {req.status === "PENDING" && (
                                 <>
                                   {canApprove && (
@@ -455,29 +442,54 @@ export function CreditLimitsClient() {
                 const exp = req.expiryDate ? new Date(req.expiryDate) : null;
                 return (
                   <Paper key={req.id} variant="outlined" sx={{ p: 1 }}>
-                    <Stack direction="row" spacing={1} alignItems="flex-start" justifyContent="space-between">
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      alignItems="flex-start"
+                      justifyContent="space-between"
+                    >
                       <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography noWrap sx={{ fontWeight: 700 }}>{name}</Typography>
+                        <Typography noWrap sx={{ fontWeight: 700 }}>
+                          {name}
+                        </Typography>
                         <Stack direction="row" spacing={1} sx={{ mt: 0.5, flexWrap: "wrap" }}>
-                          <Typography variant="body2">วงเงิน: {dd?.creditLimit != null ? formatNumber(dd.creditLimit) : "-"}</Typography>
+                          <Typography variant="body2">
+                            วงเงิน: {dd?.creditLimit != null ? formatNumber(dd.creditLimit) : "-"}
+                          </Typography>
                           <Typography variant="body2">วงเงินชั่วคราว: {tempAmount}</Typography>
-                          <Typography variant="body2">หมดอายุ: {exp ? exp.toLocaleDateString("th-TH") : "-"}</Typography>
+                          <Typography variant="body2">
+                            หมดอายุ: {exp ? exp.toLocaleDateString("th-TH") : "-"}
+                          </Typography>
                         </Stack>
                         <Stack direction="row" spacing={1} sx={{ mt: 0.5 }} alignItems="center">
                           {renderStatusChip(req)}
-                          <Typography variant="body2">ผู้ขอ: {req.requestedBy?.name || req.requestedByUserId || "-"}</Typography>
+                          <Typography variant="body2">
+                            ผู้ขอ: {req.requestedBy?.name || req.requestedByUserId || "-"}
+                          </Typography>
                         </Stack>
                       </Box>
                       <Stack spacing={1} sx={{ ml: 1 }}>
                         {canEditLimits && (
-                          <Button size="small" variant="outlined" onClick={() => setEditCustomer(req.customer)}>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => setEditCustomer(req.customer)}
+                          >
                             แก้ไข
                           </Button>
                         )}
-                        <Button size="small" onClick={() => router.push(`/dashboard/customers/${req.customer?.id}`)}>
+                        <Button
+                          size="small"
+                          onClick={() => router.push(`/dashboard/customers/${req.customer?.id}`)}
+                        >
                           ดูร้าน
                         </Button>
-                        <Button size="small" onClick={() => { setSelected(req); }}>
+                        <Button
+                          size="small"
+                          onClick={() => {
+                            setSelected(req);
+                          }}
+                        >
                           รายละเอียด
                         </Button>
                       </Stack>
