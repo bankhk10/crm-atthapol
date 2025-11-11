@@ -10,7 +10,7 @@ export async function PUT(
 
   const { customerId } = await params;
   const body = await request.json();
-  const { 
+  let { 
     creditLimit,
     temporaryCreditLimit,
     temporaryCreditExpiry,
@@ -18,32 +18,54 @@ export async function PUT(
   } = body;
 
   // Validate inputs
-  if (creditLimit !== null && (typeof creditLimit !== "number" || creditLimit < 0)) {
-    return NextResponse.json(
-      { error: "วงเงินเครดิตต้องเป็นตัวเลขที่มากกว่าหรือเท่ากับ 0" },
-      { status: 400 }
-    );
+  if (creditLimit !== null && creditLimit !== undefined) {
+    creditLimit = parseFloat(creditLimit);
+    if (isNaN(creditLimit) || creditLimit < 0) {
+      return NextResponse.json(
+        { error: "วงเงินเครดิตต้องเป็นตัวเลขที่มากกว่าหรือเท่ากับ 0" },
+        { status: 400 }
+      );
+    }
+  } else {
+    creditLimit = null;
   }
 
-  if (temporaryCreditLimit !== null && (typeof temporaryCreditLimit !== "number" || temporaryCreditLimit < 0)) {
-    return NextResponse.json(
-      { error: "วงเงินเครดิตชั่วคราวต้องเป็นตัวเลขที่มากกว่าหรือเท่ากับ 0" },
-      { status: 400 }
-    );
+  if (temporaryCreditLimit !== null && temporaryCreditLimit !== undefined) {
+    temporaryCreditLimit = parseFloat(temporaryCreditLimit);
+    if (isNaN(temporaryCreditLimit) || temporaryCreditLimit < 0) {
+      return NextResponse.json(
+        { error: "วงเงินเครดิตชั่วคราวต้องเป็นตัวเลขที่มากกว่าหรือเท่ากับ 0" },
+        { status: 400 }
+      );
+    }
+  } else {
+    temporaryCreditLimit = null;
   }
 
-  if (temporaryCreditExpiry !== null && !(temporaryCreditExpiry instanceof Date)) {
-    return NextResponse.json(
-      { error: "วันหมดอายุต้องเป็นวันที่ที่ถูกต้อง" },
-      { status: 400 }
-    );
+  // Parse temporaryCreditExpiry: accept null, undefined, or ISO string
+  if (temporaryCreditExpiry !== null && temporaryCreditExpiry !== undefined) {
+    const parsed = new Date(temporaryCreditExpiry);
+    if (isNaN(parsed.getTime())) {
+      return NextResponse.json(
+        { error: "วันหมดอายุต้องเป็นวันที่ที่ถูกต้อง" },
+        { status: 400 }
+      );
+    }
+    temporaryCreditExpiry = parsed;
+  } else {
+    temporaryCreditExpiry = null;
   }
 
-  if (promotionBudgetLimit !== null && (typeof promotionBudgetLimit !== "number" || promotionBudgetLimit < 0)) {
-    return NextResponse.json(
-      { error: "วงเงินส่งเสริมการขายต้องเป็นตัวเลขที่มากกว่าหรือเท่ากับ 0" },
-      { status: 400 }
-    );
+  if (promotionBudgetLimit !== null && promotionBudgetLimit !== undefined) {
+    promotionBudgetLimit = parseFloat(promotionBudgetLimit);
+    if (isNaN(promotionBudgetLimit) || promotionBudgetLimit < 0) {
+      return NextResponse.json(
+        { error: "วงเงินส่งเสริมการขายต้องเป็นตัวเลขที่มากกว่าหรือเท่ากับ 0" },
+        { status: 400 }
+      );
+    }
+  } else {
+    promotionBudgetLimit = null;
   }
 
   try {

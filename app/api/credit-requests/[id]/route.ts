@@ -28,7 +28,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     if (action === 'approve') {
       // Approve: update TempCreditRequest and update dealerDetail
       await prisma.$transaction(async (tx) => {
-        await tx.tempCreditRequest.update({ where: { id }, data: { status: 'APPROVED', processedByUserId, processedAt: new Date() } });
+  await tx.tempCreditRequest.update({ where: { id }, data: { status: 'APPROVED', processedByUserId, processedAt: new Date(), rejectReason: null } as any });
 
         await tx.dealerDetail.update({ where: { customerId: req.customerId }, data: { temporaryCreditLimit: req.amount, temporaryCreditExpiry: req.expiryDate } });
       });
@@ -36,8 +36,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ success: true });
     }
 
-    // reject
-    await prisma.tempCreditRequest.update({ where: { id }, data: { status: 'REJECTED', processedByUserId, processedAt: new Date() } });
+    // reject: save provided note as rejectReason
+  await prisma.tempCreditRequest.update({ where: { id }, data: { status: 'REJECTED', processedByUserId, processedAt: new Date(), rejectReason: note || null } as any });
 
     return NextResponse.json({ success: true });
   } catch (err) {

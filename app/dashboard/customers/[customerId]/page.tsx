@@ -2,6 +2,7 @@ import { Box, Divider, Grid, Paper, Stack, Typography } from "@mui/material";
 import { notFound } from "next/navigation";
 
 import { getCustomer } from "../../customers/data";
+import { ManageSingleCreditLimitButton } from "./_components/manage-single-credit-limit-button";
 
 function typeLabel(type: "DEALER" | "SUBDEALER" | "FARMER" | "BROKER") {
   if (type === "DEALER") return "Dealer";
@@ -80,24 +81,27 @@ export default async function CustomerDetailPage({
 
             {customer.type === "DEALER" && (
               <Section title="ข้อมูล Dealer">
-                <Info label="ชื่อบริษัท/ร้านค้า" value={(customer as any).companyName ?? "-"} />
-                <Info label="ผู้ติดต่อหลัก" value={(customer as any).contactPerson ?? "-"} />
-                <Info label="วงเงินเครดิต (บาท)" value={(customer as any).creditLimit ?? "-"} />
-                <Info
-                  label="วงเงินส่งเสริมการขาย (บาท)"
-                  value={(customer as any).promotionBudget ?? "-"}
-                />
-                <Info
-                  label="ยอดซื้อเฉลี่ย/เดือน"
-                  value={(customer as any).averageMonthlyPurchase ?? "-"}
-                />
-                <Info label="สินค้าหลักที่ขาย" value={(customer as any).mainProducts ?? "-"} />
-                <Info label="ยี่ห้อที่จำหน่าย" value={(customer as any).brandsSold ?? "-"} />
-                <Info
-                  label="คะแนนความสัมพันธ์"
-                  value={(customer as any).relationshipScore ?? "-"}
-                />
-                <Info label="หมายเหตุทางธุรกิจ" value={(customer as any).businessNotes ?? "-"} />
+                <Stack sx={{ width: "100%" }} spacing={2}>
+                  <ManageSingleCreditLimitButton customerId={customerId} />
+                  <Info label="ชื่อบริษัท/ร้านค้า" value={(customer as any).companyName ?? "-"} />
+                  <Info label="ผู้ติดต่อหลัก" value={(customer as any).contactPerson ?? "-"} />
+                  <Info label="วงเงินเครดิต (บาท)" value={(customer as any).creditLimit ?? "-"} />
+                  <Info
+                    label="วงเงินส่งเสริมการขาย (บาท)"
+                    value={(customer as any).promotionBudget ?? "-"}
+                  />
+                  <Info
+                    label="ยอดซื้อเฉลี่ย/เดือน"
+                    value={(customer as any).averageMonthlyPurchase ?? "-"}
+                  />
+                  <Info label="สินค้าหลักที่ขาย" value={(customer as any).mainProducts ?? "-"} />
+                  <Info label="ยี่ห้อที่จำหน่าย" value={(customer as any).brandsSold ?? "-"} />
+                  <Info
+                    label="คะแนนความสัมพันธ์"
+                    value={(customer as any).relationshipScore ?? "-"}
+                  />
+                  <Info label="หมายเหตุทางธุรกิจ" value={(customer as any).businessNotes ?? "-"} />
+                </Stack>
               </Section>
             )}
 

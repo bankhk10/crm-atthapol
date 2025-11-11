@@ -4,11 +4,10 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { customerId: string } }
+  { params }: { params: Promise<{ customerId: string }> }
 ) {
   await requirePermission("customers", "create");
-
-  const { customerId } = params;
+  const { customerId } = await params;
   const body = await request.json();
   const { amount, expiryDate } = body;
 
@@ -28,7 +27,7 @@ export async function POST(
 
   try {
     // Create request first
-    const request = await prisma.tempCreditRequest.create({
+    const rec = await prisma.tempCreditRequest.create({
       data: {
         customerId,
         amount,
@@ -37,7 +36,7 @@ export async function POST(
       },
     });
 
-    return NextResponse.json(request);
+    return NextResponse.json(rec);
   } catch (error) {
     console.error("Error creating temp credit request:", error);
     return NextResponse.json(

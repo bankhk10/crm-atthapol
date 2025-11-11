@@ -54,17 +54,53 @@ export async function GET(request: NextRequest) {
   })();
 
   try {
-    if (canApprove) {
-      // approver: return all (optionally filtered)
+    // parse pagination/search
+    const page = Number(q.get("page") || "1");
+    const pageSize = Number(q.get("pageSize") || "0");
+    const search = (q.get("q") || "").trim();
+
+    const buildWhere = () => {
       const where: any = {};
       if (statusFilter) where.status = statusFilter.toUpperCase();
-      const list = await prisma.tempCreditRequest.findMany({ where, orderBy: { createdAt: "desc" } });
-      return NextResponse.json(list);
+      if (canApprove) {
+        // approver: optionally filter by search across customer name/company
+        if (search) {
+          where.OR = [
+            { customer: { name: { contains: search, mode: "insensitive" } } },
+            { customer: { companyName: { contains: search, mode: "insensitive" } } },
+          ];
+        }
+      } else {
+        // non-approver: only own
+        where.requestedByUserId = userId;
+        if (search) {
+          where.OR = [
+            { customer: { name: { contains: search, mode: "insensitive" } } },
+            { customer: { companyName: { contains: search, mode: "insensitive" } } },
+          ];
+        }
+      }
+      return where;
+    };
+
+    const where = buildWhere();
+
+    // count for pagination
+    const total = await prisma.tempCreditRequest.count({ where });
+
+    const findOpts: any = {
+      where,
+      orderBy: { createdAt: "desc" },
+      include: { customer: { include: { dealerDetail: true } } },
+    };
+
+    if (pageSize && page > 0) {
+      findOpts.skip = (page - 1) * pageSize;
+      findOpts.take = pageSize;
     }
 
-    // non-approver: return own requests
-    const list = await prisma.tempCreditRequest.findMany({ where: { requestedByUserId: userId }, orderBy: { createdAt: "desc" } });
-    return NextResponse.json(list);
+    const list = await prisma.tempCreditRequest.findMany(findOpts);
+    return NextResponse.json({ items: list, total });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: "Failed to fetch requests" }, { status: 500 });
