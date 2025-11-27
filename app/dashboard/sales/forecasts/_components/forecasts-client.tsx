@@ -145,7 +145,7 @@ export function ForecastsClient({ employeeOptions }: Props) {
     <Stack spacing={3}>
       <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems={{ md: "center" }}>
         <Typography variant="h4" fontWeight={700} flexGrow={1}>
-          แผนการขาย (Forecast)
+          Forecast
         </Typography>
         <Stack direction="row" spacing={1}>
           <Tooltip title="รีเฟรช">
@@ -266,7 +266,9 @@ export function ForecastsClient({ employeeOptions }: Props) {
                   <TableCell>{displayEmployee(item.salesperson)}</TableCell>
                   <TableCell>
                     <Chip
-                      label={STATUS_OPTIONS.find((s) => s.value === item.status)?.label || item.status}
+                      label={
+                        STATUS_OPTIONS.find((s) => s.value === item.status)?.label || item.status
+                      }
                       size="small"
                       sx={{
                         color: STATUS_COLOR[item.status]?.color ?? "text.primary",
