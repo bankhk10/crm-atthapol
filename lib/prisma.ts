@@ -56,6 +56,9 @@ const SOFT_DELETE_MODELS = new Set<string>([
   "Stock",
   "Warehouse",
   "WarehouseLocation",
+  "Forecast",
+  "ForecastMonth",
+  "ForecastLine",
 ]);
 
 const STATUS_KEYS = ["status", "approvalStatus", "state"];

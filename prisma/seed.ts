@@ -330,7 +330,7 @@ async function main() {
   // ---------------------------
   // 3️⃣ สร้าง Users + Employees
   // ---------------------------
-  const employees: Record<string, string> = {};
+  const employees: Record<string, { id: string; code?: string }> = {};
   const usersByEmail: Record<string, string> = {};
 
   for (const u of userSeeds) {
@@ -369,7 +369,7 @@ async function main() {
           status: "ACTIVE",
         },
       });
-      employees[user.email as string] = emp.id;
+      employees[user.email as string] = { id: emp.id, code: u.employee.employeeCode };
     }
 
     usersByEmail[u.email] = user.id;
@@ -465,6 +465,86 @@ async function main() {
     }
   }
   console.log("🏬 Seeded Warehouses and Locations");
+
+  // ---------------------------
+  // 9️⃣ สร้างตัวอย่าง Sales Forecasts สำหรับพนักงานขายที่ seed ไว้
+  // ---------------------------
+  const salesEmployees = Object.entries(employees).filter(([, info]) => Boolean(info?.id));
+  if (salesEmployees.length > 0) {
+    const forecastYear = year;
+    const monthTemplates = Array.from({ length: 12 }, (_, idx) => {
+      const baseRevenue = 80000 + idx * 3500;
+      const baseQuantity = 40 + idx * 4;
+      return {
+        month: idx + 1,
+        targetRevenue: baseRevenue,
+        targetQuantity: baseQuantity,
+        note: idx % 3 === 0 ? "Seed target" : undefined,
+        lines: [
+          {
+            channel: "FIELD",
+            expectedQuantity: Math.max(5, Math.round(baseQuantity * 0.6)),
+            expectedRevenue: Math.round(baseRevenue * 0.5),
+            note: "Seed baseline line",
+          },
+        ],
+      };
+    });
+    const totalRevenue = monthTemplates.reduce((sum, m) => sum + m.targetRevenue, 0);
+    const totalQuantity = monthTemplates.reduce((sum, m) => sum + m.targetQuantity, 0);
+
+    let forecastCount = 0;
+    for (const [email, info] of salesEmployees) {
+      if (!info?.id) continue;
+      const rawSuffix = (info.code || email.split("@")[0] || "OWNER").toUpperCase();
+      const safeSuffix = rawSuffix.replace(/[^A-Z0-9]/g, "");
+      const forecastName = `SEED-FC-${forecastYear}-${safeSuffix || "OWNER"}`;
+
+      const baseData = {
+        name: forecastName,
+        year: forecastYear,
+        currency: "THB",
+        salespersonId: info.id,
+        status: "DRAFT" as const,
+        notes: "Seed forecast baseline",
+        totalRevenueTarget: totalRevenue,
+        totalQuantityTarget: totalQuantity,
+        submittedAt: null,
+        approvedAt: null,
+        approvedByUserId: null,
+        rejectedReason: null,
+      };
+
+      const record = await prisma.forecast.upsert({
+        where: {
+          salespersonId_year_name: {
+            salespersonId: info.id,
+            year: forecastYear,
+            name: forecastName,
+          },
+        },
+        update: baseData,
+        create: baseData,
+      });
+
+      await prisma.forecastMonth.deleteMany({ where: { forecastId: record.id } });
+      for (const tpl of monthTemplates) {
+        await prisma.forecastMonth.create({
+          data: {
+            forecastId: record.id,
+            month: tpl.month,
+            targetRevenue: tpl.targetRevenue,
+            targetQuantity: tpl.targetQuantity,
+            note: tpl.note,
+            lines: { create: tpl.lines },
+          },
+        });
+      }
+      forecastCount += 1;
+    }
+
+    console.log(`📈 Seeded ${forecastCount} sales forecasts for ${forecastYear}.`);
+  }
 }
 
 main()
